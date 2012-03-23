@@ -1,7 +1,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-    <title>Untitled Page</title>
+    <title></title>
     <style type="text/css">
         *
         {
@@ -28,7 +28,6 @@
 
         /*
         * TODO:
-        * 3. Distance
         * 4. Chunks
         * 5. Line
         * 6. Circles
@@ -87,6 +86,19 @@
         function sc2w(y0, x0, ys, xs) {
             var x = xs - x0;
             return [y0 - Math.floor((x + (x0 + 1) % 2) / 2) - ys, x];
+        }
+
+        // World coordinates distance
+        function d(a, b) {
+            var y = a[0] - b[0];
+            var x = a[1] - b[1];
+            return (x * y < 0)
+                    ? (Math.max(Math.abs(y), Math.abs(x)))
+                    : (Math.abs(y) + Math.abs(x));
+        }
+
+        function path(y, x) {
+            return [];
         }
 
         function ring2st(r) {
@@ -161,8 +173,13 @@
         var len = ring2st(Math.ceil(h)) + 1;
 
         for (var n = 0; n < len; ++n) {
-            map.push(Math.random() < .1 ? '#' : '&middot;');
+            //&#x2b21;
+            map.push(Math.random() < .1 ? '●' : '&middot;');
         }
+
+        map[w2st(3, 1)] = 'X';
+        pth = path((0, 0), (3, 1));
+        for (var i = 0; i < pth.length; ++i) map[w2st(pth[i][0], pth[i][1])] = '*';
 
         var ovr = []
         for (var i = 0; i < h; ++i) {
@@ -197,9 +214,6 @@
                 ovr[i - Math.floor((k + 1) / 2)][k] = s[k];
             }
         }
-
-        text(h - 2, 0, 'Health (20/35):');
-        text(h - 1, 0, '[=======----]');
 
         function valid(world) {
             var x = world[1];
@@ -249,16 +263,12 @@
                 case 74: case 101: app(p, dirw[D_DOWN]); break;
                 case 76: case 102: app(p, dirw[D_DRIGHT]); break;
 
-                case 97: /*screen left*/s = w2sc(y0, x0, p[0], p[1]); set(p, sc2w(y0, x0, s[0], s[1] - 1)); break;
+                case 97: /*screen left */s = w2sc(y0, x0, p[0], p[1]); set(p, sc2w(y0, x0, s[0], s[1] - 1)); break;
                 case 99: /*screen right*/s = w2sc(y0, x0, p[0], p[1]); set(p, sc2w(y0, x0, s[0], s[1] + 1)); break;
             }
 
-            text(h - 3, 0, p[0] + ', ' + p[1]);
+            text(h - 1, 0, [p, d([2,1],p)].join(' '));
 
-            y0 += p[0];
-            x0 += p[1];
-
-            p = [0, 0]
             print();
         }
 
