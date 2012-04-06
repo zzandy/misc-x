@@ -19,6 +19,8 @@
         {
             margin-top: .6em;
         }
+        .hidden
+        {color: #333;}
     </style>
 </head>
 <body>
@@ -26,11 +28,16 @@
     </div>
     <script type="text/javascript">
 
+        var sqrt = Math.sqrt;
+
         /*
         * TODO:
+        * 2. Space coordinates
+        * 3. FOV
         * 4. Chunks
         * 5. Line
         * 6. Circles
+        * 7. Voiw rotation
         */
 
         /*
@@ -86,6 +93,17 @@
         function sc2w(y0, x0, ys, xs) {
             var x = xs - x0;
             return [y0 - Math.floor((x + (x0 + 1) % 2) / 2) - ys, x];
+        }
+
+        // World to geometry
+        function w2g( y,x) {
+            return [y + x / 2, x * .866];
+        }
+
+        // Geometry to world
+        function g2w(y, x) {
+            var a = x / .866;
+            return [Math.round(y - a / 1), Math.round(a)];
         }
 
         // World coordinates distance
@@ -162,6 +180,7 @@
         var out = document.getElementById('out');
         var w = 73;
         var h = 21;
+        var radius = 5;
 
         var y0 = Math.floor(h/2);
         var x0 = Math.floor(w/4);
@@ -174,7 +193,7 @@
 
         for (var n = 0; n < len; ++n) {
             //&#x2b21;
-            map.push(Math.random() < .1 ? '●' : '&middot;');
+            map.push(Math.random() < .2 ? '#' : '&middot;');
         }
 
         map[w2st(3, 1)] = 'X';
@@ -228,13 +247,16 @@
                 text.push((j % 2 == 0) ? '<div>' : '<div class="odd">');
                 for (var i = 0; i < h; ++i) {
                     
-
                     var char = ' ';
                     if (ovr[i][j] != '') {
                         char = ovr[i][j];
                     }
                     else {
                         var world = sc2w(y0, x0, i, j);
+
+                        var g = w2g(world[0], world[1]);
+                        
+
                         if (world[0] == p[0] && world[1] == p[1]) {
                             char = '@';
                         }
@@ -242,6 +264,11 @@
                             var st = w2st(world[0], world[1]);
                             char = st < len ? map[st] : ' ';
                         }
+
+                        var pl = w2g(p[0], p[1]);
+                        var dx = g[0] - pl[0];
+                        var dy = g[1] - pl[1];
+                        if (sqrt(dx*dx+dy*dy) + .5 > radius) char = '<span class="hidden">' + char + '</span>';
                     }
 
                     text.push(char + '</br>');
@@ -265,9 +292,11 @@
 
                 case 97: /*screen left */s = w2sc(y0, x0, p[0], p[1]); set(p, sc2w(y0, x0, s[0], s[1] - 1)); break;
                 case 99: /*screen right*/s = w2sc(y0, x0, p[0], p[1]); set(p, sc2w(y0, x0, s[0], s[1] + 1)); break;
+                case 96: --radius; break;
+                case 110: ++radius; break;
             }
 
-            text(h - 1, 0, [p, d([2,1],p)].join(' '));
+            text(h - 1, 0, char.toString());
 
             print();
         }
@@ -287,6 +316,41 @@
         function add(a, b) {
             return [a[0] + b[0], a[1] + b[1]];
         }
+
+        // same jubject
+        // your dog barks. your dog barks. your dog barks. your dog barks. 
+        // =>
+        // your dog barks four times. 
+
+
+        // different subjects
+        // jakal bites. jakal bites. jakal bites. jakal bites.
+        // =>
+        // Four jackals bite.
+        // or
+        // Jackals bite four times.
+
+
+        // same subject different actions
+        // jackal bites, jackal misses, jackal is hit
+        // =>
+        // jackal bites, misses and is hit
+
+        // you hit the dar blademster; something missed the dar blademaster; 
+        // something missed the dar blademaster; something missed the dar blademaster.
+        // The dar blademsater slashes you.
+        // =>
+        // You hit the dar blademaster, something misses him thrice, and it shashes you.
+                
+        function msg(object, verb) {
+            return { object: object, verb: verb, toString: function () { return  } }
+        }
+
+
+
+
+
+
     
     </script>
 </body>
