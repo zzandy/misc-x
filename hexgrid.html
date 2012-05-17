@@ -20,7 +20,9 @@
             margin-top: .6em;
         }
         .hidden
-        {color: #333;}
+        {
+            color: #333;
+        }
     </style>
 </head>
 <body>
@@ -28,11 +30,49 @@
     </div>
     <script type="text/javascript">
 
+        var rnd = function(){
+            var i = Math.floor(Math.random() * arguments.length);
+            return arguments[i];
+        }
+
+        if (!('map' in Array.prototype))
+            Array.prototype.map = function (fn) {
+                var res = [];
+                var i = -1, n = this.length;
+                while (++i < n) {
+                    res.push(fn(this[i], i));
+                }
+
+                return res;
+            }
+
+        if (!('filter' in Array.prototype))
+            Array.prototype.filter = function (fn) {
+                var res = [];
+                var i = -1, n = this.length;
+                while (++i < n) {
+                    if (fn(this[i], i))
+                        res.push(this[i]);
+                }
+
+                return res;
+            }
+
+        if (!('any' in Array.prototype))
+            Array.prototype.any = function (fn) {
+                var i = -1, n = this.length;
+                while (++i < n) {
+                    if (fn(this[i], i))
+                        return true;
+                }
+
+                return false;
+            }
+
         var sqrt = Math.sqrt;
 
         /*
         * TODO:
-        * 2. Space coordinates
         * 3. FOV
         * 4. Chunks
         * 5. Line
@@ -71,8 +111,8 @@
         var D_UP = 1;
         var D_ULEFT = 2;
         var D_DLEFT = 3;
-        var D_DOWN = 4;        
-        var D_DRIGHT = 5;      
+        var D_DOWN = 4;
+        var D_DRIGHT = 5;
 
         /* Possible directions in world space
         *          UP
@@ -96,7 +136,7 @@
         }
 
         // World to geometry
-        function w2g( y,x) {
+        function w2g(y, x) {
             return [y + x / 2, x * .866];
         }
 
@@ -106,6 +146,13 @@
             return [Math.round(y - a / 1), Math.round(a)];
         }
 
+        function wd(gc, gp) {
+            var dy = gc[0] - gp[0];
+            var dx = gc[1] - gp[1];
+
+            return sqrt(dx * dx + dy * dy);
+        }
+
         // World coordinates distance
         function d(a, b) {
             var y = a[0] - b[0];
@@ -113,10 +160,6 @@
             return (x * y < 0)
                     ? (Math.max(Math.abs(y), Math.abs(x)))
                     : (Math.abs(y) + Math.abs(x));
-        }
-
-        function path(y, x) {
-            return [];
         }
 
         function ring2st(r) {
@@ -129,37 +172,36 @@
 
         // Storage to world
         function st2w(s) {
-            if(s == 0) return [0,0];
-    
+            if (s == 0) return [0, 0];
+
             var r = st2ring(s)
-            var d = s - ring2st(r-1) - 1
+            var d = s - ring2st(r - 1) - 1
             var sx = d / r
             var sn = d % r
 
             var an = [
-                    [[0,1],[1,-1]],
-                    [[1,0],[0,-1]],
-                    [[1,-1],[-1,0]],
-                    [[0,-1],[-1,1]],
-                    [[-1,0],[0,1]],
-                    [[-1,1],[1,0]]
+                    [[0, 1], [1, -1]],
+                    [[1, 0], [0, -1]],
+                    [[1, -1], [-1, 0]],
+                    [[0, -1], [-1, 1]],
+                    [[-1, 0], [0, 1]],
+                    [[-1, 1], [1, 0]]
                   ];
-    
+
             var q = [r, sn]
             var o = an[sx]
 
-            return [q[0]*o[0][0] + q[1]*o[0][1], q[0]*o[1][0] + q[1]*o[1][1]];
+            return [q[0] * o[0][0] + q[1] * o[0][1], q[0] * o[1][0] + q[1] * o[1][1]];
         }
 
         // World to storage
-        function w2st(x, y) {
-            if (y==0 && x==0) return 0;
-                
+        function w2st(y, x) {
+            if (y == 0 && x == 0) return 0;
+
             var ax = Math.abs(x);
             var ay = Math.abs(y);
-            var axy = Math.abs(x+y);
-            
-            
+            var axy = Math.abs(x + y);
+
             // ring
             var r = (ay + ax + axy) / 2;
             // hextant
@@ -168,7 +210,7 @@
                   : (y <= 0 && x < 0) ? 3
                   : (ay > x ? 4 : 5);
 
-            var n = s%3;
+            var n = s % 3;
             n = n == 0 ? ay : n == 1 ? ax : axy;
 
             var a0 = ring2st(r);
@@ -177,17 +219,37 @@
             return n + a1 + 1 + s * (a0 - a1) / 6;
         }
 
+        function ring(y, x) {
+            var ax = Math.abs(x);
+            var ay = Math.abs(y);
+            var axy = Math.abs(x + y);
+
+            return (ay + ax + axy) / 2;
+        }
+
+        // Get world coordinates of hexes visible from (y,x) within radius.
+        function visible(y, x, r) {
+            r = r + .5;
+
+            // Current ring
+            var rn = 0;
+            var v = [[y, x]];
+            var arcs = [];
+
+
+            return v;
+        }
+
         var out = document.getElementById('out');
         var w = 73;
         var h = 21;
         var radius = 5;
 
-        var y0 = Math.floor(h/2);
-        var x0 = Math.floor(w/4);
+        var y0 = Math.floor(h / 2);
+        var x0 = Math.floor(w / 4);
         // screen coordinates of world origin (0,0) -> (y,x)
         var originscreen = [y0, x0];
-               
-
+        
         var map = [];
         var len = ring2st(Math.ceil(h)) + 1;
 
@@ -196,10 +258,7 @@
             map.push(Math.random() < .2 ? '#' : '&middot;');
         }
 
-        map[w2st(3, 1)] = 'X';
-        pth = path((0, 0), (3, 1));
-        for (var i = 0; i < pth.length; ++i) map[w2st(pth[i][0], pth[i][1])] = '*';
-
+        // Overlay a.k.a. HUD
         var ovr = []
         for (var i = 0; i < h; ++i) {
             ovr.push([]);
@@ -241,34 +300,56 @@
             return y >= 0 && x >= 0 && y < map.length && x < map[y].length;
         }
 
+        var bg = [];
+        for(var j=0; j<w; ++j){
+            var row = [];
+            for(var i=0; i<h; ++i)  {
+                row.push(rnd(',', '`', ' ', ' ', ' '));
+            }
+            bg.push(row);
+        }
+        
         function print() {
+            function hidden(str)    {
+                return '<span class="hidden">' + str + '</span>';
+            }
+
             var text = [];
+            var v = visible(p[0], p[1], radius);
+            var screen = [];
+            for(var j=0; j<w; ++j){
+                var row = [];
+                for(var i=0; i<h; ++i)  {
+                    row.push(hidden(bg[j][i]));
+                }
+                screen.push(row);
+            }
+
+            var screenp = w2sc(y0, x0, p[0], p[1]);
+            screen[screenp[1]][screenp[0]] = '@';
+
+            var vis = visible(p[0], p[1]);
+            for(var k = 0; k < vis.length; ++k)
+            {
+                var c = vis[k];
+                var sc = w2sc(y0, x0, c[0], c[1]);
+                screen[sc[1]][sc[0]] = map[w2st(c[0], c[1])];
+            }
+                        
             for (var j = 0; j < w; ++j) {
                 text.push((j % 2 == 0) ? '<div>' : '<div class="odd">');
                 for (var i = 0; i < h; ++i) {
-                    
+
                     var char = ' ';
                     if (ovr[i][j] != '') {
                         char = ovr[i][j];
                     }
+                    else if (i==screenp[0] && j==screenp[1])
+                    {
+                        char = '@';
+                    }
                     else {
-                        var world = sc2w(y0, x0, i, j);
-
-                        var g = w2g(world[0], world[1]);
-                        
-
-                        if (world[0] == p[0] && world[1] == p[1]) {
-                            char = '@';
-                        }
-                        else {
-                            var st = w2st(world[0], world[1]);
-                            char = st < len ? map[st] : ' ';
-                        }
-
-                        var pl = w2g(p[0], p[1]);
-                        var dx = g[0] - pl[0];
-                        var dy = g[1] - pl[1];
-                        if (sqrt(dx*dx+dy*dy) + .5 > radius) char = '<span class="hidden">' + char + '</span>';
+                        char = screen[j][i];
                     }
 
                     text.push(char + '</br>');
@@ -340,18 +421,11 @@
         // something missed the dar blademaster; something missed the dar blademaster.
         // The dar blademsater slashes you.
         // =>
-        // You hit the dar blademaster, something misses him thrice, and it shashes you.
-                
+        // You hit the dar blademaster, something misses him thrice, then it shashes you.
+
         function msg(object, verb) {
-            return { object: object, verb: verb, toString: function () { return  } }
+            return { object: object, verb: verb, toString: function () { return } }
         }
-
-
-
-
-
-
-    
     </script>
 </body>
 </html>
