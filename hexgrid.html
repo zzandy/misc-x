@@ -174,10 +174,10 @@
         function st2w(s) {
             if (s == 0) return [0, 0];
 
-            var r = st2ring(s)
-            var d = s - ring2st(r - 1) - 1
-            var sx = d / r
-            var sn = d % r
+            var r = st2ring(s);
+            var d = s - ring2st(r - 1) - 1;
+            var sx = Math.floor(d / r);
+            var sn = d % r;
 
             var an = [
                     [[0, 1], [1, -1]],
@@ -229,14 +229,21 @@
 
         // Get world coordinates of hexes visible from (y,x) within radius.
         function visible(y, x, r) {
-            r = r + .5;
+            r = r || 8;
 
             // Current ring
             var rn = 0;
-            var v = [[y, x]];
-            var arcs = [];
+            var v = [];
+            var i = -1;
 
+            var n = ring2st(r);
+            while(++i <= n) {
 
+                var c = st2w(i);
+                v.push([c[0] + y, c[1] + x]);
+
+            }
+            
             return v;
         }
 
@@ -255,7 +262,7 @@
 
         for (var n = 0; n < len; ++n) {
             //&#x2b21;
-            map.push(Math.random() < .2 ? '#' : '&middot;');
+            map.push(Math.random() < 2 ? '#' : '&middot;');
         }
 
         // Overlay a.k.a. HUD
@@ -304,7 +311,7 @@
         for(var j=0; j<w; ++j){
             var row = [];
             for(var i=0; i<h; ++i)  {
-                row.push(rnd(',', '`', ' ', ' ', ' '));
+                row.push(rnd(',', '`', ' ', ' ', ' ', ' '));
             }
             bg.push(row);
         }
@@ -328,12 +335,25 @@
             var screenp = w2sc(y0, x0, p[0], p[1]);
             screen[screenp[1]][screenp[0]] = '@';
 
-            var vis = visible(p[0], p[1]);
-            for(var k = 0; k < vis.length; ++k)
-            {
-                var c = vis[k];
-                var sc = w2sc(y0, x0, c[0], c[1]);
-                screen[sc[1]][sc[0]] = map[w2st(c[0], c[1])];
+            var showall = true;
+            if (showall) {
+                for (var j = 0; j < w; ++j) {
+                    for (var i = 0; i < h; ++i) {
+                        var c = sc2w(y0, x0, i, j);
+                        screen[j][i] = map[w2st(c[0], c[1])];
+                    }
+                }
+            }
+            else {
+                var vis = visible(p[0], p[1]);
+                for (var k = 0; k < vis.length; ++k) {
+                    var c = vis[k];
+                    var sc = w2sc(y0, x0, c[0], c[1]);
+                    var s = w2st(c[0], c[1]);
+
+                    if (sc[0] >= 0 && sc[1] >= 0 && sc[1] < w && sc[0] < h)
+                        screen[sc[1]][sc[0]] = map[s];
+                } 
             }
                         
             for (var j = 0; j < w; ++j) {
@@ -367,7 +387,7 @@
                 case 72: case 103: app(p, dirw[D_ULEFT]); break;
                 case 75: case 104: app(p, dirw[D_UP]); break;
                 case 85: case 105: app(p, dirw[D_URIGHT]); break;
-                case 60: case 100: app(p, dirw[D_DLEFT]); break;
+                case 66: case 100: app(p, dirw[D_DLEFT]); break;
                 case 74: case 101: app(p, dirw[D_DOWN]); break;
                 case 76: case 102: app(p, dirw[D_DRIGHT]); break;
 
@@ -375,6 +395,10 @@
                 case 99: /*screen right*/s = w2sc(y0, x0, p[0], p[1]); set(p, sc2w(y0, x0, s[0], s[1] + 1)); break;
                 case 96: --radius; break;
                 case 110: ++radius; break;
+                case 32:
+                    var x = w2st(p[0], p[1]); 
+                    map[x] = map[x] == '#' ? ' ' : '#'; 
+                    break;
             }
 
             text(h - 1, 0, char.toString());
