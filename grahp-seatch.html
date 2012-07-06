@@ -1,18 +1,30 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" >
+<html xmlns="http://www.w3.org/1999/xhtml">
 <head>
     <title>craft</title>
     <style type="text/css">
-        html{font-family:Monaco, Consolas, Lucida Console, Monospace; background-color: #1a1917; color:#bbb}
-        #entry:before{content: '> '}
-        .red{color: Red}
-
+        html
+        {
+            font-family: Monaco, Consolas, Lucida Console, Monospace;
+            background-color: #1a1917;
+            color: #bbb;
+        }
+        #entry:before
+        {
+            content: '> ';
+        }
+        .red
+        {
+            color: Red;
+        }
     </style>
 </head>
 <body>
-<div id="out"></div>
-<div id="entry"></div>
-<script type="text/javascript">
+    <div id="out">
+    </div>
+    <div id="entry">
+    </div>
+    <script type="text/javascript">
 
     if (!('map' in Array)) Array.prototype.map = function (fn) {
         var res = [];
@@ -263,7 +275,6 @@
     }
 
     // TODO: Find out why it does not want to cut all trees first.
-
     function search(world, reactions, goal) {
         var starttime = (new Date()).getTime();
 
@@ -275,19 +286,14 @@
         var toolcost = 5;
         
         //       [price, path, world]
-        var open = [[0, [], world]];
+        var open = [[0, [], world.sort(function (a, b) { return a[1] > b[1] ? 1 : a[1] < b[1] ? -1 : 0 })]];
         var visited = [abbr(world)]; // world states already under consideration
 
         var cheapest = Infinity;
 
-        var n=0, k=0, t=0;
-        while (n < maxIterations && open.length > 0) {
-            var node;
-            ++k;
-            var open2 = [];
-            while (++n < maxIterations && (node = open.pop()) !== undefined) {
-                ++t;
-            
+        var n=0;
+        while (++n < maxIterations && (node = open.pop()) !== undefined) {
+               
                 var price = node[0];
                 var path = node[1];
                 var world = node[2];
@@ -301,12 +307,7 @@
                     cheapest = Math.min(price, cheapest);
 
                     continue;
-                    //n = maxIterations + 1;
-                    //break;
                 }
-
-                //var str = t + '. world ---- ' + join(world);
-                //out('<br/>' + str + ' ' + (new Array(Math.max(0, 120 - str.length))).join('-'));
 
                 var i = -1;
                 var x = reactions.length;
@@ -339,20 +340,17 @@
 
                         if (cheapEnough && !visited.contains(bbr)) {
                             visited.push(bbr);
-                            open2.push([nextprice, path.concat([[r, wld]]), wld]);
+                            open.push([nextprice, path.concat([[r, wld]]), wld]);
                         }
                     }
-                }    
-            }
+                }
 
-            open = open2.sort(function (a, b) { return a[0] - b[0]});
+                open.sort(function (a, b) { return b[0] - a[0] });
+            
         }
 
-        out('Done after ' + k + ' iterations, ' + t + ' nodes.');
-
+        out('Done after expanding ' + n + ' nodes. Elapsed ' + ((new Date()).getTime() - starttime) / 1000 + ' seconds.');
         out(visited.join('<br/>'));
-
-        out('Elapsed ' + ((new Date()).getTime() - starttime) / 1000 + ' seconds');
     }
     
     // ------------------------------------------------------------------------------------ //
@@ -394,6 +392,6 @@
             pending += letter;
         }
     }
-</script>
+    </script>
 </body>
 </html>
