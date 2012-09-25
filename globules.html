@@ -1,0 +1,86 @@
+<html><head><title>globules</title><style type="text/css">
+
+table{border-collapse:collapse}
+td{width:2px;height:2px;margin:0;padding:0;font-size:0.01pt}
+
+
+</style></head><body><div id="target"></div><script type="text/javascript">
+
+var t = document.getElementById('target');
+
+var aspect = 2.2;
+var h = 60;
+var w = h*aspect;
+
+function rnd(min, max){
+	if(arguments.length == 1) return Math.random() * min;
+	else if (arguments.length == 2) return min + Math.random() * (max - min);
+}
+
+var r=1, g=1, b=1;
+var p = [];
+var fps = 0;
+
+var q0 = [function(d){return d * d * d}, function(d){return d * d}, function(d){return d}];
+var q = q0;
+
+frame();
+
+function frame(){
+
+	var n = rnd(3, 8);
+	p = [];
+	for(var i=0;i<n;++i)	{
+		var base = rnd(.4, .8);
+		var mag = rnd(.5, .9);
+		p.push([rnd(h), rnd(w), (base + rnd(1-base)) * mag]);
+	}
+
+	var a = rnd(.1, .4);
+	var cols = [1, a, 1-a].sort(Math.random);
+	r = cols[0];
+	g = cols[1];
+	b = cols[2];
+
+	q = q0.sort(Math.random);
+
+	t.innerHTML = '<div>' + w + 'x' + h + '&nbsp;@' + fps + 'fps</div>' + render();
+	window.setTimeout(frame, 10);
+
+}
+
+function col(n)	{
+	var v = Math.floor(256 * n).toString(16);
+	return v.length == 2 ? v : ('0' + v);
+}
+
+
+function render(){
+	var text = [];
+	text.push('<table>');
+	for(var i=0;i<h;++i){
+		text.push('<td>');
+		for(var j=0;j<w;++j){
+			var d = 0;
+			for(var k=0;k<p.length;++k){
+				var pt = p[k];
+				var dy = pt[0] - i;
+				var dx = pt[1] - j;
+
+				var dist = Math.sqrt(dx*dx + dy*dy);
+				var v = dist > pt[2] ? 0 : ((pt[2]-dist)/pt[2]);
+
+				d = Math.max(d, v);
+			}
+
+			text.push('<td style="background-color: #');
+			text.push(col(q[0](d)*r) + col(q[1](d)*g) + col(q[2](d)*b));
+			text.push('"></td>');
+		}
+		text.push('</tr>');
+	}
+
+	return text.join('');
+}
+
+</script></body></html>
