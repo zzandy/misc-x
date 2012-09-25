@@ -1,7 +1,7 @@
 <html><head><title>globules</title><style type="text/css">
 
 table{border-collapse:collapse}
-td{width:2px;height:2px;margin:0;padding:0;font-size:0.01pt}
+td{width:3px;height:3px;margin:0;padding:0;font-size:0.01pt}
 
 
 </style></head><body><div id="target"></div><script type="text/javascript">
@@ -11,6 +11,11 @@ var t = document.getElementById('target');
 var aspect = 2.2;
 var h = 60;
 var w = h*aspect;
+
+document.addEventListener('DOMMouseScroll', function(e){
+	h *= e.detail > 0 ? 1.05 : .95;
+	w = h * aspect;
+}, false);
 
 function rnd(min, max){
 	if(arguments.length == 1) return Math.random() * min;
@@ -24,16 +29,19 @@ var fps = 0;
 var q0 = [function(d){return d * d * d}, function(d){return d * d}, function(d){return d}];
 var q = q0;
 
+var maxFrames = 30;
+var frames = [];
 frame();
 
 function frame(){
 
+	var start = new Date().getTime();
 	var n = rnd(3, 8);
 	p = [];
 	for(var i=0;i<n;++i)	{
 		var base = rnd(.4, .8);
 		var mag = rnd(.5, .9);
-		p.push([rnd(h), rnd(w), (base + rnd(1-base)) * mag]);
+		p.push([rnd(h), rnd(w), (base + rnd(1-base)) * mag * Math.min(w, h)]);
 	}
 
 	var a = rnd(.1, .4);
@@ -44,7 +52,14 @@ function frame(){
 
 	q = q0.sort(Math.random);
 
-	t.innerHTML = '<div>' + w + 'x' + h + '&nbsp;@' + fps + 'fps</div>' + render();
+
+	t.innerHTML = '<div>' + w + 'x' + h + '&nbsp;@' + fps.toFixed(2) + 'fps</div>' + render();
+	var frameTime = (new Date().getTime())- start;
+
+	frames.push(frameTime);
+	if(frames.length > maxFrames)frames = frames.slice(-maxFrames);
+	
+	fps = 1000 * frames.length / frames.reduce(function(a, b){return a+b});
 	window.setTimeout(frame, 10);
 
 }
@@ -59,7 +74,7 @@ function render(){
 	var text = [];
 	text.push('<table>');
 	for(var i=0;i<h;++i){
-		text.push('<td>');
+		text.push('<tr>');
 		for(var j=0;j<w;++j){
 			var d = 0;
 			for(var k=0;k<p.length;++k){
@@ -68,17 +83,18 @@ function render(){
 				var dx = pt[1] - j;
 
 				var dist = Math.sqrt(dx*dx + dy*dy);
-				var v = dist > pt[2] ? 0 : ((pt[2]-dist)/pt[2]);
-
-				d = Math.max(d, v);
+				if(dist < pt[2])
+					d = Math.max(d, (pt[2] - dist) / pt[2]);
 			}
 
 			text.push('<td style="background-color: #');
-			text.push(col(q[0](d)*r) + col(q[1](d)*g) + col(q[2](d)*b));
+			text.push(col(q[0](d)*r) + '' + col(q[1](d)*g) + col(q[2](d)*b));
 			text.push('"></td>');
 		}
 		text.push('</tr>');
 	}
+
+	text.push('</table>');
 
 	return text.join('');
 }
