@@ -9,23 +9,30 @@
 </head>
 <body>
     <script id="2d-vertex" type="x-shader/x-vertex">
-        attribute vec2 a_position;
-        uniform mat3 u_matrix;
+        attribute vec4 a_position;
+        attribute vec4 a_color;
+        uniform mat4 u_matrix;
+        varying vec4 v_color;
 
         void main(){
-            gl_Position = vec4((u_matrix * vec3(a_position, 1)).xy, 0, 1);
+            gl_Position = u_matrix * a_position;
+            v_color = a_color;
         }
     </script>
 
     <script id="2d-fragment" type="x-shader/x-fragment">
+        precision highp float;
+        varying vec4 v_color;
+
         void main() {
-            gl_FragColor = vec4(0.6,0.0,0.0,1.0);
+            gl_FragColor = v_color;
         }
     </script>
 
     <script type="text/javascript">
 
         var iden3 = [1, 0, 0, 0, 1, 0, 0, 0, 1];
+        var iden4 = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
 
         function mul33(a, b) {
             return [
@@ -43,8 +50,33 @@
             ];
         }
 
+        function mul44(a, b) {
+            return [
+                a[0] * b[0] + a[1] * b[4] + a[2] * b[8] + a[3] * b[12],
+                a[0] * b[1] + a[1] * b[5] + a[2] * b[9] + a[3] * b[13],
+                a[0] * b[2] + a[1] * b[6] + a[2] * b[10] + a[3] * b[14],
+                a[0] * b[3] + a[1] * b[7] + a[2] * b[11] + a[3] * b[15],
+
+                a[4] * b[0] + a[5] * b[4] + a[6] * b[8] + a[7] * b[12],
+                a[4] * b[1] + a[5] * b[5] + a[6] * b[9] + a[7] * b[13],
+                a[4] * b[2] + a[5] * b[6] + a[6] * b[10] + a[7] * b[14],
+                a[4] * b[3] + a[5] * b[7] + a[6] * b[11] + a[7] * b[15],
+
+                a[8] * b[0] + a[9] * b[4] + a[10] * b[8] + a[11] * b[12],
+                a[8] * b[1] + a[9] * b[5] + a[10] * b[9] + a[11] * b[13],
+                a[8] * b[2] + a[9] * b[6] + a[10] * b[10] + a[11] * b[14],
+                a[8] * b[3] + a[9] * b[7] + a[10] * b[11] + a[11] * b[15],
+
+                a[12] * b[0] + a[13] * b[4] + a[14] * b[8] + a[15] * b[12],
+                a[12] * b[1] + a[13] * b[5] + a[14] * b[9] + a[15] * b[13],
+                a[12] * b[2] + a[13] * b[6] + a[14] * b[10] + a[15] * b[14],
+                a[12] * b[3] + a[13] * b[7] + a[14] * b[11] + a[15] * b[15],
+            ];
+        }
+
     </script>
 
+    <!-- 2d transformations -->
     <script type="text/javascript">
         function trans(x, y) {
             return [
@@ -90,6 +122,68 @@
 
     </script>
 
+    <!-- 3d transformations -->
+    <script type="text/javascript">
+
+        function translate3d(trans) {
+            return [
+                1, 0, 0, 0,
+                0, 1, 0, 0,
+                0, 0, 1, 0,
+                trans[0], trans[1], trans[2], 1
+            ];
+        }
+
+        function scale3d(scale) {
+            return [
+                scale[0], 0, 0, 0,
+                0, scale[1], 0, 0,
+                0, 0, scale[2], 0,
+                0, 0, 0, 1
+            ];
+        }
+
+        function vectorAngleQuaternion(v, a) {
+            var s = Math.sin(a / 2);
+            return [s * v[0], s * v[1], s * v[2], Math.cos(a / 2)];
+        }
+
+        function rotate3d(q) {
+            var x = q[0];
+            var y = q[1];
+            var z = q[2];
+            var w = q[3];
+
+            return [
+                1 - 2 * y * y - 2 * z * z, 2 * x * y - 2 * z * w, 2 * x * z + 2 * y * w, 0,
+                2 * x * y + 2 * z * w, 1 - 2 * x * x - 2 * z * z, 2 * y * z - 2 * x * w, 0,
+                2 * x * z - 2 * y * w, 2 * y * z + 2 * x * w, 1 - 2 * x * x - 2 * y * y, 0,
+                0, 0, 0, 1
+            ];
+        }
+
+        function project3d(width, height, depth) {
+            return [
+                2 / width, 0, 0, 0,
+                0, 2 / height, 0, 0,
+                0, 0, 2 / depth, 0,
+                -1, -1, 0, 1
+            ];
+        }
+
+        function makeProjection3d(proj, origin, rv, ra, scales) {
+
+            var scale = scale3d(scales);
+            var rot = rotate3d(vectorAngleQuaternion(rv, ra));
+            var translate = translate3d(origin);
+            var project = project3d(proj[0], proj[1], proj[2]);
+
+            return mul44(mul44(mul44(scale, rot), translate), project);
+        }
+
+    </script>
+
+    <!-- shader loading -->
     <script type="text/javascript">
         var mimeFragmentShader = 'x-shader/x-fragment';
         var mimeVertexShader = 'x-shader/x-vertex';
@@ -143,12 +237,8 @@
         }
     </script>
 
+    <!-- helpers -->
     <script type="text/javascript">
-
-        var origin = [100,100];
-        var scaling = [1, 1];
-        var a = 0;
-
         function makeCanvas() {
             var canvas = document.createElement('canvas');
             canvas.width = document.body.parentElement.clientWidth;
@@ -161,34 +251,110 @@
             return canvas;
         }
 
-        function makeGeometry(w) {
-            return new Float32Array([
-                0, 0,
-                w, 0,
-                w, 7 * w,
+        function makeBox(x, y, z, w, hy, dz) {
 
-                w, 7 * w,
-                0, 7 * w,
-                0, 0,
+            var a = [x, y, z];
+            var b = [x + w, y, z];
+            var c = [x + w, y, z - dz];
+            var d = [x, y, z - dz];
+            var e = [x, y + hy, z];
+            var f = [x + w, y + hy, z];
+            var g = [x + w, y + hy, z - dz];
+            var h = [x, y + hy, z - dz];
 
-                 w, 3 * w,
-                 3 * w, 3 * w,
-                 3 * w, 4 * w,
+            function tri(a, b, c) {
+                return a.concat(b, c);
+            }
 
-                 3 * w, 4 * w,
-                 w, 4 * w,
-                 w, 3 * w,
+            function quad(a, b, c, d) {
+                return tri(a, b, c).concat(tri(c, d, a));
+            }
 
-                 w, 6 * w,
-                 4 * w, 6 * w,
-                 4 * w, 7 * w,
+            var x = [].concat(
+                quad(a, b, c, d),
+                quad(a, e, f, b),
+                quad(f, g, c, b),
+                quad(g, h, d, c),
+                quad(h, e, a, d),
+                quad(h, g, f, e)
+                );
 
-                 4 * w, 7 * w,
-                 w, 7 * w,
-                 w, 6 * w
-            ]);
+            return x;
         }
-        
+
+        function makeGeometry(w) {
+            return new Float32Array(
+                    [].concat(
+                    makeBox(0, 0, 0, w, 6 * w, w),
+                    makeBox(w, 3 * w, 0, 2 * w, w, w),
+                    makeBox(0, 6 * w, 0, 4 * w, w, w)
+                ));
+        }
+
+    </script>
+
+    <!-- Color -->
+    <script type="text/javascript">
+
+        // hue Chroma luma
+        function hcy2rgb(h, c, y, a) {
+            // 601
+            var r = .3;
+            var g = .59;
+            var b = .11;
+
+            var h0 = h;
+            h /= 60;
+
+            var k = (1 - Math.abs((h % 2) - 1));
+
+            var K = h < 1 ? r + k * g
+                : h < 2 ? g + k * r
+                : h < 3 ? g + k * b
+                : h < 4 ? b + k * g
+                : h < 5 ? b + k * r
+                : r + k * b;
+
+            var cmax = 1;
+
+            if (y <= 0 || y >= 1) cmax = 0;
+            else cmax *= K < y ? (y - 1) / (K - 1) : K > y ? y / K : 1;
+            c = Math.min(c, cmax);
+
+            var x = c * k;
+            var rgb = h < 1 ? [c, x, 0]
+                : h < 2 ? [x, c, 0]
+                : h < 3 ? [0, c, x]
+                : h < 4 ? [0, x, c]
+                : h < 5 ? [x, 0, c]
+                : [c, 0, x];
+
+            var m = y - (r * rgb[0] + g * rgb[1] + b * rgb[2]);
+
+            var rgbdata = [rgb[0] + m, rgb[1] + m, rgb[2] + m];
+
+            return rgbdata;
+        }
+
+        function hcy(h,c,y) {
+
+            var k = .1;
+            var x = h / 360;
+            ha = h * (1 - (x < .66 ? 1 : 0) * k * Math.sin(3 * Math.PI * x));
+            y *= (1 + .4 * Math.sin(x * 2 * Math.PI));
+
+            return hcy2rgb(ha,c,y);
+        }
+
+    </script>
+
+    <script type="text/javascript">
+
+        var origin = [100,100];
+        var scaling = [1, 1];
+        var a = 0;
+        var xxxa = 0;
+
         function init() {
             var canvas = makeCanvas();
             var gl = canvas.getContext('experimental-webgl');
@@ -196,23 +362,55 @@
 
             var program = createProgramFromScripts(gl, '2d-vertex', '2d-fragment');
             gl.useProgram(program);
+            gl.enable(gl.CULL_FACE);
+            gl.enable(gl.DEPTH_TEST);
 
             var pos = gl.getAttribLocation(program, 'a_position');
             var matrix = gl.getUniformLocation(program, 'u_matrix');
+            var color = gl.getAttribLocation(program, 'a_color');
+
+            var geometry = makeGeometry(10);
+            var colors = [];
+
+
+            var side = hcy(Math.random() * 360, 1, .5);
+            var face = hcy(Math.random() * 360, 1, .5);
+            var cls = [side, side, face, face, side, side, face, face, side, side, side, side];
+            console.log(cls)
+            for (var i = 0; i < geometry.length / 3; ++i) {
+
+
+                
+                var c = hcy2rgb(Math.random() * 360, 1, .5);
+                c = cls[i % cls.length];
+                colors = colors.concat(c.concat(c, c));
+            }
 
             var buffer = gl.createBuffer();
             gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-            gl.bufferData(gl.ARRAY_BUFFER, makeGeometry(10), gl.STATIC_DRAW);
+            gl.bufferData(gl.ARRAY_BUFFER, geometry, gl.STATIC_DRAW);
 
             gl.enableVertexAttribArray(pos);
-            gl.vertexAttribPointer(pos, 2, gl.FLOAT, false, 0, 0);
+            gl.vertexAttribPointer(pos, 3, gl.FLOAT, false, 0, 0);
+            buffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+            gl.enableVertexAttribArray(color);
+            gl.vertexAttribPointer(color, 3, gl.FLOAT, false, 0, 0);
 
             return function () {
-                var proj = makeProjection(canvas.clientWidth, canvas.clientHeight, origin[0], origin[1], a, scaling[0], scaling[1])
-                gl.uniformMatrix3fv(matrix, false, proj);
 
-                gl.clear(gl.COLOR_BUFFER_BIT);
-                gl.drawArrays(gl.TRIANGLES, 0, 18);
+                var pr = [canvas.clientWidth, canvas.clientHeight, 400];
+                var or = [canvas.clientWidth/2, canvas.clientHeight/2, 0];
+                var sc = [2,2,2];
+                var rv = [Math.cos(xxxa),Math.sin(xxxa), 0];
+                var ra = a;
+
+                var proj = makeProjection3d(pr, or, rv, ra, sc);
+                gl.uniformMatrix4fv(matrix, false, proj);
+
+                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                gl.drawArrays(gl.TRIANGLES, 0, geometry.length / 3);
             }
         }
 
@@ -232,26 +430,26 @@
             var fps = (100000 / frametime | 0) / 100;
             console.log(frametime, fps);
         },
-            500);
+            1000);
 
         function tick() {
 
             var time2 = (new Date()).getTime();
-            framecounters[frameno++] = time2-time; 
+            framecounters[frameno++] = time2-time;
             time = time2;
-             
 
             if (frameno >= numframes) frameno = 0;
 
+            xxxa += .008;
             a += .01;
             k += Math.PI/7;
 
             scaling = [
-                1+  .8*Math.cos(k), 1+ .8*Math.cos(k + .5)
+                1 + .8 * Math.cos(k), 1 + .8 * Math.cos(k + .5)
             ];
             draw();
 
-            //window.requestAnimationFrame(tick);
+            window.requestAnimationFrame(tick);
         }
 
         tick();
