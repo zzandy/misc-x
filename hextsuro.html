@@ -3,7 +3,7 @@
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
 <head>
     <meta charset="utf-8" />
-    <title></title>
+    <title>Hextsuro</title>
 </head>
 <body>
     <script type="text/javascript">
@@ -19,11 +19,11 @@
 
             }
 
-            function line(ctx, angle1, offst1, angle2, offst2) {
+            function line(ctx, angle1, offst1, angle2, offst2, c) {
                 var h = a / 5;
 
                 var styles = [
-                    { width: a / 10, color: 'red' },
+                    { width: a / 10, color: c },
                     { width: a / 15, color: 'white' }
                 ];
 
@@ -48,21 +48,23 @@
                 });
             }
 
-            function addCanvas(w, h) {
+            function addCanvas(w, h, title) {
                 var el = document.createElement('canvas');
                 el.width = w;
                 el.height = h;
+                el.title = title;
 
                 document.body.appendChild(el);
                 return el.getContext('2d');
             }
 
-            function render(deltas) {
+            function render(deltas, c) {
 
+                console.log(c)
                 var w = a / 2 / Math.sqrt(3);
 
                 var el = document.createElement('canvas');
-                var ctx = el.width = addCanvas(4 * w + 2, a + 2);
+                var ctx = addCanvas(4 * w + 2, a + 2, deltas.title);
 
                 ctx.translate(1+2*w, 1+ a/2);
 
@@ -75,7 +77,7 @@
                 }
 
                 deltas.map(function (d) {
-                    line(ctx, angle(d.i), offset(d.i), angle(d.i+d.w), offset(d.i + d.w));
+                    line(ctx, angle(d.i), offset(d.i), angle(d.i+d.w), offset(d.i + d.w), c);
                 });
 
                 ctx.beginPath();
@@ -125,22 +127,33 @@
 
                 } while (next != -1);
 
-                return res;
+                return res.sort(byIndex);
 
             }
 
             function printDelta(delta) { return delta.join(', ') }
+
+            function byIndex(a, b) {
+                return a.i - b.i;
+            }
 
             function rotDelta(delta, num) {
                 var res = [];
 
                 for (var i = 0; i < delta.length; ++i) {
                     var d = delta[(delta.length + i - num) % delta.length];
-                    var t = (d.i + 2) % 12;
-                    res.push(new Delta(d.w, t));
+                    var nw = d.w;
+                    var ni = (d.i + 2*num) % 12;
+
+                    if (ni + nw >= 12) {
+                        ni = (ni + nw) % 12;
+                        nw = 12 - nw;
+                    }
+
+                    res.push(new Delta(nw, ni));
                 }
 
-                return res;
+                return res.sort(byIndex);
             }
 
             function deltaKey(delta) {
@@ -163,12 +176,16 @@
 
                     var pass = true;
 
-                    for (var i = 1; i < 6; ++i) {
-                        var key = deltaKey(rotDelta(delta, i));
+                    if (delta.some(function (d) { return d.w == 1 || d.w==11 }))
+                        pass = false;
+                    else {
+                        for (var i = 1; i < 6; ++i) {
+                            var key = deltaKey(rotDelta(delta, i));
 
-                        if (key in res) {
-                            pass = false;
-                            break;
+                            if (key in res) {
+                                pass = false;
+                                break;
+                            }
                         }
                     }
 
@@ -195,13 +212,38 @@
             var start = (new Date()).getTime();
             iter(res, seed, 0);
 
+            var items = [];
+
             var n = 0;
             for (var x in res) {
-                render(res[x]);
-                ++n
+                items.push(res[x]);
             }
 
-            console.log(n, (((new Date()).getTime() - start)/1000).toFixed(2));
+            function calcSymmetry(deltas) {
+
+                var keys = [0, 1, 2, 3, 4, 5].map(function (i) { return deltaKey(rotDelta(deltas, i)) });
+
+                var s= keys.every(function (k, i, v) { return v[i] == v[0] })
+                ? 0
+                    : keys.every(function (k, i, v) { return v[i] == v[i % 2] })
+                ? 10
+                    : keys.every(function (k, i, v) { return v[i] == v[i % 3] })
+                ? 20
+                    : 100;
+
+
+                deltas.title = keys[0] + ' // ' + s;
+
+                return s;
+            }
+
+            function bySymmetry(a, b) {
+                return calcSymmetry(a) - calcSymmetry(b);
+            }
+
+            items.sort(bySymmetry).map(function (d, i, a) { render(d, 'hsl(' + (360 * i / a.length).toFixed(2) + ', 100%, 60% )') });
+
+            console.log(items.length, (((new Date()).getTime() - start)/1000).toFixed(2));
 
     </script>
 
