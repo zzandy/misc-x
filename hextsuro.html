@@ -5,23 +5,27 @@
     <meta charset="utf-8" />
     <title></title>
 </head>
-    <body>
-        <script type="text/javascript">
+<body>
+    <script type="text/javascript">
 
             var a = 100;
 
-            function line(ctx, angle1, offst1, angle2, offst2) {
-                //debugger;
-                var h = a / 5;
-                var w = a / 2 / Math.sqrt(3);
-                offst1 *= 2/4*w;
-                offst2 *= 2/4*w;
-
-                var styles = [
-                    { width: a/10, color: 'red' },
-                    { width: a / 15, color: 'white' }
+            function rot(x, y, a) {
+                
+                return [
+                    x * Math.cos(a) - y * Math.sin(a),
+                    x * Math.sin(a) + y * Math.cos(a)
                 ];
 
+            }
+
+            function line(ctx, angle1, offst1, angle2, offst2) {
+                var h = a / 5;
+
+                var styles = [
+                    { width: a / 10, color: 'red' },
+                    { width: a / 15, color: 'white' }
+                ];
 
                 styles.forEach(function(style) {
 
@@ -33,16 +37,24 @@
 
                     ctx.rotate(angle1);
                     ctx.moveTo(offst1, -a / 2);
-                    ctx.bezierCurveTo(offst1, -h,
-                        offst2 * Math.cos(angle2) + h * Math.sin(angle2),
-                        offst2 * Math.sin(angle2) - h * Math.cos(angle2),
-                        offst2 * Math.cos(angle2) + a / 2 * Math.sin(angle2),
-                        offst2 * Math.sin(angle2) - a / 2 * Math.cos(angle2)
-                    );
+
+                    var p2 = rot(offst2, -h, angle2 - angle1);
+                    var p3 = rot(offst2, -a / 2, angle2 - angle1);
+
+                    ctx.bezierCurveTo(offst1, -h, p2[0], p2[1], p3[0], p3[1]);
 
                     ctx.stroke();
                     ctx.restore();
                 });
+            }
+
+            function addCanvas(w, h) {
+                var el = document.createElement('canvas');
+                el.width = w;
+                el.height = h;
+
+                document.body.appendChild(el);
+                return el.getContext('2d');
             }
 
             function render(deltas) {
@@ -50,21 +62,20 @@
                 var w = a / 2 / Math.sqrt(3);
 
                 var el = document.createElement('canvas');
-                el.width = 4*w+2;//+ 'px';
-                el.height = a +2;// + 'px';
-
-                document.body.appendChild(el);
-
-                var ctx = el.getContext('2d');
+                var ctx = el.width = addCanvas(4 * w + 2, a + 2);
 
                 ctx.translate(1+2*w, 1+ a/2);
 
-                //var deltas = toDeltas(sequence);
+                function angle(idx) {
+                    return Math.floor(idx / 2) * Math.PI / 3;
+                }
 
-                deltas.map(function(d) {
-                    line(ctx,
-                    ((d[0] / 2) | 0) * Math.PI / 3, -1 + 2 * (d[0] % 2),
-                    ((d[1] / 2) | 0) * Math.PI / 3, -1 + 2 * ((d[0] + d[1]) % 2));
+                function offset(idx){
+                    return w * (idx % 2) - w / 2;
+                }
+
+                deltas.map(function (d) {
+                    line(ctx, angle(d.i), offset(d.i), angle(d.i+d.w), offset(d.i + d.w));
                 });
 
                 ctx.beginPath();
@@ -77,6 +88,15 @@
                 ctx.closePath();
 
                 ctx.stroke();
+            }
+
+            function Delta(w, i) {
+                this.w = w;
+                this.i = i;
+            }
+
+            Delta.prototype.toString = function () {
+                return '(' + this.w + ', ' + this.i + ')';
             }
 
             // Convert outlet map (0 1 0 1 2 2) to deltas ((2 0) (2 1) (1 4))
@@ -93,7 +113,7 @@
                     for (var i = k + 1; i < seq.length; ++i) {
 
                         if (seq[i] == out) {
-                            res.push([k, i - k]);
+                            res.push(new Delta(i-k, k));
                             past.push(out);
                         } else if (next == -1) {
                             next = i;
@@ -109,34 +129,22 @@
 
             }
 
-            function printDelta(delta){return '('+delta.map(function(d){return d[0]+', '+d[1]}).join('), (')+')'}
+            function printDelta(delta) { return delta.join(', ') }
 
             function rotDelta(delta, num) {
                 var res = [];
 
                 for (var i = 0; i < delta.length; ++i) {
                     var d = delta[(delta.length + i - num) % delta.length];
-                    var t = (d[0] + 2) % 12;
-                    res.push([t, d[1]]);
-
+                    var t = (d.i + 2) % 12;
+                    res.push(new Delta(d.w, t));
                 }
 
                 return res;
             }
 
-            function deltaValid(delta) {
-
-                return delta.every(function(d, i, a) {
-                    return i == 0 || a[i - 1][1] >= d[1];
-                });
-
-
-                return delta.every(function(d) { return d[0] < 12 && d[0] + d[1] < 12 });
-
-            }
-
             function deltaKey(delta) {
-                return delta.map(function(d) { return d[1] }).join(' ');
+                return delta.map(function(d) { return d.w }).join(' ');
             }
 
             function iter(res, seed, num) {
@@ -164,10 +172,8 @@
                         }
                     }
 
-                    var key = deltaKey(delta);
-
                     if (pass)
-                        res[key] = delta;
+                        res[deltaKey(delta)] = delta;
                 }
                 else {
                     for (var i = first + 1; i < seed.length; ++i) {
@@ -197,7 +203,7 @@
 
             console.log(n, (((new Date()).getTime() - start)/1000).toFixed(2));
 
-        </script>
+    </script>
 
-    </body>
+</body>
 </html>
