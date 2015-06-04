@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+</head>
+<body>
+    <script type="text/javascript">
+        function makeCanvas(w, h) {
+            var can = document.createElement('canvas');
+            can.width = w;
+            can.height = h;
+
+            return can;
+        }
+
+        function placeCanvas(w, h) {
+            var can = makeCanvas(w, h);
+            document.body.appendChild(can);
+            return can.getContext('2d');
+        }
+    </script>
+    <script type="text/javascript">
+        var a = 100;
+
+        var q = 1 / Math.sqrt(3);
+        var b = 1;
+        var w = 2 * q * a;
+        var h = a;
+
+        var tau = 2 * Math.PI;
+
+        function circle(ctx, x, y, r) {
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, tau);
+            ctx.closePath();
+            ctx.stroke();
+        }
+
+        function prepCanvas() {
+            var ctx = placeCanvas(2 * b + w, 2 * b + h)
+            ctx.translate(b + w / 2, b + h / 2);
+            ctx.scale(a,-a);
+            ctx.lineWidth = 1 / a;
+            return ctx;
+        }
+
+        var hexv = [
+            [q / 2, 1 / 2],
+            [q, 0],
+            [q / 2, -1 / 2],
+            [-q / 2, -1 / 2],
+            [-q, 0],
+            [-q / 2, 1 / 2]
+        ];
+
+        function plotPath(ctx, path){
+        
+            ctx.beginPath();
+            var n=0;
+
+            ctx.moveTo(path[n][0], path[n][1]);
+            while(++n<path.length){
+                ctx.lineTo(path[n][0], path[n][1]);
+            }
+
+            ctx.closePath();
+
+        }
+
+        function renderHex(ctx) {
+            plotPath(ctx, hexv)
+
+            ctx.stroke();
+        }
+
+        var colors = [
+            '#C80815',
+            '#002366',
+            '#FFD300'
+        ];
+
+        function fetch(a, i) {
+            i = i % a.length;
+            while (i < 0)
+                i += a.length;
+
+            return a[i];
+        }
+
+        function add(v1, v2) {
+            return [v1[0] + v2[0], v1[1] + v2[1]];
+        }
+
+        function mul(s, v) {
+            return [s * v[0], s * v[1]];
+        }
+
+        function averagePoint(a, i, j) {
+            return mul(1 / 2, add(fetch(a, i), fetch(a, j)));
+        }
+
+        function render(s) {
+            var ctx = prepCanvas();
+            
+
+            var n = -1;
+            var l = s.length;
+
+            var k=0;
+
+            while (++n < l) {
+
+                ctx.fillStyle = colors[n % colors.length];
+                var path = [];
+
+                path.push(averagePoint(hexv, k - 1, k));
+
+                for (var i = 0; i < s[n]; ++i) {
+                    ++k;
+                    path.push(averagePoint(hexv, k, k + 1));
+                }
+
+                for (var i = 0; i < s[n]; ++i) {
+                    path.push(mul(.5, averagePoint(hexv, k - i, k - 1 - i)));
+                }
+
+                plotPath(ctx, path);
+                ctx.fill();
+            }
+        }
+
+        render([1, 1, 3, 1]);
+    </script>
+</body>
+</html>
