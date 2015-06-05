@@ -75,10 +75,13 @@
             ctx.stroke();
         }
 
+
+        var base = '#002366';
         var colors = [
             '#C80815',
-            '#002366',
-            '#FFD300'
+            base,
+            '#FFD300',
+            base
         ];
 
         function fetch(a, i) {
@@ -101,29 +104,41 @@
             return mul(1 / 2, add(fetch(a, i), fetch(a, j)));
         }
 
+        var numRender = 0;
         function render(s) {
+            console.log(++numRender, s)
+
             var ctx = prepCanvas();
             
 
             var n = -1;
             var l = s.length;
 
-            var k=0;
+            var k = -1;
+
+            ctx.fillStyle = colors[1];
+            plotPath(ctx, hexv);
+            ctx.fill();
 
             while (++n < l) {
-
                 ctx.fillStyle = colors[n % colors.length];
+                if (ctx.fillStyle == base) {
+                    k += s[n];
+                    continue;
+                }
+
                 var path = [];
 
-                path.push(averagePoint(hexv, k - 1, k));
+                path.push(averagePoint(hexv, k, k+1));
 
                 for (var i = 0; i < s[n]; ++i) {
                     ++k;
+                    path.push(hexv[k]);
                     path.push(averagePoint(hexv, k, k + 1));
                 }
 
                 for (var i = 0; i < s[n]; ++i) {
-                    path.push(mul(.5, averagePoint(hexv, k - i, k - 1 - i)));
+                    path.push(mul(.3, hexv[k-i]));
                 }
 
                 plotPath(ctx, path);
@@ -131,7 +146,22 @@
             }
         }
 
-        render([1, 1, 3, 1]);
+        for (var i = 5; i >= 1; --i) {
+            for (var j = 6 - i; j >= 1; --j) {
+                if (i + j < 6)
+                    for (var k = 5 - i - j; k > 0; --k) {
+                        if (i + j + k < 6)
+                            for (var l = 6 - i - j - k; l > 0; --l) {
+                                if (i + j + k + l == 6)
+                                    render([i, j, k, l]);
+                            }
+                        else
+                            render([i, j, k]);
+                    }
+                else render([i, j]);
+            }
+        }
+
     </script>
 </body>
 </html>
