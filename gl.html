@@ -214,13 +214,16 @@
             ];
         }
 
+        function mul() {
+            return [].reduce.call([].reverse.call(arguments), function(a, b) { return mul44(a, b) });
+        }
 
         function makeProjection3d(view, proj, origin, rv, ra, scales) {
             var scale = scale3d(scales);
             var rot = rotate3d(vectorAngleQuaternion(rv, ra));
             var translate = translate3d(origin);
 
-            return mul44(mul44(mul44(mul44(scale, rot), translate), view), proj);
+            return mul(proj, view, rot, scale, translate);
         }
 
         function cross(a, b) {
@@ -232,7 +235,7 @@
         var epsilon = 1e-10;
         var tau = 2 * Math.PI;
         var deg = tau / 360;
-        qua
+        
         function length(a) {
             return Math.sqrt(a[0] * a[0] + a[1] * a[1] + a[2] * a[2]);
         }
@@ -249,7 +252,7 @@
         }
 
         function lookAt(pos, target, up) {
-            var z = norm(substract(pos, target))
+            var z = norm(substract(pos, target));
             var x = cross(up, z);
             var y = cross(z, x);
 
@@ -363,15 +366,17 @@
         }
 
         function makeGeometry(w) {
-
             return new Float32Array(
-                    [].concat(
-                    makeBox(0, 0, 0, w, 6 * w, w),
-                    makeBox(w, 3 * w, 0, 2 * w, w, w),
-                    makeBox(0, 6 * w, 0, 4 * w, w, w),
-
-                    makeBox(2 * w, 8 * w, 0, w, w, 2 * w)
-                ));
+            [].concat(
+                makeBox(-w / 6, -w / 6, w / 6, w * 10, w / 3, w / 3),
+                makeBox(-w / 6, w / 6, w / 6, w / 3, w * 10, w / 3),
+                makeBox(-w / 6, -w / 6, -w / 6, w / 3, w / 3, w * 10),
+                makeBox(0, 0, 0, w, 6 * w, w),
+                makeBox(w, 3 * w, 0, 2 * w, w, w),
+                makeBox(0, 6 * w, 0, 4 * w, w, w),
+                makeBox(2 * w, 8 * w, 0, w, w, 2 * w),
+                makeBox(3 * w, 3 * w, 2 * w, w, w, w)
+            ));
         }
 
         function makeColors(geometry) {
@@ -383,9 +388,15 @@
             var face = hcy((a + b) % 360, 1, .5);
             var cls = [side, side, face, face, side, side, face, face, side, side, side, side];
 
+
+            var red = [1, 0, 0];
+            var green = [0, 1, 0];
+            var blue = [0, 0, 1];
+            var prime = [red, green, blue];
+
             for (var i = 0; i < geometry.length / 3; ++i) {
-                var c = hcy2rgb(Math.random() * 360, 1, .5);
-                c = cls[i % cls.length];
+
+                var c = i < 12*3 ? c = prime[(i/12)|0] : cls[i % cls.length];
                 colors = colors.concat(c.concat(c, c));
             }
 
@@ -454,6 +465,18 @@
         var a = 0;
         var xxxa = 0;
 
+        var camz = 100;
+
+        var cam = new Camera([0, 50, camz],
+        [0, 1, 0],
+        [0, 30, 0]);
+
+        function Camera(pos, up, lookat) {
+            this.pos = pos;
+            this.up = up;
+            this.lookat = lookat;
+        }
+
         function init() {
             var canvas = makeCanvas();
             var gl = canvas.getContext('experimental-webgl');
@@ -488,16 +511,14 @@
             var aspect = canvas.clientWidth / canvas.clientHeight;
 
             return function () {
-                var cam = [20, -50, 100];
-                var lookat = [0, 0, 0];
-                var up = [0, 0,1];
+
                 var or = [0, 0, 0];
                 var sc = [1, 1, -1];
-                var rv = [0, 0, 1];
+                var rv = [0, -1, 0];
                 var ra = a;
 
                 var pr = makePerspective(fov, aspect, 1, 1000);
-                var view = inverse(lookAt(cam, lookat, up));
+                var view = inverse(lookAt(cam.pos, cam.lookat, cam.up));
                 var proj = makeProjection3d(view, pr, or, rv, ra, sc);
 
                 gl.uniformMatrix4fv(matrix, false, proj);
@@ -534,12 +555,8 @@
             if (frameno >= numframes) frameno = 0;
 
             xxxa += .008;
-            a += .01;
-            k += Math.PI/7;
+            a += .05;
 
-            scaling = [
-                1 + .8 * Math.cos(k), 1 + .8 * Math.cos(k + .5)
-            ];
             draw();
 
             window.requestAnimationFrame(tick);
