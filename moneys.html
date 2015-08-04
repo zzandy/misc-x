@@ -1,0 +1,190 @@
+<html id="model">
+<head>
+	<style type="text/css">
+		html, body {
+			background-color: #101315;
+			color: grey;
+			font-family: monospace;
+		}
+
+		.highlight {
+			border: 1em solid;
+			border-width: 1em 1ex;
+			padding: 1em;
+		}
+	</style>
+	<script type='text/javascript' src='knockout-3.2.0.js'></script>
+
+</head>
+<body>
+
+<script type="text/javascript">
+	function extend(target, source) {
+		for (var prop in source)
+			target[prop] = source[prop];
+
+		return target;
+	}
+
+	ko.extenders.range = function(target, bounds) {
+		var result = ko.computed({
+			read: target,
+			write: function(value) {
+				console.log(value);
+			}
+		});
+
+		result(target);
+		return result;
+	}
+
+	function falloff(t) {
+		return t < 0 ? 0 : t > 1 ? 1 : t * t * t * (3 * t * (2 * t - 5) + 10);
+	}
+
+	function Falloff(source, target, phase) {
+		this.source = source;
+		this.target = target;
+		this.phase = phase || 0;
+		this.speed = 1;
+	}
+
+	Falloff.prototype.setTarget = function (target) {
+		var c = "???";
+		if (this.phase <= 0.0001) {
+			this.target = target;
+			this.speed = 1;
+			c = 0;
+		}
+		else if (this.phase >= .999) {
+			this.source = this.target;
+			this.target = target;
+			this.phase = 0;
+			this.speed = 1;
+			c = 1;
+		} else {
+			var v = this.getValue();
+
+			if (target < v) {
+				this.source = v;
+				this.target = target;
+				this.phase = 0;
+				this.speed = 1;
+				c = 2;
+			} else if(target <= this.target || (target > this.target && this.phase <.5)) {
+				// continue as normal
+				this.speed = this.speed / (1 - this.phase);
+				var f = falloff(this.phase);
+				this.source = ((f - 1) * this.source + f * (target - this.target)) / (f - 1);
+				this.target = target;
+				c = 3;
+			} else {
+				// reverse
+				this.speed = this.speed / (1 - this.phase);
+				var f1 = falloff(this.phase);
+				this.phase = 1 - this.phase;
+				var f2 = falloff(this.phase);
+
+				this.source = ((f1 - 1) * this.source - f1 * this.target + f2 * target) / (f2 - 1);
+
+				this.target = target;
+				c = 4;
+			}
+		}
+
+		console.log(c, target, this.source, this.target, this.phase, this.speed);
+	}
+
+
+	Falloff.prototype.update = function(delta) {
+		this.phase = Math.min(1, this.phase + delta / this.speed);
+	}
+
+	Falloff.prototype.getValue = function () {
+		return this.phase == 0 ? this.source : this.phase == 1 ? this.target : this.source + falloff(this.phase) * (this.target - this.source);
+	}
+
+
+	function render() {
+
+		var ends = [[10000, 100], [20, 120], [25, 80], [60, 120], [65, 80], [100, 0], [50, 0]];
+		var fs = ends.map(function () { return new Falloff(0, 100) });
+		for (var i = 0; i < 200; ++i) {
+
+			document.body.innerHTML += '<div>' + i + ' ' + fs.map(function (f, x) {
+
+				if (Math.abs(i - ends[x][0]) < .0001) {
+					f.setTarget(ends[x][1]);
+				}
+				f.update(1 / 100);
+				return (x+f.getValue()).toFixed(3);
+
+			}).join(' ') + '</div>';
+		}
+	}
+
+	render();
+
+
+	function TimeController() {
+		var $ = this;
+
+		$.speedLevel = ko.observable(0).extend({ range: { min: -10, max: 10 } });
+		$.paused = ko.observable(false);
+
+		$.speedLevel.subscribe(function(val) {
+
+		});
+
+		$.faster = function() {
+			$.speedLevel($.speedLevel() + 1);
+		}
+
+		$.slower = function() {
+			$.speedLevel($.speedLevel() - 1);
+		}
+
+		$.togglePause = function() {
+			$.paused(!$.paused());
+		}
+	}
+
+	function Model() {
+		var $ = this;
+
+		$.time = ko.observable(0);
+
+		extend($, new TimeController());
+
+		$.update = function(delta) {
+			$.time($.time() + delta);
+		}
+	}
+
+	var model = new Model();
+	ko.applyBindings(model, document.getElementById('model'))
+
+	var lastTime = (new Date().getTime())
+
+	function frame() {
+		var time = (new Date().getTime());
+		var delta = time - lastTime;
+		lastTime = delta;
+
+		tick(delta);
+
+		window.requestAnimationFrame(frame);
+	}
+
+	function tick(deltaActual) {
+		model.updateTimescale(deltaActual);
+		var deltaAdjusted = deltaActual * model.timescale();
+
+		if (deltaAdjusted > 0)
+			model.update(deltaAdjusted);
+	}
+
+
+</script>
+</body>
+</html>
