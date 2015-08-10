@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+	<title></title>
+	<style type="text/css">
+		html, body{ background: #000030;color: #f0e68c; font-family:monospace}
+
+		input, input:active {
+			border: 1px solid;border-width: 1px 0 0;width: 100%;
+			background-color:  #333359;
+			background-color: hsla(1, 0%, 100%, .2);
+			color: white;
+		}
+	</style>
+</head>
+<body>
+<div id="out"></div>
+	<input type="text" id="in"/>
+<script type="text/javascript">
+	
+	function out(){
+						  
+		var oe = document.getElementById('out');
+		out = function () {
+			oe.innerHTML += '<div>'+  [].join.call(arguments, ' ') +'</div>';
+		}				   
+
+		out.apply(null, arguments);
+	}
+
+	function Room(name, description) {
+		this.east = null;
+		this.south = null;
+		this.north = null;
+		this.west = null;
+		this.items = null;
+		this.name = name;
+		this.description = description;
+		this.features = [];
+		this.items = [];
+	}
+
+	var inventory = [];
+
+	var names = 'dark cellar;crypt;narrow passage;torture chamber;well room;twisted stairs;cold room'.split(';');
+	var descriptions = [
+		'Water is dripping from the ceiling', 'Moss covers the walls','Floor is made of old, squeaky oak boards',
+		"Some beast have made a lair here, you probably shouldn't stay here longer than necessary",
+		"Walls are overgrown with white mold that oozes something you don't want to know"
+	];
+
+	var numRooms = names.length;
+
+	Array.prototype.shuffle = function () {
+			var o = [];
+			for (var i = 0; i < this.length; ++i)o[i] = this[i];
+			for (var j, x, i = o.length; i; j = Math.floor(Math.random() * i), x = o[--i], o[i] = o[j], o[j] = x);
+			return o;
+	}
+
+	String.prototype.capitalize = function() {
+		return this.charAt(0).toUpperCase() + this.slice(1);
+	}
+
+	String.prototype.subs= function(placeholder) {
+		return this.indexOf('%') >= 0 || this.indexOf('$') >= 0
+			? this.replace("%", placeholder).replace('$', placeholder.capitalize)
+			: this + placeholder;
+	}
+
+	String.prototype.subsa = function (array) {
+		var repr = array.length == 1 ? array[0] : array.slice(0, array.length - 1).join(', ') + ' and ' + array[array.length - 1];
+		return this.subs(repr);
+	}
+
+	var rooms= [];
+	for (var i = 0; i < numRooms; ++i) {
+		rooms.push(new Room(names[i], descriptions[i%descriptions.length]));
+	}
+
+	var dirs = ['north', 'east', 'south', 'west'];
+
+	function link(r1, r2, r1dir) {
+
+		if (r1 !== r2 && r1[r1dir] == null) {
+			r1[r1dir] = r2;
+			r2[dirs[(dirs.indexOf(r1dir) + 2) % dirs.length]] = r1;
+
+			return true;
+		}
+
+		return false;
+	}
+
+	function random(a) {
+		return a[(Math.random() * a.length )| 0];
+	}
+
+	var n = rooms.length * 2;
+	while (n > 0) {
+		var r1 = random(rooms);
+		var r2 = random(rooms);
+		var dir = random(dirs);
+
+		if (link(r1, r2, dir))--n;
+	}
+
+
+	var features = ['exit', 'fountain', 'chasm', 'tombstone', 'skeleton'];
+	var items = 'key;bone;brick;vine;amulet'.split(';');
+
+	features.shuffle().forEach(function(f) {
+		random(rooms).features.push(f);
+	});
+
+
+	items.shuffle().forEach(function (f) {
+		random(rooms).items.push(f);
+	});
+
+														 function MultiLine() {
+		this.options = [].shuffle.apply(arguments);
+		this.no = 0;
+	}
+
+	MultiLine.prototype.get = function () {
+
+		if (this.no >= this.options.length) {
+			this.options = this.options.shuffle();
+			this.no = 0;
+		}
+
+		return this.options[this.no++];
+	}
+
+	var currentRoom = rooms[Math.floor(Math.random() * rooms.length)];
+
+	var enterDesc = new MultiLine("You are now in the %", "You enter the %");
+	var locDesc = new MultiLine("You look around the %", "You are in the %");
+
+	function display(room, first) {
+
+		var intro = first ? enterDesc : locDesc;
+
+		out(intro.get().replace("%", room.name));
+		out(room.description);
+
+		if(room.features.length>0)
+			out(('Inside the ' + room.name + ' you can see %.').subsa(room.features));
+
+		if (room.items.length > 0)
+			out("Lying on the floor is %.".subsa(room.items));
+
+	}
+
+	display(currentRoom);
+
+
+	var turns = 1;
+	var exitIntro = new MultiLine("There is an exit %.", "You can go %.", "$ wall has a door.", "A passage leads %.");
+
+	var commands = {
+		'look': function() {
+			display(currentRoom);
+			var msgs = [];
+
+			['north', 'south', 'east', 'west'].forEach(function(d) {
+				if (currentRoom[d] != null)
+					msgs.push(exitIntro.get().replace('%', d).replace('$', d.capitalize()));
+			});
+			out.apply(null, msgs);
+		},
+		'help': function() {
+
+			out('Available commands:');
+
+			for (var i in commands) {
+				if (commands.hasOwnProperty(i)) out('&nbsp;&nbsp;&nbsp;&nbsp;' + i);
+
+			}
+
+		},
+		'exit': function() {
+			if (currentRoom.features.indexOf('exit') == -1)
+				out("This room has no exit to the overworld.");
+			else if (inventory.indexOf('key') == -1)
+				out("The exit door is locked.");
+			else
+				out("You escape after " + turns + " turns" + (inventory.indexOf('amulet') == -1 ? '.' : " with the precious amulet!"));
+		},
+		'pick': function (itemName) {
+			var id = currentRoom.items.indexOf(itemName);
+
+			if (id == -1) out('There is no ' + itemName + " here.");
+			else {
+				currentRoom.items.splice(id, 1);
+				inventory.push(itemName);
+				out('Picked ' + itemName);
+			}
+		},
+		'drop': function(itemName) {
+			var i = inventory.indexOf(itemName);
+
+			if (i == -1) out("You don't have " + itemName);
+			else {
+				inventory.splice(i, 1);
+				out('Dropped ' + itemName);
+			}
+
+		},
+		'go': function(direction) {
+
+			if (direction == undefined || direction === '')
+				out("Please provide direction");
+			else if (direction in { north: 1, east: 1, south: 1, west: 1 }) {
+
+				if (currentRoom[direction] != null) {
+					currentRoom = currentRoom[direction];
+					++turns;
+					display(currentRoom, true);
+
+				} else
+					out(currentRoom.name.capitalize() + " doesn't have a " + direction + " exit.");
+			} else {
+				out("Unknown direction: " + direction);
+			}
+
+		},
+		'inv': function () {
+			if (inventory.length == 0)
+				out("Your inventory is empty");
+			else
+				out("You have %.".subsa(inventory));
+		}
+	};
+
+	function run(command) {
+
+		command = command.split(' ');
+		if (command[0] in commands) {
+			commands[command[0]].apply(commands[command[0]], command.slice(1));
+		} else {
+			out("Don't understand: " + command[0]);
+		}
+	}
+
+	document.getElementById('in').addEventListener('keydown', function(e) {
+		if (e.keyCode === 13) {
+			run(this.value);
+			this.value = '';
+		}
+	});
+	
+</script>
+</body>
+</html>
