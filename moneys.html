@@ -7,183 +7,208 @@
 			font-family: monospace;
 		}
 
-		.highlight {
-			border: 1em solid;
-			border-width: 1em 1ex;
-			padding: 1em;
+
+		.info{ color: #505050;}
+
+		.balance {
+			font-size: 5rem;
 		}
+
+		.positive {
+			color: #409040;
+		}
+
+		.negative {
+			color: #a03030;
+		}
+
+		.balance:before, .amount:before{content: '$'}
 	</style>
 	<script type='text/javascript' src='knockout-3.2.0.js'></script>
+
+
+	<div class="container">
+		<div class="balance" data-bind="text: Math.abs(balance()).toFixed(2), css: balance() > 0 ? 'positive' : balance() < 0 ? 'negative' : ''"></div>
+		<div data-bind="text: time"></div>
+
+		<ul class="opportunities list" data-bind="foreach: opportunities">
+			<li> <button data-bind="text: name, click: action"></button> </li>
+		</ul>
+
+		<table class="transactions list" data-bind="foreach: latestTransactions">
+
+			<tr>
+				<td class="info" data-bind="text:id"></td>
+				<td data-bind="text: Math.abs(amount).toFixed(2), css: amount > 0 ? 'positive' : amount < 0 ? 'negative' : ''"></td>
+				<td data-bind="text:description"></td>
+
+			</tr>
+		</table>
+
+
+	</div>
 
 </head>
 <body>
 
 <script type="text/javascript">
-	function extend(target, source) {
-		for (var prop in source)
-			target[prop] = source[prop];
 
-		return target;
+
+	function Deal(name, cost, action) {
+		this.name = name;
+		this.cost = cost;
+		this.action = action;
 	}
 
-	ko.extenders.range = function(target, bounds) {
-		var result = ko.computed({
-			read: target,
-			write: function(value) {
-				console.log(value);
-			}
-		});
-
-		result(target);
-		return result;
+	function Opportunity(name, action) {
+		this.name = name;
+		this.action = action;
 	}
 
-	function falloff(t) {
-		return t < 0 ? 0 : t > 1 ? 1 : t * t * t * (3 * t * (2 * t - 5) + 10);
+	function RandomEvent(targetDelta, action) {
+		this.accDelta = 0;
+		this.targetDelta = targetDelta;
+		this.action = action;
 	}
 
-	function Falloff(source, target, phase) {
-		this.source = source;
-		this.target = target;
-		this.phase = phase || 0;
-		this.speed = 1;
-	}
-
-	Falloff.prototype.setTarget = function (target) {
-		var c = "???";
-		if (this.phase <= 0.0001) {
-			this.target = target;
-			this.speed = 1;
-			c = 0;
+	function rnd(probf) {
+		var xi, fi, y;
+		do {
+			xi = Math.random();
+			fi = probf(xi);
+			y = Math.random();
 		}
-		else if (this.phase >= .999) {
-			this.source = this.target;
-			this.target = target;
-			this.phase = 0;
-			this.speed = 1;
-			c = 1;
-		} else {
-			var v = this.getValue();
+		while (fi < y);
 
-			if (target < v) {
-				this.source = v;
-				this.target = target;
-				this.phase = 0;
-				this.speed = 1;
-				c = 2;
-			} else if(target <= this.target || (target > this.target && this.phase <.5)) {
-				// continue as normal
-				this.speed = this.speed / (1 - this.phase);
-				var f = falloff(this.phase);
-				this.source = ((f - 1) * this.source + f * (target - this.target)) / (f - 1);
-				this.target = target;
-				c = 3;
-			} else {
-				// reverse
-				this.speed = this.speed / (1 - this.phase);
-				var f1 = falloff(this.phase);
-				this.phase = 1 - this.phase;
-				var f2 = falloff(this.phase);
-
-				this.source = ((f1 - 1) * this.source - f1 * this.target + f2 * target) / (f2 - 1);
-
-				this.target = target;
-				c = 4;
-			}
-		}
-
-		console.log(c, target, this.source, this.target, this.phase, this.speed);
+		return xi;
 	}
 
-
-	Falloff.prototype.update = function(delta) {
-		this.phase = Math.min(1, this.phase + delta / this.speed);
+	function fade(t) {
+		return t < 0 ? 0 : t > 1 ? 1 : t * t * t * (t * (t * 6 - 15) + 10);
 	}
 
-	Falloff.prototype.getValue = function () {
-		return this.phase == 0 ? this.source : this.phase == 1 ? this.target : this.source + falloff(this.phase) * (this.target - this.source);
-	}
+	RandomEvent.prototype.trigger = function(delta) {
 
+		this.accDelta += delta;
 
-	function render() {
+		var q = this.accDelta / this.targetDelta;
 
-		var ends = [[10000, 100], [20, 120], [25, 80], [60, 120], [65, 80], [100, 0], [50, 0]];
-		var fs = ends.map(function () { return new Falloff(0, 100) });
-		for (var i = 0; i < 200; ++i) {
-
-			document.body.innerHTML += '<div>' + i + ' ' + fs.map(function (f, x) {
-
-				if (Math.abs(i - ends[x][0]) < .0001) {
-					f.setTarget(ends[x][1]);
-				}
-				f.update(1 / 100);
-				return (x+f.getValue()).toFixed(3);
-
-			}).join(' ') + '</div>';
-		}
-	}
-
-	render();
-
-
-	function TimeController() {
-		var $ = this;
-
-		$.speedLevel = ko.observable(0).extend({ range: { min: -10, max: 10 } });
-		$.paused = ko.observable(false);
-
-		$.speedLevel.subscribe(function(val) {
-
-		});
-
-		$.faster = function() {
-			$.speedLevel($.speedLevel() + 1);
-		}
-
-		$.slower = function() {
-			$.speedLevel($.speedLevel() - 1);
-		}
-
-		$.togglePause = function() {
-			$.paused(!$.paused());
+		if (q/2 > rnd(fade)) {
+			this.accDelta = 0;
+			this.action();
 		}
 	}
 
 	function Model() {
 		var $ = this;
 
-		$.time = ko.observable(0);
+		$.balance = ko.observable(0);
 
-		extend($, new TimeController());
+		$.opportunities = ko.observableArray();
 
+		$.transactions = ko.observableArray();
+
+		$.latestTransactions = ko.computed(function() {
+			var a = $.transactions();
+			return (a.length < 5 ? a.slice() : a.slice(a.length - 5)).reverse();
+		});
+
+		var clock = ko.observable(0);
+
+		function advanceClock(time) {
+			clock(clock() + time);
+		}
+
+		$.time = ko.computed(function() {
+			var perDay = 24;
+			var perMonth = 30 * perDay;
+			var perYear = 12 * perMonth;
+
+			var total = clock();
+
+			var year = total < perYear ? 0 : Math.floor(total / perYear);
+
+			total = total % perYear;
+
+			var month = total < perMonth ? 0 : Math.floor(total / perMonth);
+
+			total = total % perMonth;
+
+			var day = total < perDay ? 0 : Math.floor(total / perDay);
+
+			var hour = total % perDay;
+			var minutes = (hour % 1 * 60) | 0;
+
+			return ['Year ', year, ', month ', month, ', day ', day, ', ', hour < 10 ? '0' : '', Math.floor(hour), ':', minutes < 10 ? '0' : '', minutes].join('');
+		});
+
+		function addOpportunity(name, action) {
+			var op = new Opportunity(name, function() {
+				$.opportunities.remove(op);
+				action();
+			});
+
+			$.opportunities.push(op);
+		}
+
+		var transctionid = 0;
+		var credit = function(amount, description) {
+			$.balance($.balance() + amount);
+			$.transactions.push({id:++transctionid, amount: amount, description: description });
+		}
+
+		var startingMoney = 10000;
+
+		addOpportunity('Get $' + startingMoney + " for a start.", function() { credit(startingMoney, 'Starting capital') });
+
+		var eventNo = 0;
+
+		var x = new RandomEvent(2, function() {
+			var amount = 100 + Math.random() * 4900;
+
+			if (Math.random() < .2)amount = -amount;
+
+			credit(amount, 'Random event #' + ++eventNo);
+		});
+
+	
+		$.speedDeltaToHours = ko.observable(60000 / 24);
+								
 		$.update = function(delta) {
-			$.time($.time() + delta);
+			var hourDelta = delta / $.speedDeltaToHours();
+
+			advanceClock(hourDelta);
+			x.trigger(hourDelta);
 		}
 	}
 
 	var model = new Model();
-	ko.applyBindings(model, document.getElementById('model'))
+	ko.applyBindings(model, document.getElementById('model'));
 
-	var lastTime = (new Date().getTime())
+	var lastTime = (new Date().getTime());
+
+	var fixedDelta = 16;
+	var accumulatedDelta = 0;
 
 	function frame() {
 		var time = (new Date().getTime());
 		var delta = time - lastTime;
-		lastTime = delta;
+		lastTime = time;
 
-		tick(delta);
+		accumulatedDelta += delta;
+		while (accumulatedDelta >= fixedDelta) {
+			accumulatedDelta -= fixedDelta;
+			tick(fixedDelta);
+		}
 
 		window.requestAnimationFrame(frame);
 	}
 
 	function tick(deltaActual) {
-		model.updateTimescale(deltaActual);
-		var deltaAdjusted = deltaActual * model.timescale();
-
-		if (deltaAdjusted > 0)
-			model.update(deltaAdjusted);
+		model.update(deltaActual);
 	}
 
+	frame();
 
 </script>
 </body>
