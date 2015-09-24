@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
@@ -368,9 +369,9 @@
         function makeGeometry(w) {
             return new Float32Array(
             [].concat(
-                makeBox(-w / 6, -w / 6, w / 6, w * 10, w / 3, w / 3),
-                makeBox(-w / 6, w / 6, w / 6, w / 3, w * 10, w / 3),
-                makeBox(-w / 6, -w / 6, -w / 6, w / 3, w / 3, w * 10),
+                makeBox(-w / 16, -w / 16, w / 6, w * 15, w / 8, w / 8),
+                makeBox(-w / 16, w / 16, w / 6, w / 8, w * 15, w / 8),
+                makeBox(-w / 16, -w / 16, -w / 6, w / 8, w / 8, w * 15),
                 makeBox(0, 0, 0, w, 6 * w, w),
                 makeBox(w, 3 * w, 0, 2 * w, w, w),
                 makeBox(0, 6 * w, 0, 4 * w, w, w),
@@ -388,7 +389,6 @@
             var face = hcy((a + b) % 360, 1, .5);
             var cls = [side, side, face, face, side, side, face, face, side, side, side, side];
 
-
             var red = [1, 0, 0];
             var green = [0, 1, 0];
             var blue = [0, 0, 1];
@@ -396,14 +396,14 @@
 
             for (var i = 0; i < geometry.length / 3; ++i) {
 
+                
                 var c = i < 12*3 ? c = prime[(i/12)|0] : cls[i % cls.length];
-                colors = colors.concat(c.concat(c, c));
+                colors = colors.concat(c.concat(c,c));
             }
 
             return colors;
         }
-
-    </script>
+      </script>
 
     <!-- Color -->
     <script type="text/javascript">
@@ -462,14 +462,52 @@
 
     <script type="text/javascript">
 
+        function fade(t) {
+            return t < 0 ? 0 : t > 1 ? 1 : t * t * t * (t * (t * 6 - 15) + 10);
+        }
+
+        function Transition(interval, delta, setter, done) {
+            this.interval = interval;
+            this.elapsed = 0;
+            this.delta = delta;
+            this.setter = setter;
+            this.done = done;
+        }
+
+        Transition.prototype.apply = function(delta) {
+
+            if (this.elapsed + delta > this.interval)
+                this.delta = this.interval - this.elapsed;
+
+            var q = fade((this.elapsed + delta) / this.interval) - fade(this.elapsed / this.interval);
+
+            this.elapsed += delta;
+            this.setter(q * this.delta);
+
+            if (this.elapsed < this.interval)
+                return true;
+            else {
+                if(this.done)
+                this.done();
+                return false;
+            }
+        }
+
+        var transitions = [];
+
+        function tr(interval, delta, setter, done) {
+            transitions.push(new Transition(interval, delta, setter, done));
+        }
+
         var a = 0;
         var xxxa = 0;
 
         var camz = 100;
+        var fov = 20 * deg;
 
-        var cam = new Camera([0, 50, camz],
-        [0, 1, 0],
-        [0, 30, 0]);
+        var cam = new Camera([100, -200, camz],
+        [0, 0, 1],
+        [0, 0, 20]);
 
         function Camera(pos, up, lookat) {
             this.pos = pos;
@@ -483,9 +521,11 @@
             gl.clearColor(1, 1, 1, 1);
 
             var program = createProgramFromScripts(gl, 'vertex', 'fragment');
-            gl.useProgram(program);
+            
             gl.enable(gl.CULL_FACE);
             gl.enable(gl.DEPTH_TEST);
+
+            gl.useProgram(program);
 
             var pos = gl.getAttribLocation(program, 'a_position');
             var matrix = gl.getUniformLocation(program, 'u_matrix');
@@ -507,10 +547,14 @@
             gl.enableVertexAttribArray(color);
             gl.vertexAttribPointer(color, 3, gl.FLOAT, false, 0, 0);
 
-            var fov = 95 * deg;
             var aspect = canvas.clientWidth / canvas.clientHeight;
 
-            return function () {
+            return function (delta) {
+        
+                transitions = transitions.filter(function (transition) {
+                    return transition.apply(delta);
+                });
+
 
                 var or = [0, 0, 0];
                 var sc = [1, 1, -1];
@@ -533,31 +577,14 @@
         var k = 0;
 
         var time = (new Date()).getTime();
-
-        var numframes = 50;
-        var framecounters = new Array(numframes)
-        var frameno = 0;
-        for (var i = 0; i < numframes; ++i) framecounters[i] = 0;
-
-        window.setInterval(function () {
-            var frametime = framecounters.reduce(function (a, b) { return a + b }) / framecounters.length
-            var fps = (100000 / frametime | 0) / 100;
-            console.log(frametime, fps);
-        },
-            100000);
-
+                                        
         function tick() {
 
             var time2 = (new Date()).getTime();
-            framecounters[frameno++] = time2-time;
+            var delta = time2-time;
             time = time2;
 
-            if (frameno >= numframes) frameno = 0;
-
-            xxxa += .008;
-            a += .05;
-
-            draw();
+            draw(delta);
 
             window.requestAnimationFrame(tick);
         }
