@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
@@ -15,8 +16,8 @@
         varying vec4 v_color;
 
         void main(){
-            gl_Position = u_matrix * a_position;
-            v_color = a_color;
+        gl_Position = u_matrix * a_position;
+        v_color = a_color;
         }
     </script>
 
@@ -25,10 +26,11 @@
         varying vec4 v_color;
 
         void main() {
-            gl_FragColor = v_color;
+        gl_FragColor = v_color;
         }
     </script>
 
+    <!-- matrices -->
     <script type="text/javascript">
 
         var iden3 = [1, 0, 0, 0, 1, 0, 0, 0, 1];
@@ -117,49 +119,47 @@
             var tmp_23 = m10 * m01;
 
             var t0 = (tmp_0 * m11 + tmp_3 * m21 + tmp_4 * m31) -
-                (tmp_1 * m11 + tmp_2 * m21 + tmp_5 * m31);
+            (tmp_1 * m11 + tmp_2 * m21 + tmp_5 * m31);
             var t1 = (tmp_1 * m01 + tmp_6 * m21 + tmp_9 * m31) -
-                (tmp_0 * m01 + tmp_7 * m21 + tmp_8 * m31);
+            (tmp_0 * m01 + tmp_7 * m21 + tmp_8 * m31);
             var t2 = (tmp_2 * m01 + tmp_7 * m11 + tmp_10 * m31) -
-                (tmp_3 * m01 + tmp_6 * m11 + tmp_11 * m31);
+            (tmp_3 * m01 + tmp_6 * m11 + tmp_11 * m31);
             var t3 = (tmp_5 * m01 + tmp_8 * m11 + tmp_11 * m21) -
-                (tmp_4 * m01 + tmp_9 * m11 + tmp_10 * m21);
+            (tmp_4 * m01 + tmp_9 * m11 + tmp_10 * m21);
 
             var d = 1.0 / (m00 * t0 + m10 * t1 + m20 * t2 + m30 * t3);
 
             return [
-              d * t0,
-              d * t1,
-              d * t2,
-              d * t3,
-              d * ((tmp_1 * m10 + tmp_2 * m20 + tmp_5 * m30) -
-                    (tmp_0 * m10 + tmp_3 * m20 + tmp_4 * m30)),
-              d * ((tmp_0 * m00 + tmp_7 * m20 + tmp_8 * m30) -
-                    (tmp_1 * m00 + tmp_6 * m20 + tmp_9 * m30)),
-              d * ((tmp_3 * m00 + tmp_6 * m10 + tmp_11 * m30) -
-                    (tmp_2 * m00 + tmp_7 * m10 + tmp_10 * m30)),
-              d * ((tmp_4 * m00 + tmp_9 * m10 + tmp_10 * m20) -
-                    (tmp_5 * m00 + tmp_8 * m10 + tmp_11 * m20)),
-              d * ((tmp_12 * m13 + tmp_15 * m23 + tmp_16 * m33) -
-                    (tmp_13 * m13 + tmp_14 * m23 + tmp_17 * m33)),
-              d * ((tmp_13 * m03 + tmp_18 * m23 + tmp_21 * m33) -
-                    (tmp_12 * m03 + tmp_19 * m23 + tmp_20 * m33)),
-              d * ((tmp_14 * m03 + tmp_19 * m13 + tmp_22 * m33) -
-                    (tmp_15 * m03 + tmp_18 * m13 + tmp_23 * m33)),
-              d * ((tmp_17 * m03 + tmp_20 * m13 + tmp_23 * m23) -
-                    (tmp_16 * m03 + tmp_21 * m13 + tmp_22 * m23)),
-              d * ((tmp_14 * m22 + tmp_17 * m32 + tmp_13 * m12) -
-                    (tmp_16 * m32 + tmp_12 * m12 + tmp_15 * m22)),
-              d * ((tmp_20 * m32 + tmp_12 * m02 + tmp_19 * m22) -
-                    (tmp_18 * m22 + tmp_21 * m32 + tmp_13 * m02)),
-              d * ((tmp_18 * m12 + tmp_23 * m32 + tmp_15 * m02) -
-                    (tmp_22 * m32 + tmp_14 * m02 + tmp_19 * m12)),
-              d * ((tmp_22 * m22 + tmp_16 * m02 + tmp_21 * m12) -
-                    (tmp_20 * m12 + tmp_23 * m22 + tmp_17 * m02))
+                d * t0,
+                d * t1,
+                d * t2,
+                d * t3,
+                d * ((tmp_1 * m10 + tmp_2 * m20 + tmp_5 * m30) -
+                (tmp_0 * m10 + tmp_3 * m20 + tmp_4 * m30)),
+                d * ((tmp_0 * m00 + tmp_7 * m20 + tmp_8 * m30) -
+                (tmp_1 * m00 + tmp_6 * m20 + tmp_9 * m30)),
+                d * ((tmp_3 * m00 + tmp_6 * m10 + tmp_11 * m30) -
+                (tmp_2 * m00 + tmp_7 * m10 + tmp_10 * m30)),
+                d * ((tmp_4 * m00 + tmp_9 * m10 + tmp_10 * m20) -
+                (tmp_5 * m00 + tmp_8 * m10 + tmp_11 * m20)),
+                d * ((tmp_12 * m13 + tmp_15 * m23 + tmp_16 * m33) -
+                (tmp_13 * m13 + tmp_14 * m23 + tmp_17 * m33)),
+                d * ((tmp_13 * m03 + tmp_18 * m23 + tmp_21 * m33) -
+                (tmp_12 * m03 + tmp_19 * m23 + tmp_20 * m33)),
+                d * ((tmp_14 * m03 + tmp_19 * m13 + tmp_22 * m33) -
+                (tmp_15 * m03 + tmp_18 * m13 + tmp_23 * m33)),
+                d * ((tmp_17 * m03 + tmp_20 * m13 + tmp_23 * m23) -
+                (tmp_16 * m03 + tmp_21 * m13 + tmp_22 * m23)),
+                d * ((tmp_14 * m22 + tmp_17 * m32 + tmp_13 * m12) -
+                (tmp_16 * m32 + tmp_12 * m12 + tmp_15 * m22)),
+                d * ((tmp_20 * m32 + tmp_12 * m02 + tmp_19 * m22) -
+                (tmp_18 * m22 + tmp_21 * m32 + tmp_13 * m02)),
+                d * ((tmp_18 * m12 + tmp_23 * m32 + tmp_15 * m02) -
+                (tmp_22 * m32 + tmp_14 * m02 + tmp_19 * m12)),
+                d * ((tmp_22 * m22 + tmp_16 * m02 + tmp_21 * m12) -
+                (tmp_20 * m12 + tmp_23 * m22 + tmp_17 * m02))
             ];
         }
-
-
     </script>
 
     <!-- 3d transformations -->
@@ -210,12 +210,12 @@
                 f / aspect, 0, 0, 0,
                 0, f, 0, 0,
                 0, 0, (near + far) * r, -1,
-                0, 0, near * far* r * 2, 0
+                0, 0, near * far * r * 2, 0
             ];
         }
 
         function mul() {
-            return [].reduce.call([].reverse.call(arguments), function(a, b) { return mul44(a, b) });
+            return [].reduce.call([].reverse.call(arguments), function (a, b) { return mul44(a, b) });
         }
 
         function makeProjection3d(view, proj, origin, rv, ra, scales) {
@@ -226,6 +226,11 @@
             return mul(proj, view, rot, scale, translate);
         }
 
+        function projection(cam, pos, rot, scale) {
+            return mul(cam, translate3d(pos), rotate3d(rot), scale3d(scale));
+        }
+
+
         function cross(a, b) {
             return [a[1] * b[2] - a[2] * b[1],
                 a[2] * b[0] - a[0] * b[2],
@@ -235,7 +240,7 @@
         var epsilon = 1e-10;
         var tau = 2 * Math.PI;
         var deg = tau / 360;
-        
+
         function length(a) {
             return Math.sqrt(a[0] * a[0] + a[1] * a[1] + a[2] * a[2]);
         }
@@ -322,6 +327,28 @@
 
     <!-- helpers -->
     <script type="text/javascript">
+
+        function rnd(a, b) {
+
+            if (a instanceof Array) {
+
+                return a[(Math.random() * a.length) | 0];
+
+            } else {
+                switch (arguments.length) {
+
+                    case 2:
+                        return a + Math.random() * (b - a);
+
+                    case 1:
+                        return Math.random() * a;
+
+                    default:
+                        return Math.random();
+                }
+            }
+        }
+
         function makeCanvas() {
             var canvas = document.createElement('canvas');
             canvas.width = document.body.parentElement.clientWidth;
@@ -338,12 +365,12 @@
 
             var a = [x, y, z];
             var b = [x + w, y, z];
-            var c = [x + w, y, z - dz];
-            var d = [x, y, z - dz];
+            var c = [x + w, y, z + dz];
+            var d = [x, y, z + dz];
             var e = [x, y + hy, z];
             var f = [x + w, y + hy, z];
-            var g = [x + w, y + hy, z - dz];
-            var h = [x, y + hy, z - dz];
+            var g = [x + w, y + hy, z + dz];
+            var h = [x, y + hy, z + dz];
 
             function tri(a, b, c) {
                 return a.concat(b, c);
@@ -353,27 +380,26 @@
                 return tri(a, b, c).concat(tri(c, d, a));
             }
 
-            var x = [].concat(
-                quad(a, b, c, d),
-                quad(a, e, f, b),
-                quad(f, g, c, b),
-                quad(g, h, d, c),
-                quad(h, e, a, d),
-                quad(h, g, f, e)
-                );
-
-            return x;
+            return [].concat(
+                quad(b, c, d, a),
+                quad(e, a, d, h),
+                quad(f, b, a, e),
+                quad(g, c, b, f),
+                quad(h, d, c, g),
+                quad(g, f, e, h)
+            );
         }
 
-
         function makeHex(origin, side, a, q) {
-            var l = 3*3*6* (3 * side * side - 3 * side + 1);
+            var l = 3 * 3 * 6 * (3 * side * side - 3 * side + 1);
+
             var mesh = new Array(l);
 
+            var sq = Math.sqrt(3) / 2;
 
+            origin = [origin[0] - (side - 1) * a * sq, origin[1] - (side - 1) * a / 2, origin[2]];
 
             var k = 0;
-            var sq = Math.sqrt(3) / 2;
 
             var dy = a * (1 - q) / 2;
             var dx = dy / (2 * sq);
@@ -391,43 +417,68 @@
             }
 
             for (var i = 0; i < side * 2 - 1; ++i) {
-                var j0 = Math.max(0, i - side+1);
+                var j0 = Math.max(0, i - side + 1);
                 var jMax = Math.min(side * 2 - 1, i + side);
 
                 for (var j = j0; j < jMax; ++j) {
 
-                    var t = Math.random() * a / 2-a/4;
+                    var t = a / 10 * (Math.random() - .5);
+                    t = 0;
 
                     var c = [j * a * sq, i * a - j * a / 2, t];
 
-                    p(c, [0, 0, 0], [dx, dy, 0], [-dx, dy, 0]);
-                    p(c, [0, 0, 0], [2 * dx, 0,0], [dx, dy, 0]);
-                    p(c, [0, 0, 0], [dx, -dy, 0], [2 * dx, 0, 0]);
-                    p(c, [0, 0, 0], [-dx, -dy, 0], [dx, -dy, 0]);
-                    p(c, [0, 0, 0], [-2 * dx, 0, 0], [-dx, -dy, 0]);
-                    p(c, [0, 0, 0], [-dx, dy, 0], [-2 * dx, 0, 0]);
+                    p(c, [0, 0, 5], [dx, dy, 0], [-dx, dy, 0]);
+                    p(c, [0, 0, 5], [2 * dx, 0, 0], [dx, dy, 0]);
+                    p(c, [0, 0, 5], [dx, -dy, 0], [2 * dx, 0, 0]);
+                    p(c, [0, 0, 5], [-dx, -dy, 0], [dx, -dy, 0]);
+                    p(c, [0, 0, 5], [-2 * dx, 0, 0], [-dx, -dy, 0]);
+                    p(c, [0, 0, 5], [-dx, dy, 0], [-2 * dx, 0, 0]);
                 }
             }
 
             return mesh;
         }
 
+        function makeHexColors(side) {
+            var l = 3 * 3 * 6 * (3 * side * side - 3 * side + 1);
+            var numhexes = l / 3 / 3 / 6;
+
+            var colors = [];
+
+            for (var i = 0; i < numhexes; ++i) {
+
+                var a = Math.random() * 360;
+                var c = hcy(a, 1, .5);
+
+                for (var j = 0; j < 6; ++j) {
+                    colors = colors.concat(c,c,c);
+                }
+            }
+
+            return colors;
+        }
+
         function makeGeometry(w) {
 
             var axis = 100;
+            var small = w / axis;
 
-            return new Float32Array(
-            [].concat(
-                //makeBox(-w / axis, -w / axis, w / (axis / 2), w * 15, w / (axis / 2), w / (axis / 2)),
-                //makeBox(-w / axis, w / axis, w / (axis / 2), w / (axis / 2), w * 15, w / (axis / 2)),
-                //makeBox(-w / axis, -w / axis, -w / (axis / 2), w / (axis / 2), w / (axis / 2), w * 15),
-                //makeBox(0, 0, 0, w, 6 * w, w),
-                //makeBox(w, 3 * w, 0, 2 * w, w, w),
-                //makeBox(0, 6 * w, 0, 4 * w, w, w),
-                //makeBox(2 * w, 8 * w, 0, w, w, 2 * w),
-                //makeBox(3 * w, 3 * w, 2 * w, w, w, w),
-                makeHex([0,0,10], 4, w, .1)
-            ));
+            return [].concat(
+
+                //x
+                makeBox(0, 0, 0, 15 * w, -small, -small),
+
+                //y
+                makeBox(0, 0, 0, -small, 15 * w, -small),
+
+                //z
+                makeBox(0, 0, 0, -small, -small, 15 * w),
+                makeBox(0, 0, 0, w, 7 * w, w),
+                makeBox(w, 3 * w, 0, 2 * w, w, w),
+                makeBox(2, 6 * w, 0, 3 * w, w, w),
+                makeBox(3 * w, 3 * w, 2 * w, w, w, w)
+            );
+
         }
 
         function makeColors(geometry) {
@@ -437,7 +488,7 @@
             var b = 20 + Math.random() * 320;
             var side = hcy(a, 1, .5);
             var face = hcy((a + b) % 360, 1, .5);
-            var cls = [side, side, face, face, side, side, face, face, side, side, side, side];
+            var cls = [face, face, face, face, side, side, face, face, side, side,  face, face];
 
             var red = [1, 0, 0];
             var green = [0, 1, 0];
@@ -446,17 +497,12 @@
 
             for (var i = 0; i < geometry.length / 3; ++i) {
                 var c = i < 12 * 3 ? c = prime[(i / 12) | 0] : cls[i % cls.length];
-
-                c = cls[0];
-
-                if (((i+1) % 6) === 0) cls[0] = hcy(a+=Math.random()*40-20, 1, .5);
-
                 colors = colors.concat(c.concat(c, c));
             }
 
             return colors;
         }
-      </script>
+    </script>
 
     <!-- Color -->
     <script type="text/javascript">
@@ -501,18 +547,19 @@
             return rgbdata;
         }
 
-        function hcy(h,c,y) {
+        function hcy(h, c, y) {
 
             var k = .1;
             var x = h / 360;
-            ha = h * (1 - (x < .66 ? 1 : 0) * k * Math.sin(3 * Math.PI * x));
+            h = h * (1 - (x < .66 ? 1 : 0) * k * Math.sin(3 * Math.PI * x));
             y *= (1 + .4 * Math.sin(x * 2 * Math.PI));
 
-            return hcy2rgb(ha,c,y);
+            return hcy2rgb(h, c, y);
         }
 
     </script>
 
+    <!-- transitions -->
     <script type="text/javascript">
 
         function fade(t) {
@@ -528,9 +575,9 @@
             this.completed = false;
         }
 
-        Transition.prototype.apply = function(delta) {
+        Transition.prototype.apply = function (delta) {
 
-            if (this.completed)return;
+            if (this.completed) return;
 
             if (this.elapsed + delta > this.interval)
                 this.delta = this.interval - this.elapsed;
@@ -540,8 +587,8 @@
             this.elapsed += delta;
             this.setter(q * this.delta);
 
-            if (this.elapsed >= this.interval)  {
-                if(this.done)
+            if (this.elapsed >= this.interval) {
+                if (this.done)
                     this.done.call(null);
                 this.completed = true;
             }
@@ -552,16 +599,79 @@
         function tr(interval, delta, setter, done) {
             transitions.push(new Transition(interval, delta, setter, done));
         }
+    </script>
 
-        var a = 0;
-        var xxxa = 0;
+    <!-- Mesh -->
+    <script type="text/javascript">
+        function Mesh(vertex, fragment, geometry, colors, pos, rotv, rota, scale) {
+            this.vertex = vertex;
+            this.fragment = fragment;
+            this.pos = pos || [0, 0, 0]; // vector3
+            this.rotv = rota || [0, 0, 1];
+            this.rota = rota || 0;
+            this.scale = scale || [1, 1, 1]; // vector3
+            this.geometry = new Float32Array(geometry);
+            this.colors = new Float32Array(colors);
 
-        var camz = 100;
-        var fov = 20 * deg;
+            this.program = null;
+            this.gl = null;
+            this.vtxbuffer = null;
+            this.colbuffer = null;
+            this.pos_attr = null;
+            this.color_attr = null;
+            this.matrix = null;
+        }
 
-        var cam = new Camera([0,0,400],
+        Mesh.prototype.load = function (gl) {
+            this.gl = gl;
+
+            var p = this.program = createProgram(gl,
+                compileShader(gl, this.vertex, gl.VERTEX_SHADER),
+                compileShader(gl, this.fragment, gl.FRAGMENT_SHADER));
+
+            gl.useProgram(p);
+
+            this.vtxbuffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.vtxbuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, this.geometry, gl.STATIC_DRAW);
+
+            this.colbuffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.colbuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, this.colors, gl.STATIC_DRAW);
+
+            this.pos_attr = gl.getAttribLocation(p, 'a_position');
+            this.color_attr = gl.getAttribLocation(p, 'a_color');
+            this.matrix = gl.getUniformLocation(p, 'u_matrix');
+        }
+
+        Mesh.prototype.draw = function (cam) {
+
+            var gl = this.gl;
+            var p = this.program;
+
+            gl.useProgram(p);
+
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.vtxbuffer);
+            gl.enableVertexAttribArray(this.pos_attr);
+            gl.vertexAttribPointer(this.pos_attr, 3, gl.FLOAT, false, 0, 0);
+
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.colbuffer);
+            gl.enableVertexAttribArray(this.color_attr);
+            gl.vertexAttribPointer(this.color_attr, 3, gl.FLOAT, false, 0, 0);
+
+            gl.uniformMatrix4fv(this.matrix, false, projection(cam, this.pos, vectorAngleQuaternion(this.rotv, this.rota), this.scale));
+
+            gl.drawArrays(gl.TRIANGLES, 0, this.geometry.length / 3);
+        }
+    </script>
+
+    <script type="text/javascript">
+
+        var fov = 15 * deg;
+
+        var cam = new Camera([0, -50, 500],
         [0, 1, 0],
-        [0, 0, 0]);
+        [0, 0, 20]);
 
         function Camera(pos, up, lookat) {
             this.pos = pos;
@@ -569,61 +679,66 @@
             this.lookat = lookat;
         }
 
+        var objects = [];
+
         function init() {
             var canvas = makeCanvas();
             var gl = canvas.getContext('experimental-webgl');
             gl.clearColor(1, 1, 1, 1);
 
-            var program = createProgramFromScripts(gl, 'vertex', 'fragment');
-            
-            gl.enable(gl.CULL_FACE);
-            gl.enable(gl.DEPTH_TEST);
-
-            gl.useProgram(program);
-
-            var pos = gl.getAttribLocation(program, 'a_position');
-            var matrix = gl.getUniformLocation(program, 'u_matrix');
-            var color = gl.getAttribLocation(program, 'a_color');
-
-            var geometry = makeGeometry(10);
-            var colors = makeColors(geometry);
-
-            var buffer = gl.createBuffer();
-            gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-            gl.bufferData(gl.ARRAY_BUFFER, geometry, gl.STATIC_DRAW);
-
-            gl.enableVertexAttribArray(pos);
-            gl.vertexAttribPointer(pos, 3, gl.FLOAT, false, 0, 0);
-
-            buffer = gl.createBuffer();
-            gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
-            gl.enableVertexAttribArray(color);
-            gl.vertexAttribPointer(color, 3, gl.FLOAT, false, 0, 0);
-
             var aspect = canvas.clientWidth / canvas.clientHeight;
 
-            return function (delta) {
+            function load(object) {
+                object.load(gl);
+                objects.push(object);
+            }
 
-                transitions.forEach(function(transition) { transition.apply(delta) });
+            var hexSide = 7;
+            var hexq = 0;
+
+            load(new Mesh(
+                document.getElementById('vertex').text,
+                document.getElementById('fragment').text,
+                makeHex([0, 0, 0], hexSide, 10, hexq), makeHexColors(hexSide),
+                [10, 0, 0]
+            ));
+
+            load(new Mesh(
+                document.getElementById('vertex').text,
+                document.getElementById('fragment').text,
+                makeHex([0, 0, 0], hexSide, 10, hexq), makeHexColors(hexSide),
+                [-10, 0, 0]
+            ));
+
+            load(new Mesh(
+                document.getElementById('vertex').text,
+                document.getElementById('fragment').text,
+                makeGeometry(10), makeColors(makeGeometry(10)),
+                [0, 0, 10]
+            ));
+
+            return function (delta) {
+                transitions.forEach(function (transition) { transition.apply(delta) });
 
                 transitions = transitions.filter(function (transition) {
                     return !transition.completed;
                 });
 
-                var or = [0, 0, 0];
-                var sc = [1, 1, -1];
-                var rv = [0, -1, 0];
-                var ra = a;
+                objects[0].rota += (360 * deg / (5 * 60 * 1000)) * delta;
+                objects[1].rota -= (360 * deg / (5 * 60 * 1000)) * delta;
 
-                var pr = makePerspective(fov, aspect, 1, 1000);
+                var pr = makePerspective(fov, aspect, 1, 100000);
                 var view = inverse(lookAt(cam.pos, cam.lookat, cam.up));
-                var proj = makeProjection3d(view, pr, or, rv, ra, sc);
 
-                gl.uniformMatrix4fv(matrix, false, proj);
-
+                gl.enable(gl.CULL_FACE);
+                gl.enable(gl.DEPTH_TEST);
                 gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                gl.drawArrays(gl.TRIANGLES, 0, geometry.length / 3);
+
+                var numObj = objects.length;
+
+                while (numObj-- > 0) {
+                    objects[numObj].draw(mul44(view, pr));
+                }
             }
         }
 
@@ -632,11 +747,11 @@
         var k = 0;
 
         var time = (new Date()).getTime();
-                                        
+
         function tick() {
 
             var time2 = (new Date()).getTime();
-            var delta = time2-time;
+            var delta = time2 - time;
             time = time2;
 
             draw(delta);
@@ -645,11 +760,6 @@
         }
 
         tick();
-
-        var current_delta =-1;
-        var deltas = [[100, 0, 0], [0, 0, 100], [-100, 0, 0], [0, 0, -100] ];
-        function setter(v) { cam.lookat[0] += v * deltas[current_delta][0]; cam.lookat[2] += v * deltas[current_delta][1]; cam.lookat[1] += v * deltas[current_delta][2]; }
-        function done() { current_delta = (++current_delta) % deltas.length; tr(10000, 1, setter, done) }
 
     </script>
 </body>
