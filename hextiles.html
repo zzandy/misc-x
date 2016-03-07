@@ -211,7 +211,6 @@
             }
 
             TileRenderer.prototype.pos = function (ox, oy, i, j) {
-
                 var x = j * 20 - i * 16;
                 var y = i * 14 + j * 5;
 
@@ -274,7 +273,7 @@
         var vp = new Viewport(ctx);
 
         vp.save();
-        vp.translate(ctx.canvas.width / 2, ctx.canvas.height / 2);
+        vp.translate((ctx.canvas.width / 2) | 0, (ctx.canvas.height / 2) | 0);
         vp.scale(1, -1)
 
         var rl = new RenderLoop(tick);
