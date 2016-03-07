@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
 
@@ -17,334 +17,333 @@
     <script type="text/javascript">
         function fullscreenCanvas() {
             return canvas(window.innerWidth, window.innerHeight);
-	    }
-        
-        function canvas(width, height){
+        }
+
+        function canvas(width, height) {
             var c = window.document.createElement('canvas');
-	        window.document.body.appendChild(c);
+            window.document.body.appendChild(c);
 
-	        var ctx = c.getContext('2d');
+            var ctx = c.getContext('2d');
 
-	        ctx.canvas.width = width;
-	        ctx.canvas.height = height;
-	        ctx.canvas.style.position = 'absolute';
-	        ctx.canvas.style.top = 0;
-	        ctx.canvas.style.left = 0;
+            ctx.canvas.width = width;
+            ctx.canvas.height = height;
+            ctx.canvas.style.position = 'absolute';
+            ctx.canvas.style.top = 0;
+            ctx.canvas.style.left = 0;
 
-	        return ctx;
+            return ctx;
         }
     </script>
 
     <script type="text/javascript">
-    
-    (function($){
-        var r = .3;
-        var g = .59;
-        var b = .11;
 
-        // hue Chroma luma
-        $.hcy2rgb = function (h, c, y) {
-            h0 = h;
-            h /= 60;
+        (function ($) {
+            var r = .3;
+            var g = .59;
+            var b = .11;
 
-            var k = (1 - Math.abs((h % 2) - 1));
+            // hue Chroma luma
+            $.hcy2rgb = function (h, c, y) {
+                h0 = h;
+                h /= 60;
 
-            var K = h < 1 ? r + k * g
-                : h < 2 ? g + k * r
-                : h < 3 ? g + k * b
-                : h < 4 ? b + k * g
-                : h < 5 ? b + k * r
-                : r + k * b;
+                var k = (1 - Math.abs((h % 2) - 1));
 
-            var cmax = 1;
+                var K = h < 1 ? r + k * g
+                    : h < 2 ? g + k * r
+                    : h < 3 ? g + k * b
+                    : h < 4 ? b + k * g
+                    : h < 5 ? b + k * r
+                    : r + k * b;
 
-            if (y <= 0 || y >= 1) cmax = 0;
-            else cmax *= K < y ? (y - 1) / (K - 1) : K > y ? y / K : 1;
-            c = Math.min(c, cmax);
+                var cmax = 1;
 
-            var x = c * k;
-            var rgb = h < 1 ? [c, x, 0]
-                : h < 2 ? [x, c, 0]
-                : h < 3 ? [0, c, x]
-                : h < 4 ? [0, x, c]
-                : h < 5 ? [x, 0, c]
-                : [c, 0, x];
+                if (y <= 0 || y >= 1) cmax = 0;
+                else cmax *= K < y ? (y - 1) / (K - 1) : K > y ? y / K : 1;
+                c = Math.min(c, cmax);
 
-            var m = y - (r * rgb[0] + g * rgb[1] + b * rgb[2]);
+                var x = c * k;
+                var rgb = h < 1 ? [c, x, 0]
+                    : h < 2 ? [x, c, 0]
+                    : h < 3 ? [0, c, x]
+                    : h < 4 ? [0, x, c]
+                    : h < 5 ? [x, 0, c]
+                    : [c, 0, x];
 
-            return [rgb[0] + m, rgb[1] + m, rgb[2] + m];
-        }
-        
-        $.adjust=function (hcyrgb){
-            return [255 * hcyrgb[0] | 0, 255 * hcyrgb[1] | 0, 255 * hcyrgb[2] | 0];
-        }
+                var m = y - (r * rgb[0] + g * rgb[1] + b * rgb[2]);
 
-        $.hcyCol =function(h, c, y)
-        {
-            var col = adjust(hcy2rgb(h % 360, c, y));
-            return 'rgb(' +col[0] + ', ' +  col[1] + ',' +  col[2] | 0 + ')';
-        }
-    })(window);
+                return [rgb[0] + m, rgb[1] + m, rgb[2] + m];
+            }
+
+            $.adjust = function (hcyrgb) {
+                return [255 * hcyrgb[0] | 0, 255 * hcyrgb[1] | 0, 255 * hcyrgb[2] | 0];
+            }
+
+            $.hcyCol = function (h, c, y) {
+                var col = adjust(hcy2rgb(h % 360, c, y));
+                return 'rgb(' + col[0] + ', ' + col[1] + ',' + col[2] | 0 + ')';
+            }
+        })(window);
     </script>
 
     <script type="text/javascript">
-        function RenderLoop(frame){
+        function RenderLoop(frame) {
             this.frame = frame;
             this.isRunning = false;
         }
-        
-        RenderLoop.prototype.start = function(){
+
+        RenderLoop.prototype.start = function () {
             this.isRunning = true;
-            
+
             var self = this;
-            var onFrame = function(){
-                if(self.isRunning){
-                
-        
-                self.frame();
-                window.requestAnimationFrame(onFrame);
-            }
+            var onFrame = function () {
+                if (self.isRunning) {
+
+
+                    self.frame();
+                    window.requestAnimationFrame(onFrame);
+                }
             };
-            
-            
+
+
             window.requestAnimationFrame(onFrame);
         }
-        
-        RenderLoop.prototype.stop = function(){
+
+        RenderLoop.prototype.stop = function () {
             this.isRunning = false;
         }
     </script>
 
     <script type="text/javascript">
-        function Viewport(ctx){
-        this.ctx = ctx;
-        this.stack = [];
-        
-        this.ox = this.oy = 0;
-        this.width = ctx.canvas.width;
-        this.height = ctx.canvas.height;
-    }
-    
-    Viewport.prototype.clear = function(){
-        this.ctx.clearRect(this.ox, this.oy, this.width, this.height);
-    }
-    
-    Viewport.prototype.fill = function(fillStyle){
-        if(fillStyle!==undefined)
-            this.ctx.fillStyle =fillStyle;
-             
-        this.ctx.fillRect(this.ox, this.oy, this.width, this.height);
-    }
-    
-    Viewport.prototype.scale = function(sx, sy){
-        this.ctx.scale(sx, sy);
-        this.ox*=sx;
-        this.width*=sx;
-        this.oy*=sy;
-        this.height*=sy;
-    }
-    
-    Viewport.prototype.translate = function(dx, dy){
-        this.ctx.translate(dx, dy);
-        
-        this.ox-=dx;
-        this.oy-=dy;
-    }
-    
-    Viewport.prototype.save = function(){
-        this.ctx.save();
-        this.stack.push(this.ox, this.oy, this.width, this.height);
-    }
-    
-    Viewport.prototype.restore = function(){
-        this.ctx.restore();
-        this.height=this.stack.pop();
-        this.width=this.stack.pop();
-        this.oy=this.stack.pop();
-        this.ox=this.stack.pop();
-    }
-    
-    var drop = false;
-    
-    Viewport.prototype.contains = function(pos){
-        function between(a, b, c){
-            return a>b
-            ?(b<c&&c<a)
-            :(a<c&&c<b)
+        function Viewport(ctx) {
+            this.ctx = ctx;
+            this.stack = [];
+
+            this.ox = this.oy = 0;
+            this.width = ctx.canvas.width;
+            this.height = ctx.canvas.height;
         }
-        
-        function minGap(a, b, c, d){
-            return Math.min(Math.abs(c-a), Math.abs(c-b)) >= d;
+
+        Viewport.prototype.clear = function () {
+            this.ctx.clearRect(this.ox, this.oy, this.width, this.height);
         }
-        
-         var x = pos[0];
-        var y = pos[1];
-            
-        //     console.log(x, y, 
-        //         [this.ox , this.ox+this.width],[this.oy, this.oy+this.height], 
-        //         
-        //         between(this.ox, this.ox + this.width, x), 
-        //         between(this.oy, this.oy+this.height, y));
-        // 
-       
-        
-        return between(this.ox, this.ox + this.width, x) 
-        && between(this.oy, this.oy+this.height, y)
-        && minGap(this.ox, this.ox + this.width, x, 10)
-        && minGap(this.oy, this.oy+this.height, y, 50);
-    }
-    
+
+        Viewport.prototype.fill = function (fillStyle) {
+            if (fillStyle !== undefined)
+                this.ctx.fillStyle = fillStyle;
+
+            this.ctx.fillRect(this.ox, this.oy, this.width, this.height);
+        }
+
+        Viewport.prototype.scale = function (sx, sy) {
+            this.ctx.scale(sx, sy);
+            this.ox *= sx;
+            this.width *= sx;
+            this.oy *= sy;
+            this.height *= sy;
+        }
+
+        Viewport.prototype.translate = function (dx, dy) {
+            this.ctx.translate(dx, dy);
+
+            this.ox -= dx;
+            this.oy -= dy;
+        }
+
+        Viewport.prototype.save = function () {
+            this.ctx.save();
+            this.stack.push(this.ox, this.oy, this.width, this.height);
+        }
+
+        Viewport.prototype.restore = function () {
+            this.ctx.restore();
+            this.height = this.stack.pop();
+            this.width = this.stack.pop();
+            this.oy = this.stack.pop();
+            this.ox = this.stack.pop();
+        }
+
+        var drop = false;
+
+        Viewport.prototype.contains = function (pos) {
+            function between(a, b, c) {
+                return a > b
+                ? (b < c && c < a)
+                : (a < c && c < b)
+            }
+
+            function minGap(a, b, c, d) {
+                return Math.min(Math.abs(c - a), Math.abs(c - b)) >= d;
+            }
+
+            var x = pos[0];
+            var y = pos[1];
+
+            //     console.log(x, y,
+            //         [this.ox , this.ox+this.width],[this.oy, this.oy+this.height],
+            //
+            //         between(this.ox, this.ox + this.width, x),
+            //         between(this.oy, this.oy+this.height, y));
+            //
+
+
+            return between(this.ox, this.ox + this.width, x)
+            && between(this.oy, this.oy + this.height, y)
+            && minGap(this.ox, this.ox + this.width, x, 10)
+            && minGap(this.oy, this.oy + this.height, y, 50);
+        }
+
     </script>
 
     <script type="text/javascript">
         var ctx = fullscreenCanvas();
-        
+
         var vp = new Viewport(ctx);
-    
-    vp.save();
-    vp.translate(ctx.canvas.width/2, ctx.canvas.height/2);
-    vp.scale(1, -1)
-    
-    var rl = new RenderLoop(tick);
-    
-    rl.start();
-    
-    function colorize(buffer, col){
-        
-        var data = buffer.getImageData(0,0,buffer.canvas.width, buffer.canvas.height);
-        var w = data.width;
-        var h = data.height;
-        var d =data.data;
-        
-        for(var i=0;i<h;++i)
-        for(var j=0;j<w;++j){
-            var k = i*w+j;
-            if(d[k*4+3]!==0){
-                d[k*4] = col[0];
-                d[k*4+1] = col[1];
-                d[k*4+2] = col[2]; 
-            }
+
+        vp.save();
+        vp.translate(ctx.canvas.width / 2, ctx.canvas.height / 2);
+        vp.scale(1, -1)
+
+        var rl = new RenderLoop(tick);
+
+        rl.start();
+
+        function colorize(buffer, col) {
+
+            var data = buffer.getImageData(0, 0, buffer.canvas.width, buffer.canvas.height);
+            var w = data.width;
+            var h = data.height;
+            var d = data.data;
+
+            for (var i = 0; i < h; ++i)
+                for (var j = 0; j < w; ++j) {
+                    var k = i * w + j;
+                    if (d[k * 4 + 3] !== 0) {
+                        d[k * 4] = col[0];
+                        d[k * 4 + 1] = col[1];
+                        d[k * 4 + 2] = col[2];
+                    }
+                }
+
+            buffer.putImageData(data, 0, 0);
         }
-        
-        buffer.putImageData(data, 0,0);
-    }
-    
-    function TileRenderer(z, target){
-        this.z = z;
-        this.target = target;
-        this.buffer = canvas(24, 21);
-        
-        this.buffer.scale(1, -1);
-        this.buffer.canvas.style.display = 'none';
-        
-        renderCell(this.buffer, 1);
-    }
-    
-    TileRenderer.prototype.pos = function(ox, oy, i, j){
-        
-        var x = j*20-i*16;
-        var y = i*14+j*5;
-        
-        return [ox+x*this.z, oy+y*this.z];
-    }
-    
-    TileRenderer.prototype.render = function(ox, oy, i, j, v){
-        this.target.imageSmoothingEnabled = false;
-        this.target.mozImageSmoothingEnabled = false;
-        this.target.webkitImageSmoothingEnabled = false;
-        this.target.msImageSmoothingEnabled = false;
-        
-        colorize(this.buffer, v);
-        
-        var pos = this.pos(ox, oy, i, j);
-        
-        var z = this.z;
-        var w = this.buffer.canvas.width;
-        var h = this.buffer.canvas.height;
-        
-        this.target.drawImage(this.buffer.canvas,
-                0, 0, w, h,
-                pos[0]-12*z, pos[1]-10*z, w*z, h*z
-            );
-    }
-    
-    var rows = 14;
-    var cols = 21;
-    
-    var ox =-500, oy=-550;
-    
-    var r = new TileRenderer(4, ctx);
-    
-    var bc = Math.random()*360;
-    
-    
-    
-    function regen( rows, cols){
-        var cells = [];
-    for(var i=0;i<rows;++i){
-        var row = [];
-        for(var j=0;j<cols;++j){
-            row.push(new Cell(
-                    vp.contains(r.pos(ox, oy, i, j))
-                    ? adjust(hcy2rgb(bc+Math.random()*20, 1, .5))
-                    :null)
+
+        function TileRenderer(z, target) {
+            this.z = z;
+            this.target = target;
+            this.buffer = canvas(24, 21);
+
+            this.buffer.scale(1, -1);
+            this.buffer.canvas.style.display = 'none';
+
+            renderCell(this.buffer, 1);
+        }
+
+        TileRenderer.prototype.pos = function (ox, oy, i, j) {
+
+            var x = j * 20 - i * 16;
+            var y = i * 14 + j * 5;
+
+            return [ox + x * this.z, oy + y * this.z];
+        }
+
+        TileRenderer.prototype.render = function (ox, oy, i, j, v) {
+            this.target.imageSmoothingEnabled = false;
+            this.target.mozImageSmoothingEnabled = false;
+            this.target.webkitImageSmoothingEnabled = false;
+            this.target.msImageSmoothingEnabled = false;
+
+            colorize(this.buffer, v);
+
+            var pos = this.pos(ox, oy, i, j);
+
+            var z = this.z;
+            var w = this.buffer.canvas.width;
+            var h = this.buffer.canvas.height;
+
+            this.target.drawImage(this.buffer.canvas,
+                    0, 0, w, h,
+                    pos[0] - 12 * z, pos[1] - 10 * z, w * z, h * z
                 );
         }
-        cells.push(row);
-    }
-    
-    return cells;
-    }
-    
-    var cells = regen(rows, cols)
-    
 
-    function tick(){
-        vp.clear();
-        
-        for(var i=0;i<cells.length;++i)
-        for(var j=0;j<cells[i].length;++j){
-            var v = cells[i][j].value;
-            if(v!==null)
-            r.render(ox, oy, i, j, v);
-            var pos = r.pos(ox, oy, i, j);
-            ctx.strokeStyle='white'
-            //ctx.strokeRect(pos[0], pos[1], .5, .5);
+        var rows = 14;
+        var cols = 21;
+
+        var ox = -500, oy = -550;
+
+        var r = new TileRenderer(4, ctx);
+
+        var bc = Math.random() * 360;
+
+
+
+        function regen(rows, cols) {
+            var cells = [];
+            for (var i = 0; i < rows; ++i) {
+                var row = [];
+                for (var j = 0; j < cols; ++j) {
+                    row.push(new Cell(
+                            vp.contains(r.pos(ox, oy, i, j))
+                            ? adjust(hcy2rgb(bc + Math.random() * 20, 1, .5))
+                            : null)
+                        );
+                }
+                cells.push(row);
+            }
+
+            return cells;
         }
-    }
-    
-    function Cell(value){
-        this.value = value;
-    }
-   
-    function renderCell(ctx, s){
-        // list of columns: [offset, height]
-        var def = [[0,1], [0, 4], [0,6], [1, 8], [1,9], [1,8], [1,7], [1,6], [1,5], [2, 3], [2,2], [2,1]];
-        
-        function renderDef(ox, oy, dx, dy){
-            def.forEach(function(col, i){
-                ctx.fillRect(ox+i*dx, oy+col[0]*dy, dx, col[1]*dy);
-            });
+
+        var cells = regen(rows, cols)
+
+
+        function tick() {
+            vp.clear();
+
+            for (var i = 0; i < cells.length; ++i)
+                for (var j = 0; j < cells[i].length; ++j) {
+                    var v = cells[i][j].value;
+                    if (v !== null)
+                        r.render(ox, oy, i, j, v);
+                    var pos = r.pos(ox, oy, i, j);
+                    ctx.strokeStyle = 'white'
+                    //ctx.strokeRect(pos[0], pos[1], .5, .5);
+                }
         }
-        
-        ctx.save();
-        ctx.translate(12*s,-11*s)
-        
-        ctx.fillStyle='#aba';
-        renderDef(-12*s,-2*s,s,s);
-        renderDef(0, s, s, s);
-        renderDef(-4*s, -10*s, s, s);
-        
-        ctx.fillStyle='#9a9';
-        ctx.scale(-1, -1);
-                
-        renderDef(-12*s,-3*s,s,s);
-        renderDef(0, 0, s, s);
-        renderDef(-4*s, -11*s, s, s);
-        
-        ctx.restore();
-    }
-    
+
+        function Cell(value) {
+            this.value = value;
+        }
+
+        function renderCell(ctx, s) {
+            // list of columns: [offset, height]
+            var def = [[0, 1], [0, 4], [0, 6], [1, 8], [1, 9], [1, 8], [1, 7], [1, 6], [1, 5], [2, 3], [2, 2], [2, 1]];
+
+            function renderDef(ox, oy, dx, dy) {
+                def.forEach(function (col, i) {
+                    ctx.fillRect(ox + i * dx, oy + col[0] * dy, dx, col[1] * dy);
+                });
+            }
+
+            ctx.save();
+            ctx.translate(12 * s, -11 * s)
+
+            ctx.fillStyle = '#aba';
+            renderDef(-12 * s, -2 * s, s, s);
+            renderDef(0, s, s, s);
+            renderDef(-4 * s, -10 * s, s, s);
+
+            ctx.fillStyle = '#9a9';
+            ctx.scale(-1, -1);
+
+            renderDef(-12 * s, -3 * s, s, s);
+            renderDef(0, 0, s, s);
+            renderDef(-4 * s, -11 * s, s, s);
+
+            ctx.restore();
+        }
+
     </script>
 
 </body>
