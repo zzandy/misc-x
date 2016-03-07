@@ -35,6 +35,7 @@
         }
     </script>
 
+    <!-- Colors -->
     <script type="text/javascript">
 
         (function ($) {
@@ -86,6 +87,7 @@
         })(window);
     </script>
 
+    <!-- Render loop -->
     <script type="text/javascript">
         function RenderLoop(frame) {
             this.frame = frame;
@@ -98,13 +100,10 @@
             var self = this;
             var onFrame = function () {
                 if (self.isRunning) {
-
-
                     self.frame();
                     window.requestAnimationFrame(onFrame);
                 }
             };
-
 
             window.requestAnimationFrame(onFrame);
         }
@@ -114,6 +113,7 @@
         }
     </script>
 
+    <!-- Viewport -->
     <script type="text/javascript">
         function Viewport(ctx) {
             this.ctx = ctx;
@@ -195,6 +195,79 @@
 
     </script>
 
+    <!-- Tile renderer -->
+    <script type="text/javascript">
+        (function ($) {
+
+            $.TileRenderer = function (z, target) {
+                this.z = z;
+                this.target = target;
+                this.buffer = canvas(24, 21);
+
+                this.buffer.scale(1, -1);
+                //this.buffer.canvas.style.display = 'none';
+
+                renderCell(this.buffer, 1);
+            }
+
+            TileRenderer.prototype.pos = function (ox, oy, i, j) {
+
+                var x = j * 20 - i * 16;
+                var y = i * 14 + j * 5;
+
+                return [ox + x * this.z, oy + y * this.z];
+            }
+
+            TileRenderer.prototype.render = function (ox, oy, i, j, v) {
+                this.target.imageSmoothingEnabled = false;
+                this.target.mozImageSmoothingEnabled = false;
+                this.target.webkitImageSmoothingEnabled = false;
+                this.target.msImageSmoothingEnabled = false;
+
+                colorize(this.buffer, v);
+
+                var pos = this.pos(ox, oy, i, j);
+
+                var z = this.z;
+                var w = this.buffer.canvas.width;
+                var h = this.buffer.canvas.height;
+
+                this.target.drawImage(this.buffer.canvas,
+                        0, 0, w, h,
+                        pos[0] - 12 * z, pos[1] - 10 * z, w * z, h * z
+                    );
+            }
+
+            function renderCell(ctx, s) {
+                // list of columns: [offset, height]
+                var def = [[0, 1], [0, 4], [0, 6], [1, 8], [1, 9], [1, 8], [1, 7], [1, 6], [1, 5], [2, 3], [2, 2], [2, 1]];
+
+                function renderDef(ox, oy, dx, dy) {
+                    def.forEach(function (col, i) {
+                        ctx.fillRect(ox + i * dx, oy + col[0] * dy, dx, col[1] * dy);
+                    });
+                }
+
+                ctx.save();
+                ctx.translate(12 * s, -11 * s)
+
+                ctx.fillStyle = '#aba';
+                renderDef(-12 * s, -2 * s, s, s);
+                renderDef(0, s, s, s);
+                renderDef(-4 * s, -10 * s, s, s);
+
+                ctx.fillStyle = '#9a9';
+                ctx.scale(-1, -1);
+
+                renderDef(-12 * s, -3 * s, s, s);
+                renderDef(0, 0, s, s);
+                renderDef(-4 * s, -11 * s, s, s);
+
+                ctx.restore();
+            }
+        })(window);
+    </script>
+
     <script type="text/javascript">
         var ctx = fullscreenCanvas();
 
@@ -226,45 +299,6 @@
                 }
 
             buffer.putImageData(data, 0, 0);
-        }
-
-        function TileRenderer(z, target) {
-            this.z = z;
-            this.target = target;
-            this.buffer = canvas(24, 21);
-
-            this.buffer.scale(1, -1);
-            this.buffer.canvas.style.display = 'none';
-
-            renderCell(this.buffer, 1);
-        }
-
-        TileRenderer.prototype.pos = function (ox, oy, i, j) {
-
-            var x = j * 20 - i * 16;
-            var y = i * 14 + j * 5;
-
-            return [ox + x * this.z, oy + y * this.z];
-        }
-
-        TileRenderer.prototype.render = function (ox, oy, i, j, v) {
-            this.target.imageSmoothingEnabled = false;
-            this.target.mozImageSmoothingEnabled = false;
-            this.target.webkitImageSmoothingEnabled = false;
-            this.target.msImageSmoothingEnabled = false;
-
-            colorize(this.buffer, v);
-
-            var pos = this.pos(ox, oy, i, j);
-
-            var z = this.z;
-            var w = this.buffer.canvas.width;
-            var h = this.buffer.canvas.height;
-
-            this.target.drawImage(this.buffer.canvas,
-                    0, 0, w, h,
-                    pos[0] - 12 * z, pos[1] - 10 * z, w * z, h * z
-                );
         }
 
         var rows = 14;
@@ -316,33 +350,7 @@
             this.value = value;
         }
 
-        function renderCell(ctx, s) {
-            // list of columns: [offset, height]
-            var def = [[0, 1], [0, 4], [0, 6], [1, 8], [1, 9], [1, 8], [1, 7], [1, 6], [1, 5], [2, 3], [2, 2], [2, 1]];
-
-            function renderDef(ox, oy, dx, dy) {
-                def.forEach(function (col, i) {
-                    ctx.fillRect(ox + i * dx, oy + col[0] * dy, dx, col[1] * dy);
-                });
-            }
-
-            ctx.save();
-            ctx.translate(12 * s, -11 * s)
-
-            ctx.fillStyle = '#aba';
-            renderDef(-12 * s, -2 * s, s, s);
-            renderDef(0, s, s, s);
-            renderDef(-4 * s, -10 * s, s, s);
-
-            ctx.fillStyle = '#9a9';
-            ctx.scale(-1, -1);
-
-            renderDef(-12 * s, -3 * s, s, s);
-            renderDef(0, 0, s, s);
-            renderDef(-4 * s, -11 * s, s, s);
-
-            ctx.restore();
-        }
+        
 
     </script>
 
