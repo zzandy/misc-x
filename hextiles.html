@@ -4,7 +4,7 @@
 
 <head>
     <meta charset="utf-8" />
-    <title></title>
+    <title>Hextiles</title>
     <style type="text/css">
         html {
             background-color: #262926;
@@ -115,57 +115,66 @@
 
     <!-- Viewport -->
     <script type="text/javascript">
-        function Viewport(ctx) {
-            this.ctx = ctx;
-            this.stack = [];
 
-            this.ox = this.oy = 0;
-            this.width = ctx.canvas.width;
-            this.height = ctx.canvas.height;
-        }
+        (function ($) {
+            $.Viewport = function (ctx) {
+                this.ctx = ctx;
+                this.stack = [];
 
-        Viewport.prototype.clear = function () {
-            this.ctx.clearRect(this.ox, this.oy, this.width, this.height);
-        }
+                this.ox = this.oy = 0;
+                this.width = ctx.canvas.width;
+                this.height = ctx.canvas.height;
+            }
 
-        Viewport.prototype.fill = function (fillStyle) {
-            if (fillStyle !== undefined)
-                this.ctx.fillStyle = fillStyle;
+            $.Viewport.prototype.clear = function () {
+                this.ctx.clearRect(this.ox, this.oy, this.width, this.height);
+            }
 
-            this.ctx.fillRect(this.ox, this.oy, this.width, this.height);
-        }
+            $.Viewport.prototype.fill = function (fillStyle) {
+                if (fillStyle !== undefined)
+                    this.ctx.fillStyle = fillStyle;
 
-        Viewport.prototype.scale = function (sx, sy) {
-            this.ctx.scale(sx, sy);
-            this.ox *= sx;
-            this.width *= sx;
-            this.oy *= sy;
-            this.height *= sy;
-        }
+                this.ctx.fillRect(this.ox, this.oy, this.width, this.height);
+            }
 
-        Viewport.prototype.translate = function (dx, dy) {
-            this.ctx.translate(dx, dy);
+            $.Viewport.prototype.scale = function (sx, sy) {
+                this.ctx.scale(sx, sy);
+                this.ox *= sx;
+                this.width *= sx;
+                this.oy *= sy;
+                this.height *= sy;
+            }
 
-            this.ox -= dx;
-            this.oy -= dy;
-        }
+            $.Viewport.prototype.translate = function (dx, dy) {
+                this.ctx.translate(dx, dy);
 
-        Viewport.prototype.save = function () {
-            this.ctx.save();
-            this.stack.push(this.ox, this.oy, this.width, this.height);
-        }
+                this.ox -= dx;
+                this.oy -= dy;
+            }
 
-        Viewport.prototype.restore = function () {
-            this.ctx.restore();
-            this.height = this.stack.pop();
-            this.width = this.stack.pop();
-            this.oy = this.stack.pop();
-            this.ox = this.stack.pop();
-        }
+            $.Viewport.prototype.save = function () {
+                this.ctx.save();
+                this.stack.push(this.ox, this.oy, this.width, this.height);
+            }
 
-        var drop = false;
+            $.Viewport.prototype.restore = function () {
+                this.ctx.restore();
+                this.height = this.stack.pop();
+                this.width = this.stack.pop();
+                this.oy = this.stack.pop();
+                this.ox = this.stack.pop();
+            }
 
-        Viewport.prototype.contains = function (pos) {
+            $.Viewport.prototype.contains = function (pos) {
+                var x = pos[0];
+                var y = pos[1];
+
+                return between(this.ox, this.ox + this.width, x)
+                && between(this.oy, this.oy + this.height, y)
+                && minGap(this.ox, this.ox + this.width, x, 30)
+                && minGap(this.oy, this.oy + this.height, y, 20);
+            }
+
             function between(a, b, c) {
                 return a > b
                 ? (b < c && c < a)
@@ -176,22 +185,7 @@
                 return Math.min(Math.abs(c - a), Math.abs(c - b)) >= d;
             }
 
-            var x = pos[0];
-            var y = pos[1];
-
-            //     console.log(x, y,
-            //         [this.ox , this.ox+this.width],[this.oy, this.oy+this.height],
-            //
-            //         between(this.ox, this.ox + this.width, x),
-            //         between(this.oy, this.oy+this.height, y));
-            //
-
-
-            return between(this.ox, this.ox + this.width, x)
-            && between(this.oy, this.oy + this.height, y)
-            && minGap(this.ox, this.ox + this.width, x, 10)
-            && minGap(this.oy, this.oy + this.height, y, 50);
-        }
+        })(window);
 
     </script>
 
@@ -205,19 +199,19 @@
                 this.buffer = canvas(24, 21);
 
                 this.buffer.scale(1, -1);
-                //this.buffer.canvas.style.display = 'none';
+                this.buffer.canvas.style.display = 'none';
 
                 renderCell(this.buffer, 1);
             }
 
-            TileRenderer.prototype.pos = function (ox, oy, i, j) {
+            $.TileRenderer.prototype.pos = function (ox, oy, i, j) {
                 var x = j * 20 - i * 16;
                 var y = i * 14 + j * 5;
 
                 return [ox + x * this.z, oy + y * this.z];
             }
 
-            TileRenderer.prototype.render = function (ox, oy, i, j, v) {
+            $.TileRenderer.prototype.render = function (ox, oy, i, j, v) {
                 this.target.imageSmoothingEnabled = false;
                 this.target.mozImageSmoothingEnabled = false;
                 this.target.webkitImageSmoothingEnabled = false;
@@ -250,12 +244,10 @@
                 ctx.save();
                 ctx.translate(12 * s, -11 * s)
 
-                ctx.fillStyle = '#aba';
                 renderDef(-12 * s, -2 * s, s, s);
                 renderDef(0, s, s, s);
                 renderDef(-4 * s, -10 * s, s, s);
 
-                ctx.fillStyle = '#9a9';
                 ctx.scale(-1, -1);
 
                 renderDef(-12 * s, -3 * s, s, s);
@@ -300,16 +292,27 @@
             buffer.putImageData(data, 0, 0);
         }
 
-        var rows = 14;
-        var cols = 21;
-
-        var ox = -500, oy = -550;
-
         var r = new TileRenderer(4, ctx);
 
+        function guess(vp, dx, dy) {
+            var rows = 16;
+            var cols = 16;
+
+            var ox = -(((rows - 1) * dx) / 2 | 0);
+            var oy = -(((cols - 1) * dy) / 2 | 0);
+
+            return [ox, oy, rows, cols];
+        }
+
+        var data = guess(vp, r.z * 4, r.z * 19);
+
+        var ox = data[0];
+        var oy = data[1];
+        var rows = data[2];
+        var cols = data[3];
+
         var bc = Math.random() * 360;
-
-
+        var nocolor = null;//[255, 0, 255];
 
         function regen(rows, cols) {
             var cells = [];
@@ -318,8 +321,8 @@
                 for (var j = 0; j < cols; ++j) {
                     row.push(new Cell(
                             vp.contains(r.pos(ox, oy, i, j))
-                            ? adjust(hcy2rgb(bc + Math.random() * 20, 1, .5))
-                            : null)
+                            ? adjust(hcy2rgb(bc + 10 * Math.random() * 5, .5, .3))
+                            : nocolor)
                         );
                 }
                 cells.push(row);
@@ -330,7 +333,6 @@
 
         var cells = regen(rows, cols)
 
-
         function tick() {
             vp.clear();
 
@@ -339,8 +341,9 @@
                     var v = cells[i][j].value;
                     if (v !== null)
                         r.render(ox, oy, i, j, v);
+
                     var pos = r.pos(ox, oy, i, j);
-                    ctx.strokeStyle = 'white'
+                    //ctx.strokeStyle = 'white'
                     //ctx.strokeRect(pos[0], pos[1], .5, .5);
                 }
         }
@@ -348,8 +351,6 @@
         function Cell(value) {
             this.value = value;
         }
-
-        
 
     </script>
 
