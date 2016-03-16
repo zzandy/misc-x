@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
 
@@ -177,8 +177,8 @@
 
             function between(a, b, c) {
                 return a > b
-                ? (b < c && c < a)
-                : (a < c && c < b)
+                    ? (b < c && c < a)
+                    : (a < c && c < b);
             }
 
             function minGap(a, b, c, d) {
@@ -331,7 +331,8 @@
             return cells;
         }
 
-        var cells = regen(rows, cols)
+        var cells = regen(rows, cols);
+        var cursor = [0, 0];
 
         function tick() {
             vp.clear();
@@ -346,11 +347,24 @@
                     //ctx.strokeStyle = 'white'
                     //ctx.strokeRect(pos[0], pos[1], .5, .5);
                 }
+
+            ctx.strokeRect(cursor[0]|0, (cursor[1]|0) - 500, 0, 1000);
+            ctx.strokeRect((cursor[0]|0) - 500, cursor[1] |0, 1000, 0);
         }
 
         function Cell(value) {
             this.value = value;
         }
+
+        ctx.canvas.addEventListener('mousemove', function(e) {
+            var x = e.offsetX;
+            var y = e.offsetY;
+
+            cursor = [
+                vp.ox + x * vp.width / ctx.canvas.width,
+                vp.oy + y * vp.height / ctx.canvas.height
+            ];
+        });
 
     </script>
 
