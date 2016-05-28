@@ -5,7 +5,7 @@
     <meta charset="utf-8" />
     <title>Halftone</title>
 </head>
-<body>
+<body style="background:black">
     <script type="text/javascript">
         function dataUrlToImage(src){
             return new Promise(function(resolve, reject){
@@ -152,48 +152,47 @@
                             fillCircle(ctx, cx, cy, r);
                         }
                     }
-
-                    //window.requestAnimationFrame(render);
                 };
 
                 render()
             });
         }
         
+        var animate = false;
+        
         function renderHalftone(source, targetCanvas, sourceSize, targetSize, numSamplesX, mode){
             var kernelSize = sourceSize.w / numSamplesX | 0;
+            
+            console.log(kernelSize)
             
             if(kernelSize < 1)
                 throw 'Kernel is way to small.';
             
             var kernel = makeKernel(kernelSize);
             
-            targetCanvas.fillStyle = 'white';
-            targetCanvas.fillRect(0,0,targetSize.w, targetSize.h);
             targetCanvas.fillStyle = 'black';
+            targetCanvas.fillRect(0,0,targetSize.w, targetSize.h);
+            targetCanvas.fillStyle = 'white';
             
-            var sdx=kernelSize, sdy=kernelSize, tdx, tdy, sidx=0, tidx=0;
+            var sdx=kernelSize, sdy=kernelSize, tdx = kernelSize * targetSize.w / sourceSize.w, tdy, sidx=0, tidx=0;
             var sq = Math.sqrt(3)/2;
             
             if(mode == hex){
                 sdx = kernelSize;
-                sdy = kernelSize * sq | 0; 
+                sdy = sq * sdx; 
                 
-                tdx = targetSize.w / numSamplesX;
-                tdy = sq * targetSize.w / numSamplesX;
+                tdy = sq * tdx;
                 
-                sidx = sdx / 2 | 0;
+                sidx = sdx / 2;
                 tidx = tdx / 2;
             }
             else if(mode == rect){
-                tdx = tdy = targetSize.w / numSamplesX | 0;
-                sdx = sdy = kernelSize;
+                tdy = tdx;
+                sdy = sdx;
             }
             
-            console.log(sdx, sdy, tdx, tdy)
-            
-            if(sdx<1 || sdy<1 || tdx<1 || tdy< 1)
-                throw 'kernel is too small';
+            console.log(sdx, sdy, tdx, tdy);
+            console.log(sourceSize.w / sdx, targetSize.w / tdx)
             
             var sx = 0;
             var sy = 0;
@@ -208,7 +207,7 @@
             while(sy < sourceSize.h - sdy){
                 
                 //kernel, data, x, y, kernelWidth, dataWidth
-                var val = 1- applyKernel(kernel, source, sx, sy, kernelSize, sourceSize.w);
+                var val =  applyKernel(kernel, source, sx|0, sy|0, kernelSize, sourceSize.w);
                 
                 minmax = [
                     Math.min(minmax[0], val),
@@ -238,15 +237,21 @@
             tx = 0;
             ty = 0;
             
-            adj = 1.1;
+            var adj = 1.1;
+            var adjo = adj;
+            
             var scale = minmax[1] - minmax[0];
             
             // render
             while(sy < sourceSize.h - sdy){
                 
-                var val = 1- applyKernel(kernel, source, sx, sy, kernelSize, sourceSize.w);
+                var val =  applyKernel(kernel, source, sx|0, sy|0, kernelSize, sourceSize.w);
                 
                 val = (val - minmax[0]) / scale;
+                
+                if(animate){
+                    adj = adjo*( .8 + .4 * Math.random());
+                }
                 
                 fillCircle(targetCanvas, tx, ty, adj * val * tdx / 2 )
 
@@ -273,17 +278,18 @@
         function convertSize(target, img){
             
             var pixelWidth = document.body.clientWidth;
-            var pixelHeight = document.body.clientHeight;
+            var pixelHeight = window.innerHeight;
             
             if(target.size.w == null){
                 pixelHeight *= target.size.h;
                 pixelWidth = pixelHeight * img.width / img.height;
-                
             }
             else if (target.size.h == null){
                 pixelWidth *= target.size.w;
                 pixelHeight = pixelWidth * img.height / img.width;
             }
+            
+            console.log(pixelWidth, pixelHeight)
             
             return {
                 size:{
@@ -307,18 +313,18 @@
             }
         }
         
-        function startHalftone(source, targetCanvas, sourceSize, targetSize, numSamplesX, mode)
+        function animateHalftone(source, targetCanvas, sourceSize, targetSize, numSamplesX, mode)
         {
             renderHalftone(source, targetCanvas, sourceSize, targetSize, numSamplesX, mode);
             
             window.requestAnimationFrame(function(){
-                startHalftone(source, targetCanvas, sourceSizee, targetSize, numSamplesX, mode);
+                animateHalftone(source, targetCanvas, sourceSize, targetSize, numSamplesX, mode);
             });
         }
 
-        var animate = false;
+        
         var mode = hex;
-        var numSamplesX = 200;
+        var numSamplesX = 150;
         
         var source = {
             offset:{x:0, y:0},
@@ -326,10 +332,10 @@
         };
         
         var target = {
-            size: {w:.5,h:null}
+            size: {w:null,h:1}
         };
         
-        function launchHalftone(srcCanvas){
+        function start(srcCanvas){
             var sourceActual = convertSource(source, srcCanvas.canvas);
             var targetActual = convertSize(target, srcCanvas.canvas);
             var targetCanvas = makeCanvas(targetActual.size.w, targetActual.size.h).getContext('2d');
@@ -341,14 +347,14 @@
                                 .data;
             
             if(animate)
-                startHalftone(data, targetCanvas, sourceActual.size, targetActual.size, numSamplesX, mode);
+                animateHalftone(data, targetCanvas, sourceActual.size, targetActual.size, numSamplesX, mode);
             else
                 renderHalftone(data, targetCanvas, sourceActual.size, targetActual.size, numSamplesX, mode);
         }
 
         dataUrlToImage(imgdata)
             .then(imageToCanvas)
-            .then(launchHalftone)
+            .then(start)
             .catch(function(e){console.error(e)});
 
     </script>
