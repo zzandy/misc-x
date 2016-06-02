@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
@@ -12,11 +11,12 @@
     <script id="vertex" type="x-shader/x-vertex">
         attribute vec4 a_position;
         attribute vec4 a_color;
-        uniform mat4 u_matrix;
+        uniform mat4 u_view;
+        uniform mat4 u_trans;
         varying vec4 v_color;
 
         void main(){
-        gl_Position = u_matrix * a_position;
+        gl_Position = u_view * u_trans * a_position;
         v_color = a_color;
         }
     </script>
@@ -230,7 +230,6 @@
             return mul(cam, translate3d(pos), rotate3d(rot), scale3d(scale));
         }
 
-
         function cross(a, b) {
             return [a[1] * b[2] - a[2] * b[1],
                 a[2] * b[0] - a[0] * b[2],
@@ -327,7 +326,6 @@
 
     <!-- helpers -->
     <script type="text/javascript">
-
         function rnd(a, b) {
 
             if (a instanceof Array) {
@@ -387,6 +385,109 @@
                 quad(g, c, b, f),
                 quad(h, d, c, g),
                 quad(g, f, e, h)
+            );
+        }
+
+        function makeDodecahedron2(a) {
+
+            var s3 = Math.sqrt(3);
+            var s6 = Math.sqrt(6);
+
+            var z = a * 3 / 2 / s6;
+            var x = a / 2;
+            var y = a / s3;
+            var y2 = a / 2 / s3;
+            var z2 = a / s6;
+            var z3 = a / 2 / s6;
+
+            var v = [
+                [0, 0, -z],
+                [-x, -y2, -z2],
+                [0, -y, -z3],
+                [x, -y2, -z2],
+                [x, y2, -z3],
+                [0, y, -z2],
+                [-x, y2, -z3],
+                [-x, -y2, z3],
+                [0, -y, z2],
+                [x, -y2, z3],
+                [x, y2, z2],
+                [0, y, z3],
+                [-x, y2, z2],
+                [0, 0, z]
+            ];
+
+            function tri(a, b, c) {
+                return a.concat(b, c);
+            }
+
+            function quad(a, b, c, d) {
+                return tri(v[a], v[b], v[c]).concat(tri(v[c], v[d], v[a]));
+            }
+
+            var m = [].concat(
+                quad(0, 3, 2, 1),
+                quad(0, 5, 4, 3),
+                quad(0, 1, 6, 5),
+                quad(2, 8, 7, 1),
+                quad(2, 3, 9, 8),
+                quad(4, 10, 9, 3),
+                quad(4, 5, 11, 10),
+                quad(6, 12, 11, 5),
+                quad(6, 1, 7, 12),
+                quad(7, 8, 13, 12),
+                quad(9, 10, 13, 8),
+                quad(11, 12, 13, 10)
+            );
+
+            return m;
+        }
+
+        function makeDodecahedron(a){
+
+
+            var v = [
+                [0,0,-2*a],
+                [a, a, -a],
+                [a, -a, -a],
+                [-a, a, -a],
+                [-a, -a, -a],
+
+                [0,-2*a,0],
+                [0,2*a,0],
+                [-2*a,0,0],
+                [2*a,0,0],
+
+                [a, a, a],
+                [a, -a, a],
+                [-a, a, a],
+                [-a, -a, a],
+
+                [0,0,2*a]
+            ];
+
+            function tri(a, b, c) {
+                return a.concat(b, c);
+            }
+
+            function quad(a, b, c, d) {
+                return tri(v[a], v[b], v[c]).concat(tri(v[c], v[d], v[a]));
+            }
+
+            return [].concat(
+                quad(0, 1, 8, 2),
+                quad(0, 3, 6, 1),
+                quad(0, 4, 7, 3),
+                quad(0, 2, 5, 4),
+                quad(2,8,10,5),
+                quad(1,6,9,8),
+                quad(3,7,11,6),
+                quad(4,5,12,7),
+
+                quad(5,10,13,12),
+                quad(8,9,13,10),
+                quad(6,11,13,9),
+                quad(7,12,13,11)
             );
         }
 
@@ -498,6 +599,25 @@
             for (var i = 0; i < geometry.length / 3; ++i) {
                 var c = i < 12 * 3 ? c = prime[(i / 12) | 0] : cls[i % cls.length];
                 colors = colors.concat(c.concat(c, c));
+            }
+
+            return colors;
+        }
+
+        function makeQuadColors(geometry) {
+            var colors = new Float32Array(geometry.length * 3);
+
+            var i = 0;
+            while (i < colors.length) {
+                var c = hcy(Math.random() * 360, 1, .5);
+
+                for (var j = 0; j < 6 && (i + j * 3 < colors.length); ++j) {
+                    colors[i + j*3 + 0] = c[0];
+                    colors[i + j*3 + 1] = c[1];
+                    colors[i + j*3 + 2] = c[2];
+                }
+
+                i += 6 * 3;
             }
 
             return colors;
@@ -619,7 +739,8 @@
             this.colbuffer = null;
             this.pos_attr = null;
             this.color_attr = null;
-            this.matrix = null;
+            this.trans = null;
+            this.view = null;
         }
 
         Mesh.prototype.load = function (gl) {
@@ -641,7 +762,8 @@
 
             this.pos_attr = gl.getAttribLocation(p, 'a_position');
             this.color_attr = gl.getAttribLocation(p, 'a_color');
-            this.matrix = gl.getUniformLocation(p, 'u_matrix');
+            this.trans = gl.getUniformLocation(p, 'u_trans');
+            this.view = gl.getUniformLocation(p, 'u_view');
         }
 
         Mesh.prototype.draw = function (cam) {
@@ -659,7 +781,10 @@
             gl.enableVertexAttribArray(this.color_attr);
             gl.vertexAttribPointer(this.color_attr, 3, gl.FLOAT, false, 0, 0);
 
-            gl.uniformMatrix4fv(this.matrix, false, projection(cam, this.pos, vectorAngleQuaternion(this.rotv, this.rota), this.scale));
+            gl.uniformMatrix4fv(this.view, false, cam);
+            gl.uniformMatrix4fv(this.trans, false, mul(translate3d(this.pos),
+                rotate3d(vectorAngleQuaternion(this.rotv, this.rota)),
+                scale3d(this.scale)));
 
             gl.drawArrays(gl.TRIANGLES, 0, this.geometry.length / 3);
         }
@@ -667,11 +792,11 @@
 
     <script type="text/javascript">
 
-        var fov = 15 * deg;
+        var fov = 45 * deg;
 
-        var cam = new Camera([0, -50, 500],
+        var cam = new Camera([0, 0, 100],
         [0, 1, 0],
-        [0, 0, 20]);
+        [0, 0, 5]);
 
         function Camera(pos, up, lookat) {
             this.pos = pos;
@@ -696,26 +821,66 @@
             var hexSide = 7;
             var hexq = 0;
 
-            load(new Mesh(
-                document.getElementById('vertex').text,
-                document.getElementById('fragment').text,
-                makeHex([0, 0, 0], hexSide, 10, hexq), makeHexColors(hexSide),
-                [10, 0, 0]
-            ));
+            var vertex = document.getElementById('vertex').text;
+            var fragment = document.getElementById('fragment').text;
 
-            load(new Mesh(
-                document.getElementById('vertex').text,
-                document.getElementById('fragment').text,
-                makeHex([0, 0, 0], hexSide, 10, hexq), makeHexColors(hexSide),
-                [-10, 0, 0]
-            ));
+            // load(new Mesh(
+            //     document.getElementById('vertex').text,
+            //     document.getElementById('fragment').text,
+            //     makeHex([0, 0, 0], hexSide, 10, hexq), makeHexColors(hexSide),
+            //     [0, 0, 0]
+            // ));
 
-            load(new Mesh(
-                document.getElementById('vertex').text,
-                document.getElementById('fragment').text,
-                makeGeometry(10), makeColors(makeGeometry(10)),
-                [0, 0, 10]
-            ));
+            // load(new Mesh(
+            //     document.getElementById('vertex').text,
+            //     document.getElementById('fragment').text,
+            //     makeHex([0, 0, 0], hexSide, 10, hexq), makeHexColors(hexSide),
+            //     [0, 0, 0]
+            // ));
+
+            // load(new Mesh(
+            //     document.getElementById('vertex').text,
+            //     document.getElementById('fragment').text,
+            //     makeGeometry(10), makeColors(makeGeometry(10)),
+            //     [0, 0, 10]
+            // ));
+
+            var posAnalytic = [0, 0, 5];
+            cam.lookat = posAnalytic;
+
+            load(new Mesh(vertex, fragment, g = makeDodecahedron2(5), makeQuadColors(g), posAnalytic));
+
+            load(new Mesh(vertex, fragment, g = makeDodecahedron2(5), makeQuadColors(g), [5,0,5]));
+            load(new Mesh(vertex, fragment, g = makeDodecahedron2(5), makeQuadColors(g), [-5,0,5]));
+
+
+            var k = Math.sqrt(3) / 2;
+            load(new Mesh(vertex, fragment, g = makeDodecahedron2(5), makeQuadColors(g), [5/2,k*5,5]));
+            load(new Mesh(vertex, fragment, g = makeDodecahedron2(5), makeQuadColors(g), [5/2,-k*5,5]));
+            load(new Mesh(vertex, fragment, g = makeDodecahedron2(5), makeQuadColors(g), [-5/2,k*5,5]));
+            load(new Mesh(vertex, fragment, g = makeDodecahedron2(5), makeQuadColors(g), [-5/2,-k*5,5]));
+
+            var a = 5;
+        
+            var s6 = Math.sqrt(6);
+            var s3 = Math.sqrt(3);
+
+            var z = 2 * a / s6;
+            var y2 = a / 2 / s3;
+            
+            load(new Mesh(vertex, fragment, g = makeDodecahedron2(5), makeQuadColors(g), [5/2,-y2,5+z]));
+
+
+            var s = .1;
+            var w = 4;
+
+            for(var i=0;i<9;++i){
+                for(var j=0;j<9;++j) {
+                    load(new Mesh(vertex, fragment, makeBox(-s, -s, -s, 2 * s, 2 * s, 2 * s),
+                        makeColors(makeBox(-1, -1, -1, 2, 2, 2)),
+                        [(i - 4) * w, (j - 4) * w, 0]));
+                }
+            }
 
             return function (delta) {
                 transitions.forEach(function (transition) { transition.apply(delta) });
@@ -723,9 +888,6 @@
                 transitions = transitions.filter(function (transition) {
                     return !transition.completed;
                 });
-
-                objects[0].rota += (360 * deg / (5 * 60 * 1000)) * delta;
-                objects[1].rota -= (360 * deg / (5 * 60 * 1000)) * delta;
 
                 var pr = makePerspective(fov, aspect, 1, 100000);
                 var view = inverse(lookAt(cam.pos, cam.lookat, cam.up));
