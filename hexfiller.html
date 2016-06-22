@@ -2,53 +2,60 @@
 <html>
 <head>
     <title>---</title>
+    <style type="text/css">
+        html, body  {
+            background-color: #262626;
+        }
+    </style>
 </head>
 <body>
 
     <script type="text/javascript">
+        
+        // loop
+        (function(global){
+            'use strict';
 
-    (function(global){
-        'use strict';
+            global.makeLoop = function(fixedDelta, fixedUpdate, update){
+                var acc = 0;
 
-        global.makeLoop = function(fixedDelta, fixedUpdate, update){
-            var acc = 0;
+                return function(delta){
+                    if(delta === undefined || isNaN(delta)){
+                        delta = fixedDelta;
+                    }
 
-            return function(delta){
-                if(delta === undefined || isNaN(delta)){
-                    delta = fixedDelta;
+                    acc += delta;
+
+                    while(acc>=fixedDelta){
+                        fixedUpdate(fixedDelta);
+                        acc -= fixedDelta;
+                    }
+                    update(delta);
                 }
-
-                acc += delta;
-
-                while(acc>=fixedDelta){
-                    fixedUpdate(fixedDelta);
-                    acc -= fixedDelta;
-                }
-                update(delta);
-            }
-        }
-
-        global.loop = function(loopFunction, sheduleFunction){
-
-            var then;
-            var iteration = function(){
-                var now = new Date().getTime();
-                var delta = now - then;
-                then = now;
-
-                loopFunction(delta);
-
-                sheduleFunction(iteration);
             }
 
-            iteration();
-        }
-    }(this));
+            global.loop = function(loopFunction, sheduleFunction){
 
-</script>
+                var then;
+                var iteration = function(){
+                    var now = new Date().getTime();
+                    var delta = now - then;
+                    then = now;
+
+                    loopFunction(delta);
+
+                    sheduleFunction(iteration);
+                }
+
+                iteration();
+            }
+        }(this));
+
+    </script>
 
     <script type="text/javascript">
 
+        // canvas w/ hex
         (function(global){
             'use strict';
 
@@ -119,49 +126,50 @@
     </script>
 
     <script type="text/javascript">
-
+        
+        // Field
         (function(global){
             "use strict";
 
-        function Field(mi, mj, makeCell){
-            var body = [];
+            function Field(mi, mj, makeCell){
+                var body = [];
 
-            for(var i=0;i<mi;++i){
-                var row = [];
-                for(var j=0;j<mj;++j){
-                    row.push(makeCell(i, j));
-                }
-                body.push(row);
-            }
-
-            this.body = body;
-        }
-
-        Field.prototype.forEach = function(processCell){
-            for(var i=0;i<this.body.length;++i)
-                for(var j=0;j<this.body[i].length;++j)
-                    if(this.body[i][j] !== null)
-                        processCell(i, j, this.body[i][j]);
-        }
-
-        Field.prototype.evolve = function(processCell){
-            var body = [];
-
-            for(var i=0;i<this.body.length;++i){
-                var row = [];
-
-                for(var j=0;j<this.body[i].length;++j){
-                    var cell = this.body[i][j];
-                    row.push(cell === null ? null : processCell(i, j, cell));
+                for(var i=0;i<mi;++i){
+                    var row = [];
+                    for(var j=0;j<mj;++j){
+                        row.push(makeCell(i, j));
+                    }
+                    body.push(row);
                 }
 
-                body.push(row);
+                this.body = body;
             }
 
-            this.body = body;
-        }
+            Field.prototype.forEach = function(processCell){
+                for(var i=0;i<this.body.length;++i)
+                    for(var j=0;j<this.body[i].length;++j)
+                        if(this.body[i][j] !== null)
+                            processCell(i, j, this.body[i][j]);
+            }
 
-        global.Field = Field;
+            Field.prototype.evolve = function(processCell){
+                var body = [];
+
+                for(var i=0;i<this.body.length;++i){
+                    var row = [];
+
+                    for(var j=0;j<this.body[i].length;++j){
+                        var cell = this.body[i][j];
+                        row.push(cell === null ? null : processCell(i, j, cell));
+                    }
+
+                    body.push(row);
+                }
+
+                this.body = body;
+            }
+
+            global.Field = Field;
 
         }(this));
 
@@ -169,6 +177,7 @@
 
     <script type="text/javascript">
 
+        // SuperCell
         (function(global){
             "use strict";
 
@@ -231,11 +240,6 @@
             }
         }
 
-        var w = 5;
-        var h = 5;
-
-
-
         function getGenerator(sc, colors){
             return function(i,j){
                 return sc.contains(i, j)
@@ -253,29 +257,68 @@
         var ijorigin = sc.rank*2+1;
 
         function render(i, j, cell){
-            var s = 30;
+            var s = 50;
             var pos = hexToPix(i-ijorigin, j-ijorigin, s);
             var x = pos[0], y = pos[1];
 
             ctx.save();
             ctx.translate(x, y)
+            
+            var outer = ctx.getHexPath(.97*s);
+            var inner = ctx.getHexPath(.75*s);
+            
             ctx.fillStyle = cell;
-            ctx.fillHex(0,0,s);
-
-            ctx.fillStyle = ctx.createLinearGradient(0, s/2, 0, -s/2);
-            ctx.fillStyle.addColorStop(1, 'rgba(255,255,255, .4)');
-            ctx.fillStyle.addColorStop(.8, 'rgba(255,255,255,0)');
-            ctx.fillStyle.addColorStop(.6, 'rgba(255,255,255,0)');
-            ctx.fillStyle.addColorStop(.1, 'rgba(255,255,255, .4)');
-            ctx.fillStyle.addColorStop(0, 'rgba(255,255,255,.2)');
-
+            ctx.makePath(outer);
+            ctx.fill()
+            
             ctx.globalCompositeOperation = 'screen';
-            ctx.fillHex(0,0,s*1.01);
+            
+            var grad = ctx.createLinearGradient(0, s/2, 0, -s/2);
+            grad.addColorStop(1, 'rgba(255,255,255, .3)');
+            grad.addColorStop(.8, 'rgba(255,255,255,0)');
+            grad.addColorStop(.6, 'rgba(255,255,255,0)');
+            grad.addColorStop(.1, 'rgba(255,255,255, .4)');
+            grad.addColorStop(0, 'rgba(255,255,255,.2)');
+            
+            ctx.fillStyle = grad;
+            ctx.fill();
 
-            ctx.fillStyle = ctx.createLinearGradient(0, .7*s/2, 0, .7*-s/2);
-            ctx.fillStyle.addColorStop(1, 'rgba(255,255,255, .4)');
-            ctx.fillStyle.addColorStop(0, 'rgba(255,255,255,0)');
-            ctx.fillHex(0,0,.7*s);
+            grad = ctx.createLinearGradient(0, .7*s/2, 0, .7*-s/2);
+            grad.addColorStop(1, 'rgba(255,255,255, .4)');
+            grad.addColorStop(0, 'rgba(255,255,255,0)');
+            
+            ctx.fillStyle = grad;
+            ctx.makePath(inner);
+            ctx.fill();
+            
+            var l = outer.length;
+            var mode = ['screen', 'screen', 'screen', 'screen', 'multiply', 'multiply'];
+            var tints = [
+                'rgba(255, 255, 255, .0)', 'rgba(255, 255, 255, .0)',
+                'rgba(255, 255, 255, .2)', 'rgba(255, 255, 255, .4)',
+                'rgba(255, 255, 255, .2)', 'rgba(255, 255, 255, .1)',
+                'rgba(255, 255, 255, .0)', 'rgba(255, 255, 255, .0)',
+                'rgba(0, 0, 0, .1)', 'rgba(0, 0, 0, .3)',
+                'rgba(0, 0, 0, .3)', 'rgba(0, 0, 0, .2)'
+            ];
+            
+            for(var i=0;i<l;i+=2){
+                
+                grad = ctx.createLinearGradient(outer[i], outer[i+1], inner[(i+3)%l], inner[(i+4)%l]);
+                
+                grad.addColorStop(0, tints[i]);
+                grad.addColorStop(1, tints[i+1]);
+                
+                ctx.fillStyle = grad;
+                
+                ctx.makePath([
+                    outer[i], outer[i+1], outer[(i+2)%l], outer[(i+3)%l],
+                    inner[(i+2)%l], inner[(i+3)%l], inner[i], inner[i+1]
+                ]);
+                
+                ctx.globalCompositeOperation = mode[i/2];
+                ctx.fill();
+            }
 
             ctx.restore();
         }
