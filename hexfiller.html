@@ -231,19 +231,26 @@
 
         function rnd(){
             switch(arguments.length){
-                case 0:
-                    return Math.random();
+                
                 case 1:
                     if(arguments[0] instanceof Array)
                         return arguments[0][Math.floor(Math.random()*arguments[0].length)];
                     else return arguments[0] * Math.random();
+                case 2:
+                    return arguments[0] + Math.random() * (arguments[1] - arguments[0]);
+                case 0:
+                default:
+                    return Math.random();
             }
         }
 
         function getGenerator(sc, colors){
             return function(i,j){
                 return sc.contains(i, j)
-                    ? rnd(colors)
+                    ? {
+                        current: rnd(colors),
+                        next: null
+                      }
                     : null;
             }
         }
@@ -252,24 +259,30 @@
 
         var ctx = fullscreenCanvas();
 
-        var sc = new SuperCell(2);
+        var sc = new SuperCell(5);
         var fld = new Field(sc.width, sc.height, getGenerator(sc, colors)); 
-        var ijorigin = sc.rank*2+1;
+        var ijorigin = sc.rank*2;
 
         function render(i, j, cell){
-            var s = 50;
+            var s = 30;
             var pos = hexToPix(i-ijorigin, j-ijorigin, s);
             var x = pos[0], y = pos[1];
 
             ctx.save();
             ctx.translate(x, y)
             
-            var outer = ctx.getHexPath(.97*s);
-            var inner = ctx.getHexPath(.75*s);
+            //var outer = ctx.getHexPath(.97*s);
+            //var inner = ctx.getHexPath(.75*s);
             
-            ctx.fillStyle = cell;
-            ctx.makePath(outer);
-            ctx.fill()
+            ctx.fillStyle = cell.current;
+            ctx.beginPath();
+            ctx.arc(0,0,s/2.5,0,tau);
+            ctx.closePath();
+            //ctx.makePath(outer);
+            ctx.fill();
+            
+            ctx.restore();
+            return;
             
             ctx.globalCompositeOperation = 'screen';
             
@@ -319,35 +332,89 @@
                 ctx.globalCompositeOperation = mode[i/2];
                 ctx.fill();
             }
-
+            
             ctx.restore();
         }
-
-        loop(makeLoop(20, fixedUpdate, update), window.requestAnimationFrame);
-
+        var colorChange = new Accumulator(2000);
+        
+        
         var phase = 0;
-        var firstFixedUpdate = true;
+        
+        function Accumulator(target){
+            this.target = target;
+            this.value = 0;
+        }
+        
+        Accumulator.prototype.add = function(value){
+            this.value += value;
+            
+            if(this.value > this.target)
+            {
+                this.value -= this.target;
+                return true;
+            }
+            
+            return false;
+        }
+        
+        
+        function MovingAverage(n){
+            this.samples = new Array(n);
+            this.pointer = 0;
+        }
+        
+        MovingAverage.prototype.addSample = function(sample){
+            this.samples[this.pointer++] = sample;
+            if(this.pointer>=this.samples.length)
+                this.pointer = 0;
+        }
+        
+        MovingAverage.prototype.average = function(){
+            var res = this.samples.reduce(function(sumobj, value){return {sum: sumobj.sum + value, count: sumobj.count+1}}, {sum:0,count:0});
+            
+            return res.sum / res.count;
+        }
+        
+        var fixedFps = new MovingAverage(100);
+        var updateFps = new MovingAverage(100);
+              
+        loop(makeLoop(16, fixedUpdate, update), window.requestAnimationFrame);
+
 
         function fixedUpdate(delta){
-            if(firstFixedUpdate || firstUpdate){
-                console.log('fixed', delta);
-                firstFixedUpdate=false;
+            fixedFps.addSample(delta);
+            
+            var newTarget = null;
+            
+            if(colorChange.add(delta))  {
+                newTarget = rnd(colors);
             }
 
-            //fld.evolve(function(i, j, cell){
-            //    return rnd() < .001
-            //        ? rnd(['gold', 'teal', 'maroon'])
-            //        : cell;
-            //});
+            fld.evolve(function(i, j, cell){
+                if(cell.next && cell.next.in < delta)
+                    cell.current = cell.next.value;
+                
+                if(newTarget)   {
+                    cell.next = {
+                            value : newTarget,
+                            in: 20*(i+j) * rnd(.8, 1.2)
+                    };
+                }
+                else if(cell.next){
+                    cell.next.in -= delta;
+                }
+                
+                return cell;
+            });
         }
-
-        var firstUpdate = true;
+                
+        function reportfps(){
+            console.log('fixed: '+1000/fixedFps.average()+'; update: '+1000/updateFps.average())
+        }
+        
         function update(delta){
-            if(firstUpdate){
-                console.log('update', delta);
-                firstUpdate=false;
-            }
-
+            updateFps.addSample(delta);
+            
             ctx.clear();
             fld.forEach(render);
         }
