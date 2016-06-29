@@ -1,4 +1,3 @@
-
 public class Random{
 	constructor(private seed: number = (new Date()).getTime()){}
 
@@ -88,10 +87,10 @@ public class KgbCipher implements ICipher{
   }
   
   public Decode(ciphertext: string): string {
-  	let ciphertext = ciphertext.replace(' ', '', 'g');
+  	ciphertext = ciphertext.replace(/ /g, '');
       	
-  	let seed1 = ciphertext.substr(0,3) | 0;
-    let seed2 = ciphertext.substr(3,3) | 0;
+  	let seed1 = +ciphertext.substr(0,3);
+    let seed2 = +ciphertext.substr(3,3);
     
     let [columns, toprow, rest] = this.GetCodeTable(seed1, seed2);
     
@@ -99,14 +98,14 @@ public class KgbCipher implements ICipher{
     let i=5;
     
     while(++i<ciphertext.length){
-    	let col = columns.indexOf(ciphertext[i] | 0);
+    	let col = columns.indexOf(+ciphertext[i]);
       
       if(col < 7){
         res.push(toprow[col]);
       }
       else{
       	let row = col-7;
-        col = columns.indexOf(ciphertext[++i] | 0);
+        col = columns.indexOf(+ciphertext[++i]);
         res.push(rest[row*10+col]);
       }
     }
@@ -119,9 +118,9 @@ public class KgbCipher implements ICipher{
     let rnd2 = new Random(seed2);
     
     let toprow = 'eations'.split('');
-    let rest =   'bcdfghjklm'
-                +'pqrtuvwxyz'
-                +'. '.split('');
+    let rest =   ('bcdfghjklm'
+                 +'pqrtuvwxyz'
+                 +'. ').split('');
                 
 		let columns = [0,1,2,3,4,5,6,7,8,9];
     
