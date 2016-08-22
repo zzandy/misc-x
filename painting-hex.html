@@ -2,7 +2,7 @@
 <html>
 <head>
 </head>
-<body>
+<body style="background-color: goldenrod">
     <script type="text/javascript">
         "use strict";
         
@@ -56,7 +56,8 @@
             ctx.canvas.style.left = 0;
             
             ctx.clear = function(){
-                ctx.clearRect(-ctx.canvas.width/2, -ctx.canvas.height/2, ctx.canvas.width, ctx.canvas.height);
+                ctx.clearRect(0,0,ctx.canvas.width, ctx.canvas.height);
+                //ctx.clearRect(-ctx.canvas.width/2, -ctx.canvas.height/2, ctx.canvas.width, ctx.canvas.height);
             };
 
             var q = 1 / Math.sqrt(3);
@@ -102,24 +103,29 @@
                 this.restore();
             };
 
-            ctx.translate(ctx.canvas.width / 2, ctx.canvas.height / 2);
-            ctx.scale(1, -1);
+            // ctx.translate(ctx.canvas.width / 2, ctx.canvas.height / 2);
+            // ctx.scale(1, -1);
             document.body.appendChild(c);
             return ctx;
         }
     </script>
+    
     <script type="text/javascript">
         "use strict";
 
         var ctx = fullscreenCanvas();
-        var a = 0;
 
-        var w = 30;
-        var h = 20;
-        var data = array(20, 30, function(i, j){ return {value:Math.random() < .5 }});
-        var s = new Pos(10, 10);
+        var w = 50;
+        var h = 30;
+        var data = array(h, w,function(i, j){ return {value:Math.random() < .3 }});
+        var s = new Pos(1, 1);
         var o = getHexPos(h/2, w/2);
-        o = new Pos(-o.x*s.x, -o.y*s.y);
+        o = new Pos((-o.x*s.x + ctx.canvas.width/2)|0, (-o.y*s.y+ctx.canvas.height/2)|0);
+
+
+        //o = new Pos(50,50);
+
+
         var ready = false;
         var updated = true;
         var renderer = null;
@@ -182,7 +188,7 @@ function present(a){return '[[' + a.map(function(r){return r.join(', ')}).join('
 
         function constructStencils(templates){
 
-            return new Renderer( 4,
+            return new Renderer( s.x,
                 /* sector 5-0 corner */ stencil(0,4,templates.stencil1, 1),
                 /* sector 5-0 body   */ stencil(0,4,templates.stencil1, 2),
 
@@ -224,10 +230,20 @@ function present(a){return '[[' + a.map(function(r){return r.join(', ')}).join('
             for(var i=0;i<data.length;++i)
             for(var j=0;j<data[i].length;++j){
                 var v = data[i][j].value;
-                data[i][j].sprite = renderer.render(v, getN(0, i, j, data), getN(1, i, j, data), getN(2, i, j, data), getN(3, i, j, data), getN(4, i, j, data), getN(5, i, j, data));
+                data[i][j].sprite = renderer.render(v, 
+                    bool(getN(0, i, j, data)), 
+                    bool(getN(1, i, j, data)), 
+                    bool(getN(2, i, j, data)), 
+                    bool(getN(3, i, j, data)), 
+                    bool(getN(4, i, j, data)), 
+                    bool(getN(5, i, j, data)));
             }
 
             return renderer;
+        }
+
+        function bool(obj){
+            return obj == null ? false : !!obj.value;
         }
 
         function setReady(r){
@@ -238,7 +254,7 @@ function present(a){return '[[' + a.map(function(r){return r.join(', ')}).join('
         loop(makeLoop(1000/60, fixedUpdate, update), window.requestAnimationFrame);
 
         function fixedUpdate(delta){
-            a += 1;
+            
         }
 
         function update(delta){
@@ -258,13 +274,23 @@ function present(a){return '[[' + a.map(function(r){return r.join(', ')}).join('
 
         function render(delta)
         {
-            //ctx.rotate(a/1000);
-
             for(var i=0;i<data.length;++i){
                 for(var j=0;j<data[i].length;++j){
                     renderCell(i, j, data[i][j], data);
                 }
             }
+        }
+
+        var onceMap = {};
+        function once(){
+            var key = [].shift.apply(arguments);
+
+            if(key in onceMap)
+                return;
+
+            onceMap[key] = true;
+
+            console.log(arguments);
         }
 
         function renderCell(i, j, cell, data){
@@ -274,37 +300,54 @@ function present(a){return '[[' + a.map(function(r){return r.join(', ')}).join('
             var pos = getHexPos(i, j);
 
             var imagedata = cell.sprite;
-            ctx.putImageData(imagedata, o.x + pos.x   * renderer.scale, o.y+pos.y*  renderer.scale);
+
+            ctx.drawImage(imagedata, o.x+pos.x * renderer.scale, o.y + pos.y * renderer.scale);
             return;
-
-            ctx.arc(o.x + pos.x * s.x, o.y+pos.y*s.y, s.x/2*(.2+v*.8), 0, 2*Math.PI);
-            ctx.closePath();
-
-            ctx.fillStyle = 'hsl('+(pos.x+10*pos.y)%360+', 100%, 50%)';
-
-            ctx.fill();
         }
 
         // Get neighbour
         function getN(n, i, j, data){
-            var ni = i+(n == 0 ? -1 : n == 3 ? 1 :  i);
-            var nj = j+(n==1||n==2?1:n==4||n==5?-1:0);
+            var ni=i, nj=j;
 
-            if((n == 1||n==5 )&& j%2 == 0) ni-=1;
-            if((n==2||n==4) && j%2 == 1) ni+=1;
-            
+            switch (n){
+                case 0: // top
+                    ni -=1;
+                    break;
+                case 1:
+                    ni -= j%2 ? 1 : 0;
+                    nj += 1;
+                    break;
+                case 2:
+                    ni += j%2 ? 0 : 1;
+                    nj+=1;
+                    break;
+                case 3:
+                    ni+=1;
+                    break;
+                case 4:
+                    ni += j%2 ? 0 : 1;
+                    nj -= 1;
+                    break;
+                case 5:
+                    ni -= j%2 ? 1 : 0;
+                    nj -= 1;
+                    break;
+            }
+
             return ni>=0&&nj>=0&&ni<data.length&&nj<data[ni].length?data[ni][nj]:null;
         }
 
         function getHexPos(i, j){
-            var q = Math.sqrt(3) / 2;
-            
-            return new Pos(j*q, i-(j%2)/2);
+            return new Pos(j*20 - i*4 - (j/2|0)*4, i*19 - (j%2)*5+(j/2|0)*9);
         }
 
         function Pos(x, y){
             this.x = x;
             this.y = y;
+        }
+
+        Pos.prototype.toString = function(){
+            return '('+this.x + '; ' + this.y+')';
         }
 
         function array(rows, cols, gen){
@@ -365,40 +408,48 @@ function present(a){return '[[' + a.map(function(r){return r.join(', ')}).join('
         }
 
         Renderer.prototype.render = function(v, n0, n1, n2, n3, n4, n5){
+            var can = document.createElement('canvas');
+            can.widht = 24*this.scale;
+            can.height = 21*this.scale;
+
+            var ctx = can.getContext('2d'); 
+
             var id = ctx.createImageData(24*this.scale, 21*this.scale);
             var data = id.data;
-            this.scale=1;
-            
+            var s = this.scale;
+            var c = (Math.random()*60 + 0)|0;
+
             for(var i=0;i<21;++i)
             {
                 for(var j=0;j<24;++j)
                 {
-                    for(var si=0;si<this.scale;++si)
-                    {
-                        for(var sj=0;sj<this.scale;++sj){
-                            var index = ((i*this.scale + si) * 24 + j*this.scale + sj)*4;
+                    var isset = this.isSet(v, i, j, n0, n1, n2, n3, n4, n5);
 
-                            var set = this.isSet(v, i, j, n0, n1, n2, n3, n4, n5);
-                            data[index] = data[index+1] = data[index+2] = set ? 0 : 180;
-                            data[index+3] = 1;
-                            data[index] = 0; 
+                    for(var si=0;si<s;++si)
+                    {
+                        for(var sj=0;sj<s;++sj){
+                            var index = ((s*i + si)*24*s + s*j + sj)*4;
+                            
+                            data[index] = data[index+1] = data[index+2] = c;
+                            data[index+3] = isset ? 120 : 0;
                         }
                     }
                 }
             }
 
-            return id;
+            ctx.putImageData(id, 0, 0);
+
+            return can;
         }
 
         Renderer.prototype.isSet = function(v, i, j, n0, n1, n2, n3, n4, n5){
-
             return (v && this.body[i][j])
-                || (n0 && (this.s01[i][j] || this.s50[i][j]))
-                || (n1 && (this.s01[i][j] || this.s12[i][j]))
-                || (n2 && (this.s12[i][j] || this.s23[i][j]))
-                || (n3 && (this.s23[i][j] || this.s34[i][j]))
-                || (n4 && (this.s34[i][j] || this.s45[i][j]))
-                || (n5 && (this.s45[i][j] || this.s50[i][j]));
+                || (((v && n0)||(v&&n1)||(n0 && n1)) && this.s01[i][j])
+                || (((v && n1)||(v&&n2)||(n1 && n2)) && this.s12[i][j])
+                || (((v && n2)||(v&&n3)||(n2 && n3)) && this.s23[i][j])
+                || (((v && n3)||(v&&n4)||(n3 && n4)) && this.s34[i][j])
+                || (((v && n4)||(v&&n5)||(n4 && n5)) && this.s45[i][j])
+                || (((v && n5)||(v&&n0)||(n5 && n0)) && this.s50[i][j]);
         }
 
     </script>
