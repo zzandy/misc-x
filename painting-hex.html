@@ -3,262 +3,241 @@
 <head>
 </head>
 <body style="background-color: goldenrod">
-    <script type="text/javascript">
-        "use strict";
-        
-        function makeLoop(fixedDelta, fixedUpdate, update){
-            var acc = 0;
 
-            return function(delta){
-                if(delta === undefined || isNaN(delta)){
-                    delta = fixedDelta;
+    <!-- loop -->
+<script type="text/javascript">
+    "use strict";
+
+    function makeLoop(fixedDelta, fixedUpdate, update) {
+        var acc = 0;
+
+        return function(delta) {
+            if (delta === undefined || isNaN(delta)) {
+                delta = fixedDelta;
+            }
+
+            acc += delta;
+
+            while (acc >= fixedDelta) {
+                fixedUpdate(fixedDelta);
+                acc -= fixedDelta;
+            }
+            update(delta);
+        }
+    }
+
+    function loop(loopFunction, sheduleFunction) {
+
+        var then;
+        var iteration = function() {
+            var now = new Date().getTime();
+            var delta = now - then;
+            then = now;
+
+            loopFunction(delta);
+
+            sheduleFunction(iteration);
+        }
+
+        iteration();
+    }
+</script>
+
+    <!-- canvas -->
+<script type="text/javascript">
+    "use strict";
+
+    function fullscreenCanvas() {
+
+        var c = document.createElement('canvas');
+        var ctx = c.getContext('2d');
+
+        ctx.canvas.width = window.innerWidth;
+        ctx.canvas.height = window.innerHeight;
+        ctx.canvas.style.position = 'absolute';
+        ctx.canvas.style.top = 0;
+        ctx.canvas.style.left = 0;
+
+        ctx.clear = function() {
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        };
+
+        var q = 1 / Math.sqrt(3);
+
+        ctx.getHexPath = function(h) {
+            var dx = q * h / 2;
+            var dy = h / 2;
+
+            return [
+                2 * dx, 0, dx, -dy, -dx, -dy, -2 * dx, 0, -dx, dy, dx, dy
+            ];
+        }
+
+        ctx.makePath = function(vertices) {
+            this.beginPath();
+            this.moveTo(vertices[0], vertices[1]);
+            for (var i = 2; i < vertices.length; i += 2) {
+                this.lineTo(vertices[i], vertices[i + 1]);
+            }
+            this.closePath();
+        }
+
+        ctx.pathHex = function(h) {
+            this.makePath(this.getHexPath(h));
+        };
+
+        ctx.fillHex = function(x, y, h) {
+            this.save();
+            this.translate(x, y);
+            this.pathHex(h);
+            this.fill();
+            this.restore();
+        };
+
+        ctx.strokeHex = function(x, y, a) {
+            this.save();
+            this.translate(x, y);
+            this.pathHex(a);
+            this.stroke();
+            this.restore();
+        };
+
+        document.body.appendChild(c);
+        return ctx;
+    }
+</script>
+
+<script type="text/javascript">
+    "use strict";
+
+    var ctx = fullscreenCanvas();
+
+    var w = 30;
+    var h = 20;
+    var s = new Pos(2, 1);
+    var data = array(h, w, function(i, j) {
+        return {
+            value: (j === 0 || j === w - 1 || (i === 0 && j % 2 === 1) || i === h - 1 && !!j % 2) ? 0 : Math.random() < .7
+        }
+    });
+
+    function rnd(n) {
+        return Math.floor(Math.random() * n);
+    }
+
+    var overflow = 0;
+    while (1) {
+
+        var i = rnd(h);
+        var j = rnd(w / 2);
+
+        var k = h - i - 1;
+        var l = w - j - 1;
+
+        if (data[i][j].value && data[k][l].value) {
+
+            data[i][j].color = [128, 0, 0];
+            data[k][l].color = [0, 128, 0];
+
+            break;
+        }
+
+        if (++overflow > 100)
+            throw new Error("Failed to place source and destination");
+    }
+
+    var o = getHexPos(h / 2, w / 2);
+    o = new Pos((-o.x * s.x + ctx.canvas.width / 2) | 0, (-o.y * s.y + ctx.canvas.height / 2) | 0);
+
+    var ready = false;
+    var updated = true;
+    var renderer = null;
+
+    var stencil = (""
+            + ". . . . . . . ^ ^ ^ ^ . . . . . . . . . . . . .\n"
+            + ". . . . . . ^ ^ ^ ^ ^ # # # # T T . . . . . . .\n"
+            + ". . . . . ^ ^ # # # # # # # # # T T T T . . . .\n"
+            + ". . . . # # # # # # # # # # # # # T T T . . . .\n"
+            + ". . . # # # # # # # # # # # # # # # # T T . . .\n"
+            + ". . < # # # # # # # # # # # # # # # # # T . . .\n"
+            + ". < < # # # # # # # # # # # # # # # # # # . . .\n"
+            + "< < < # # # # # # # # # # # # # # # # # # # . .\n"
+            + "< < # # # # # # # # # # # # # # # # # # # # . .\n"
+            + ". < # # # # # # # # # # # # # # # # # # # # > .\n"
+            + ". < # # # # # # # # # # # # # # # # # # # # > .\n"
+            + ". < # # # # # # # # # # # # # # # # # # # # > .\n"
+            + ". . # # # # # # # # # # # # # # # # # # # # > >\n"
+            + ". . # # # # # # # # # # # # # # # # # # # > > >\n"
+            + ". . . # # # # # # # # # # # # # # # # # # > > .\n"
+            + ". . . L # # # # # # # # # # # # # # # # # > . .\n"
+            + ". . . L L # # # # # # # # # # # # # # # # . . .\n"
+            + ". . . . L L L # # # # # # # # # # # # # . . . .\n"
+            + ". . . . L L L L # # # # # # # # # v v . . . . .\n"
+            + ". . . . . . . L L # # # # v v v v v . . . . . .\n"
+            + ". . . . . . . . . . . . . v v v v . . . . . . .")
+        .split('\n')
+        .map(function(row) {
+            return row.split(' ').map(function(c) {
+                switch (c) {
+                case '#':
+                    return 7;
+                case '^':
+                    return 1;
+                case 'T':
+                    return 2;
+                case '>':
+                    return 3;
+                case 'v':
+                    return 4;
+                case 'L':
+                    return 5;
+                case '<':
+                    return 6;
+                default:
+                    return 0;
                 }
-                
-                acc += delta;
-                
-                while(acc>=fixedDelta){
-                    fixedUpdate(fixedDelta);
-                    acc -= fixedDelta;
-                }
-                update(delta);
-            }
-        }
-        
-        function loop(loopFunction, sheduleFunction){
+            });
+        });
 
-            var then;
-            var iteration = function(){
-                var now = new Date().getTime();
-                var delta = now - then;
-                then = now;
-                
-                loopFunction(delta);
-                
-                sheduleFunction(iteration);
-            }
-            
-            iteration();
-        }
-    </script>
-
-    <script type="text/javascript">
-        "use strict";
-
-        function fullscreenCanvas() {
-
-            var c = document.createElement('canvas');
-            var ctx = c.getContext('2d');
-
-            ctx.canvas.width = window.innerWidth;
-            ctx.canvas.height = window.innerHeight;
-            ctx.canvas.style.position = 'absolute';
-            ctx.canvas.style.top = 0;
-            ctx.canvas.style.left = 0;
-            
-            ctx.clear = function(){
-                ctx.clearRect(0,0,ctx.canvas.width, ctx.canvas.height);
-                //ctx.clearRect(-ctx.canvas.width/2, -ctx.canvas.height/2, ctx.canvas.width, ctx.canvas.height);
-            };
-
-            var q = 1 / Math.sqrt(3);
-            
-            ctx.getHexPath = function(h){
-                var dx = q * h / 2;
-                var dy = h / 2;
-
-                return [2 * dx, 0
-                        ,dx, -dy
-                        ,-dx, -dy
-                        ,-2 * dx, 0
-                        ,-dx, dy
-                        ,dx, dy];
-            }
-            
-            ctx.makePath = function(vertices){
-                this.beginPath();
-                this.moveTo(vertices[0], vertices[1]);
-                for(var i=2;i<vertices.length;i+=2){
-                    this.lineTo(vertices[i], vertices[i+1]);
-                }
-                this.closePath();
-            }
-
-            ctx.pathHex = function (h) {
-                this.makePath(this.getHexPath(h));
-            };
-
-            ctx.fillHex = function (x, y, h) {
-                this.save();
-                this.translate(x, y);
-                this.pathHex(h);
-                this.fill();
-                this.restore();
-            };
-
-            ctx.strokeHex = function (x, y, a) {
-                this.save();
-                this.translate(x, y);
-                this.pathHex(a);
-                this.stroke();
-                this.restore();
-            };
-
-            // ctx.translate(ctx.canvas.width / 2, ctx.canvas.height / 2);
-            // ctx.scale(1, -1);
-            document.body.appendChild(c);
-            return ctx;
-        }
-    </script>
-    
-    <script type="text/javascript">
-        "use strict";
-
-        var ctx = fullscreenCanvas();
-
-        var w = 50;
-        var h = 30;
-        var data = array(h, w,function(i, j){ return {value:Math.random() < .3 }});
-        var s = new Pos(1, 1);
-        var o = getHexPos(h/2, w/2);
-        o = new Pos((-o.x*s.x + ctx.canvas.width/2)|0, (-o.y*s.y+ctx.canvas.height/2)|0);
-
-
-        //o = new Pos(50,50);
-
-
-        var ready = false;
-        var updated = true;
-        var renderer = null;
-
-        loadImageData('hex-pieces.png')
-            .then(parseStencilTemplates)
-            .then(constructStencils)
-            .then(renderSprites)
-            .then(setReady);
-
-        function parseStencilTemplates(data){
-            return {
-                stencil1:  [[0, 0, 0, 1, 1, 1, 1, 0, 0, 0],
-                            [0, 0, 1, 1, 1, 1, 1, 2, 2, 2],
-                            [0, 1, 1, 2, 2, 2, 2, 2, 2, 2],
-                            [2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
-                            [0, 2, 2, 2, 2, 2, 2, 2, 2, 0],
-                            [0, 0, 2, 2, 2, 2, 2, 2, 2, 0],
-                            [0, 0, 0, 2, 2, 2, 2, 2, 2, 0],
-                            [0, 0, 0, 0, 0, 2, 2, 2, 2, 0],
-                            [0, 0, 0, 0, 0, 0, 2, 2, 0, 0],
-                            [0, 0, 0, 0, 0, 0, 0, 2, 0, 0]],
-                stencil2: [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                            [0, 0, 2, 1, 1, 0, 0, 0, 0, 0],
-                            [0, 0, 2, 2, 1, 1, 1, 1, 0, 0],
-                            [0, 0, 2, 2, 2, 1, 1, 1, 0, 0],
-                            [0, 2, 2, 2, 2, 2, 2, 1, 1, 0],
-                            [0, 2, 2, 2, 2, 2, 2, 2, 1, 0],
-                            [0, 2, 2, 2, 2, 2, 2, 2, 2, 0],
-                            [0, 2, 2, 2, 2, 2, 2, 2, 2, 2],
-                            [2, 2, 2, 2, 2, 2, 2, 0, 0, 0],
-                            [2, 2, 2, 0, 0, 0, 0, 0, 0, 0]],
-                stencil3: [[0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 0, 0],
-                            [0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 1, 0],
-                            [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0],
-                            [0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0],
-                            [0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1],
-                            [0, 0, 0, 2, 2, 2, 2, 2, 2, 1, 1, 1],
-                            [0, 0, 0, 0, 0, 2, 2, 2, 2, 1, 1, 0],
-                            [0, 0, 0, 0, 0, 0, 2, 2, 2, 1, 0, 0],
-                            [0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0],
-                            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
-            };
-
-            return {
-                stencil1: slice( 0, data.height, data.width, 10, data.data),
-                stencil2: slice(10, data.height, data.width, 10, data.data),
-                stencil3: slice(20, data.height, data.width, 12, data.data)
-            }
-        }
-
+    function present(a) { return '[[' + a.map(function (r) { return r.join(', ') }).join('],\n [') + ']]' };
 
 /* hex:  0
         ___
     5  /   \  1
     4  \___/  2
-         3           */ 
-
-function present(a){return '[[' + a.map(function(r){return r.join(', ')}).join('],\n [') + ']]'};
-
-        function constructStencils(templates){
-
-            return new Renderer( s.x,
-                /* sector 5-0 corner */ stencil(0,4,templates.stencil1, 1),
-                /* sector 5-0 body   */ stencil(0,4,templates.stencil1, 2),
-
-                /* sector 0-1 corner */ stencil(0,12,templates.stencil2, 1),
-                /* sector 0-1 body   */ stencil(0,12,templates.stencil2, 2),
-
-                /* sector 1-2 corner */ stencil(8,12,templates.stencil3, 1),
-                /* sector 1-2 body   */ stencil(8,12,templates.stencil3, 2),
-
-                /* sector 2-3 corner */ stencil(11, 10, flip(templates.stencil1), 1),
-                /* sector 2-3 body   */ stencil(11, 10, flip(templates.stencil1), 2),
-
-                /* sector 3-4 corner */ stencil(11, 2, flip(templates.stencil2), 1),
-                /* sector 3-4 body   */ stencil(11, 2, flip(templates.stencil2), 2),
-
-                /* sector 4-5 corner */ stencil(3, 0, flip(templates.stencil3), 1),
-                /* sector 4-5 body   */ stencil(3, 0, flip(templates.stencil3), 2)
-            );
-        }
-
-        function stencil(oi, oj, s, v){
-            return array(21, 24, function(i, j){
-                i -= oi;
-                j -= oj;
-
-                return i>=0&&j>=0&&i<s.length&&j<s[i].length ? s[i][j] == v : false;
-
-                return s[i][j] == v;
-            });
-        }
-
-        function flip(stencil){
-            return array(stencil.length, stencil[0].length, function(i, j){
-                return stencil[stencil.length-1-i][stencil[0].length -1 -j];
-            });
-        }
-
-        function renderSprites(renderer){
-            for(var i=0;i<data.length;++i)
-            for(var j=0;j<data[i].length;++j){
-                var v = data[i][j].value;
-                data[i][j].sprite = renderer.render(v, 
-                    bool(getN(0, i, j, data)), 
-                    bool(getN(1, i, j, data)), 
-                    bool(getN(2, i, j, data)), 
-                    bool(getN(3, i, j, data)), 
-                    bool(getN(4, i, j, data)), 
-                    bool(getN(5, i, j, data)));
+         3           */
+    function renderSprites(renderer) {
+        for (var i = 0; i < data.length; ++i)
+            for (var j = 0; j < data[i].length; ++j) {
+                var v = data[i][j];
+                data[i][j].sprite = renderer.render(v,
+                    getValue(getN(0, i, j, data)),
+                    getValue(getN(1, i, j, data)),
+                    getValue(getN(2, i, j, data)),
+                    getValue(getN(3, i, j, data)),
+                    getValue(getN(4, i, j, data)),
+                    getValue(getN(5, i, j, data)));
             }
 
-            return renderer;
+        return renderer;
+    }
+
+    function getValue(obj) {
+        return obj == null ? false : obj.value;
+    }
+
+    function setReady(r) {
+
+
+        renderer = r;
+        loop(makeLoop(1000 / 60, fixedUpdate, update), window.requestAnimationFrame);
+
+        function fixedUpdate(delta) {
+
         }
 
-        function bool(obj){
-            return obj == null ? false : !!obj.value;
-        }
-
-        function setReady(r){
-            renderer = r;
-            ready = true;
-        }
-        
-        loop(makeLoop(1000/60, fixedUpdate, update), window.requestAnimationFrame);
-
-        function fixedUpdate(delta){
-            
-        }
-
-        function update(delta){
-            if(!ready || !updated)
+        function update(delta) {
+            if (!updated)
                 return;
 
             ctx.clear();
@@ -271,187 +250,152 @@ function present(a){return '[[' + a.map(function(r){return r.join(', ')}).join('
 
             updated = false;
         }
+    }
 
-        function render(delta)
-        {
-            for(var i=0;i<data.length;++i){
-                for(var j=0;j<data[i].length;++j){
-                    renderCell(i, j, data[i][j], data);
+    function render(delta) {
+        for (var i = 0; i < data.length; ++i) {
+            for (var j = 0; j < data[i].length; ++j) {
+                renderCell(i, j, data[i][j], data);
+            }
+        }
+    }
+
+    var onceMap = {};
+
+function once() {
+    var key = [].shift.apply(arguments);
+
+    if (key in onceMap)
+        return;
+
+    onceMap[key] = true;
+}
+
+function renderCell(i, j, cell, data) {
+    ctx.beginPath();
+
+    var pos = getHexPos(i, j);
+
+    var imagedata = cell.sprite;
+
+    ctx.drawImage(imagedata, o.x + pos.x * renderer.scale.x, o.y + pos.y * renderer.scale.y);
+    return;
+}
+
+// Get neighbour
+function getN(n, i, j, data) {
+    var ni = i, nj = j;
+
+    switch (n) {
+    case 0: // top
+        ni -= 1;
+        break;
+    case 1:
+        ni -= j % 2 ? 1 : 0;
+        nj += 1;
+        break;
+    case 2:
+        ni += j % 2 ? 0 : 1;
+        nj += 1;
+        break;
+    case 3:
+        ni += 1;
+        break;
+    case 4:
+        ni += j % 2 ? 0 : 1;
+        nj -= 1;
+        break;
+    case 5:
+        ni -= j % 2 ? 1 : 0;
+        nj -= 1;
+        break;
+    }
+
+    return ni >= 0 && nj >= 0 && ni < data.length && nj < data[ni].length ? data[ni][nj] : null;
+}
+
+function getHexPos(i, j) {
+    return new Pos(j * 20 - i * 4 - (j / 2 | 0) * 4, i * 19 - (j % 2) * 5 + (j / 2 | 0) * 9);
+}
+
+function Pos(x, y) {
+    this.x = x;
+    this.y = y;
+}
+
+Pos.prototype.toString = function() {
+    return '(' + this.x + '; ' + this.y + ')';
+}
+
+function array(rows, cols, gen) {
+    var res = [];
+    for (var i = 0; i < rows; ++i) {
+        var row = [];
+        for (var j = 0; j < cols; ++j)
+            row.push(gen(i, j));
+        res.push(row);
+    }
+    return res;
+}
+
+function Renderer(s, stencil) {
+    this.scale = s;
+    this.stencil = stencil;
+}
+
+Renderer.prototype.render = function(v, n0, n1, n2, n3, n4, n5) {
+    var can = document.createElement('canvas');
+    can.widht = 24 * this.scale.x;
+    can.height = 21 * this.scale.y;
+
+    var s = this.scale;
+
+    var ctx = can.getContext('2d');
+    var id = ctx.createImageData(24 * s.x, 21 * s.y);
+    var data = id.data;
+
+    var l = rnd(0);
+    var c = [l, l, l, 160];
+
+    for (var i = 0; i < 21; ++i) {
+        for (var j = 0; j < 24; ++j) {
+            var isSet = this.isSet(v.value, i, j, n0, n1, n2, n3, n4, n5);
+            var col = isSet ? v.color || c
+                : [0, 0, 0, 0];
+
+            for (var si = 0; si < s.y; ++si) {
+                for (var sj = 0; sj < s.x; ++sj) {
+                    var index = ((s.y * i + si) * 24 * s.x + s.x * j + sj) * 4;
+                    data[index] = col[0];
+                    data[index + 1] = col[1];
+                    data[index + 2] = col[2];
+
+                    data[index + 3] = col.length > 3 ? col[3] : 160;
                 }
             }
         }
+    }
 
-        var onceMap = {};
-        function once(){
-            var key = [].shift.apply(arguments);
+    ctx.putImageData(id, 0, 0);
 
-            if(key in onceMap)
-                return;
+    return can;
+}
 
-            onceMap[key] = true;
+Renderer.prototype.isSet = function (v, i, j, n0, n1, n2, n3, n4, n5) {
 
-            console.log(arguments);
-        }
+    var p = this.stencil[i][j];
 
-        function renderCell(i, j, cell, data){
-            ctx.beginPath();
+    return (v && p === 7)
+        || (((v && n5) || (v && n0) || (n5 && n0)) && p === 1)
+        || (((v && n0) || (v && n1) || (n0 && n1)) && p === 2)
+        || (((v && n1) || (v && n2) || (n1 && n2)) && p === 3)
+        || (((v && n2) || (v && n3) || (n2 && n3)) && p === 4)
+        || (((v && n3) || (v && n4) || (n3 && n4)) && p === 5)
+        || (((v && n4) || (v && n5) || (n4 && n5)) && p === 6);
+}
 
-            var v = cell.value;
-            var pos = getHexPos(i, j);
+setReady(renderSprites(new Renderer(s, stencil)));
 
-            var imagedata = cell.sprite;
-
-            ctx.drawImage(imagedata, o.x+pos.x * renderer.scale, o.y + pos.y * renderer.scale);
-            return;
-        }
-
-        // Get neighbour
-        function getN(n, i, j, data){
-            var ni=i, nj=j;
-
-            switch (n){
-                case 0: // top
-                    ni -=1;
-                    break;
-                case 1:
-                    ni -= j%2 ? 1 : 0;
-                    nj += 1;
-                    break;
-                case 2:
-                    ni += j%2 ? 0 : 1;
-                    nj+=1;
-                    break;
-                case 3:
-                    ni+=1;
-                    break;
-                case 4:
-                    ni += j%2 ? 0 : 1;
-                    nj -= 1;
-                    break;
-                case 5:
-                    ni -= j%2 ? 1 : 0;
-                    nj -= 1;
-                    break;
-            }
-
-            return ni>=0&&nj>=0&&ni<data.length&&nj<data[ni].length?data[ni][nj]:null;
-        }
-
-        function getHexPos(i, j){
-            return new Pos(j*20 - i*4 - (j/2|0)*4, i*19 - (j%2)*5+(j/2|0)*9);
-        }
-
-        function Pos(x, y){
-            this.x = x;
-            this.y = y;
-        }
-
-        Pos.prototype.toString = function(){
-            return '('+this.x + '; ' + this.y+')';
-        }
-
-        function array(rows, cols, gen){
-            var res = [];
-            for(var i=0;i<rows;++i){
-                var row = [];
-                for(var j=0;j<cols;++j)
-                    row.push(gen(i,j));
-                res.push(row);
-            }
-            return res;
-        }
-
-        function loadImageData(url){
-            return new Promise(function(resolve, reject){
-                resolve(null);
-                return;
-
-                var img = new Image();
-                
-                img.onload = function(){
-                    var c = document.createElement('canvas');
-                    c.width = this.naturalWidth;
-                    c.height = this.naturalHeight;
-
-                    var ctx = c.getContext('2d');
-                    ctx.drawImage(this, 0, 0);
-                    
-                    resolve(ctx.getImageData(0,0,c.width,c.height));
-                }
-
-                img.src = url;
-            });
-        }
-
-        function slice(skipCols, fullHeight, fullWidth, width, data){
-            return array(fullHeight, width, function(i, j){
-                var index =  (i*fullWidth + (skipCols + j))*4;
-
-                var r = data[index];
-                var g = data[index+1];
-                var b = data[index+2];
-                var a = data[index+3];
-
-                return r == 255 ? 2 : r==0 ? 0 : 1;
-            });
-        }
-
-        function Renderer(s, s50c, s50b, s01c, s01b, s12c, s12b, s23c, s23b, s34c, s34b, s45c, s45b){
-            this.scale = s;
-            this.s50 = s50c;
-            this.s01 = s01c;
-            this.s12 = s12c;
-            this.s23 = s23c;
-            this.s34 = s34c;
-            this.s45 = s45c;
-            this.body = array(21, 24, function(i,j){return s50b[i][j]||s01b[i][j]||s12b[i][j]||s23b[i][j]||s34b[i][j]||s45b[i][j]});
-        }
-
-        Renderer.prototype.render = function(v, n0, n1, n2, n3, n4, n5){
-            var can = document.createElement('canvas');
-            can.widht = 24*this.scale;
-            can.height = 21*this.scale;
-
-            var ctx = can.getContext('2d'); 
-
-            var id = ctx.createImageData(24*this.scale, 21*this.scale);
-            var data = id.data;
-            var s = this.scale;
-            var c = (Math.random()*60 + 0)|0;
-
-            for(var i=0;i<21;++i)
-            {
-                for(var j=0;j<24;++j)
-                {
-                    var isset = this.isSet(v, i, j, n0, n1, n2, n3, n4, n5);
-
-                    for(var si=0;si<s;++si)
-                    {
-                        for(var sj=0;sj<s;++sj){
-                            var index = ((s*i + si)*24*s + s*j + sj)*4;
-                            
-                            data[index] = data[index+1] = data[index+2] = c;
-                            data[index+3] = isset ? 120 : 0;
-                        }
-                    }
-                }
-            }
-
-            ctx.putImageData(id, 0, 0);
-
-            return can;
-        }
-
-        Renderer.prototype.isSet = function(v, i, j, n0, n1, n2, n3, n4, n5){
-            return (v && this.body[i][j])
-                || (((v && n0)||(v&&n1)||(n0 && n1)) && this.s01[i][j])
-                || (((v && n1)||(v&&n2)||(n1 && n2)) && this.s12[i][j])
-                || (((v && n2)||(v&&n3)||(n2 && n3)) && this.s23[i][j])
-                || (((v && n3)||(v&&n4)||(n3 && n4)) && this.s34[i][j])
-                || (((v && n4)||(v&&n5)||(n4 && n5)) && this.s45[i][j])
-                || (((v && n5)||(v&&n0)||(n5 && n0)) && this.s50[i][j]);
-        }
-
-    </script>
+</script>
 </body>
 </html>
