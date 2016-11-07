@@ -1,12 +1,15 @@
 <!DOCTYPE html>
 
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+
 <head>
     <meta charset="utf-8" />
     <title></title>
     <style type="text/css">
+
     </style>
 </head>
+
 <body>
     <script id="vertex" type="x-shader/x-vertex">
         attribute vec4 a_position;
@@ -49,6 +52,16 @@
                 a[6] * b[0] + a[7] * b[3] + a[8] * b[6],
                 a[6] * b[1] + a[7] * b[4] + a[8] * b[7],
                 a[6] * b[2] + a[7] * b[5] + a[8] * b[8],
+            ];
+        }
+
+
+        function mul44v(m, v) {
+            return [
+                m[0] * v[0] + m[1] * v[1] + m[2] * v[2] + m[3] * v[3],
+                m[4] * v[0] + m[5] * v[1] + m[6] * v[2] + m[7] * v[3],
+                m[8] * v[0] + m[9] * v[1] + m[10] * v[2] + m[11] * v[3],
+                m[12] * v[0] + m[13] * v[1] + m[14] * v[2] + m[15] * v[3]
             ];
         }
 
@@ -183,16 +196,26 @@
             ];
         }
 
+        function diff(a, b) {
+            return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+        }
+
         function vectorAngleQuaternion(v, a) {
             var s = Math.sin(a / 2);
             return [s * v[0], s * v[1], s * v[2], Math.cos(a / 2)];
+        }
+
+        function rotateAArroundB(a, b, angle, axis) {
+            var relative = [a[0] - b[0], a[1] - b[1], a[2] - b[2], 1];
+            var r = mul44v(rotate3d(vectorAngleQuaternion(axis, angle)), relative);
+            return [b[0] + r[0], b[1] + r[1], b[2] + r[2]];
         }
 
         function rotate3d(q) {
             var x = q[0];
             var y = q[1];
             var z = q[2];
-            var w = q[3];
+            var w = q[3] || 1;
 
             return [
                 1 - 2 * y * y - 2 * z * z, 2 * x * y - 2 * z * w, 2 * x * z + 2 * y * w, 0,
@@ -293,9 +316,9 @@
 
             var type = null;
 
-            if (tag.type == mimeFragmentShader)
+            if (tag.type === mimeFragmentShader)
                 type = gl.FRAGMENT_SHADER;
-            else if (tag.type == mimeVertexShader)
+            else if (tag.type === mimeVertexShader)
                 type = gl.VERTEX_SHADER;
             else throw new Error('Unknown shader type, expected "' + mimeVertexShader + '" or "' + mimeFragmentShader + '", got "' + tag.type + '"');
 
@@ -345,6 +368,12 @@
                         return Math.random();
                 }
             }
+        }
+
+        function clamp(v, min, max) {
+            return v > max ? max :
+                v < min ? min :
+                v;
         }
 
         function makeCanvas() {
@@ -747,8 +776,12 @@
             this.gl = gl;
 
             var p = this.program = createProgram(gl,
-                compileShader(gl, this.vertex, gl.VERTEX_SHADER),
-                compileShader(gl, this.fragment, gl.FRAGMENT_SHADER));
+                this.vertex instanceof String
+                ? compileShader(gl, this.vertex, gl.VERTEX_SHADER)
+                : this.vertex,
+                this.fragment instanceof String
+                ? compileShader(gl, this.fragment, gl.FRAGMENT_SHADER)
+                : this.fragment);
 
             gl.useProgram(p);
 
@@ -792,11 +825,11 @@
 
     <script type="text/javascript">
 
-        var fov = 45 * deg;
+        var fov = 80 * deg;
 
-        var cam = new Camera([0, 0, 100],
-        [0, 1, 0],
-        [0, 0, 5]);
+        var cam = new Camera([0, 0, 10],
+        [0, 0, 1],
+        [0, 0, 10]);
 
         function Camera(pos, up, lookat) {
             this.pos = pos;
@@ -821,8 +854,8 @@
             var hexSide = 7;
             var hexq = 0;
 
-            var vertex = document.getElementById('vertex').text;
-            var fragment = document.getElementById('fragment').text;
+            var vertex = createShader(gl, 'vertex');
+            var fragment = createShader(gl, 'fragment');
 
             // load(new Mesh(
             //     document.getElementById('vertex').text,
@@ -861,13 +894,13 @@
             load(new Mesh(vertex, fragment, g = makeDodecahedron2(5), makeQuadColors(g), [-5/2,-k*5,5]));
 
             var a = 5;
-        
+
             var s6 = Math.sqrt(6);
             var s3 = Math.sqrt(3);
 
             var z = 2 * a / s6;
             var y2 = a / 2 / s3;
-            
+
             load(new Mesh(vertex, fragment, g = makeDodecahedron2(5), makeQuadColors(g), [5/2,-y2,5+z]));
 
 
@@ -923,6 +956,87 @@
 
         tick();
 
+        function ease(from, to, time, callback) {
+
+            var start = (new Date()).getTime();
+            var then = start;
+
+            var update = function() {
+                var now = (new Date()).getTime();
+                var delta = now - then;
+                then = now;
+
+                callback(from + (to - from) * fade((now - start) / time), delta);
+
+                if(now-start<time)
+                        window.requestAnimationFrame(update);
+            }
+
+            update();
+        }
+
+        cam.pos = [50, 0, 10];
+
+        var controller = {
+            k: 1.2,
+            qpan: deg / 10,
+            qpanv: deg / 30,
+            minfov: 2 * deg,
+            maxfov:130*deg,
+            zoom: function (delta) {
+                if(delta < 0)
+                    fov = clamp(fov * this.k, this.minfov, this.maxfov);
+                else if(delta  >0)
+                fov = clamp(fov / this.k, this.minfov, this.maxfov);
+            },
+            pan: function(dx, dy) {
+                cam.lookat = rotateAArroundB(cam.lookat, cam.pos, dx * this.qpan, cam.up);
+                cam.lookat = rotateAArroundB(cam.lookat, cam.pos, dy * this.qpanv, cross(cam.up, diff(cam.pos, cam.lookat)));
+
+            },
+            orbit: function(dx, dy) {
+                cam.pos = rotateAArroundB(cam.pos, cam.lookat, dx * this.qpan, cam.up);
+                cam.pos = rotateAArroundB(cam.pos, cam.lookat, dy * this.qpanv, cross(cam.up, diff(cam.pos, cam.lookat)));
+            }
+        };
+
+
+        window.addEventListener('wheel', function (e) {
+            controller.zoom(e.deltaY);
+
+            e.preventDefault();
+        });
+
+
+        var prevx = null;
+        var prevy = null;
+        window.addEventListener('mousemove', function (e) {
+
+            var dx, dy;
+
+            if (prevx == null) {
+                dx = 0;
+                dy = 0;
+            } else {
+                dx = e.x - prevx;
+                dy = e.y - prevy;
+            }
+
+            prevx = e.x;
+            prevy = e.y;
+
+            switch (e.which) {
+                case 1:
+                    controller.pan(dx, dy);
+                    break;
+                case 3:
+                    controller.orbit(dx, dy);
+                }
+        });
+
+        window.addEventListener('contextmenu', function (e) { e.preventDefault() }, true);
+
     </script>
 </body>
+
 </html>
