@@ -280,8 +280,8 @@
 
         function lookAt(pos, target, up) {
             var z = norm(substract(pos, target));
-            var x = cross(up, z);
-            var y = cross(z, x);
+            var x = norm(cross(up, z));
+            var y = norm(cross(z, x));
 
             return [
                 x[0], x[1], x[2], 0,
@@ -611,6 +611,19 @@
 
         }
 
+        function makeSameColor(geometry, c) {
+            var colors = new Float32Array(geometry.length * 3);
+
+            for (var i = 0; i < geometry.length; ++i) {
+                colors[ i *3] = c[0];
+                colors[i * 3 + 1] = c[1];
+                colors[i * 3 + 2] = c[2];
+            }
+
+            return colors;
+        }
+
+
         function makeColors(geometry) {
             var colors = [];
 
@@ -633,12 +646,14 @@
             return colors;
         }
 
-        function makeQuadColors(geometry) {
+        function makeQuadColors(geometry, baseHue) {
             var colors = new Float32Array(geometry.length * 3);
 
             var i = 0;
             while (i < colors.length) {
-                var c = hcy(Math.random() * 360, 1, .5);
+                var c = baseHue === undefined
+                    ? hcy(Math.random() * 360, 1, .5)
+                    : hcy(baseHue + 50*(rnd() - .5), 1, .5);
 
                 for (var j = 0; j < 6 && (i + j * 3 < colors.length); ++j) {
                     colors[i + j*3 + 0] = c[0];
@@ -881,39 +896,41 @@
             var posAnalytic = [0, 0, 5];
             cam.lookat = posAnalytic;
 
-            load(new Mesh(vertex, fragment, g = makeDodecahedron2(5), makeQuadColors(g), posAnalytic));
 
-            load(new Mesh(vertex, fragment, g = makeDodecahedron2(5), makeQuadColors(g), [5,0,5]));
-            load(new Mesh(vertex, fragment, g = makeDodecahedron2(5), makeQuadColors(g), [-5,0,5]));
+            (function loadSomeObjects(a, o) {
 
+                var cols = 4;
+                var rows = 4;
+                var layers = 4;
+                
+                var s6 = Math.sqrt(6);
+                var s3 = Math.sqrt(3);
 
-            var k = Math.sqrt(3) / 2;
-            load(new Mesh(vertex, fragment, g = makeDodecahedron2(5), makeQuadColors(g), [5/2,k*5,5]));
-            load(new Mesh(vertex, fragment, g = makeDodecahedron2(5), makeQuadColors(g), [5/2,-k*5,5]));
-            load(new Mesh(vertex, fragment, g = makeDodecahedron2(5), makeQuadColors(g), [-5/2,k*5,5]));
-            load(new Mesh(vertex, fragment, g = makeDodecahedron2(5), makeQuadColors(g), [-5/2,-k*5,5]));
-
-            var a = 5;
-
-            var s6 = Math.sqrt(6);
-            var s3 = Math.sqrt(3);
-
-            var z = 2 * a / s6;
-            var y2 = a / 2 / s3;
-
-            load(new Mesh(vertex, fragment, g = makeDodecahedron2(5), makeQuadColors(g), [5/2,-y2,5+z]));
+                var dy = s3 / 2;
+                var dz = 2 * a / s6;
+                var oyz = a / 2 / s3;
 
 
-            var s = .1;
-            var w = 4;
+                for (var i = 0; i < rows; ++i)
+                    for (var j = 0; j < cols; ++j)
+                        for (var k = 0; k < layers; ++k)
+                            load(new Mesh(vertex, fragment, g = makeDodecahedron2(a), makeQuadColors(g, rnd(360)),
+                            [
+                                -cols/2 + o[0] + ((i + (k%3)) % 2) * a / 2 + a * j,
+                                -rows/2 + o[1] + a * i * dy - oyz*(k%3),
+                                -layers/2 + o[2] + dz * k
+                            ]));
+            })(5, [0, 0, 0]);
 
-            for(var i=0;i<9;++i){
-                for(var j=0;j<9;++j) {
-                    load(new Mesh(vertex, fragment, makeBox(-s, -s, -s, 2 * s, 2 * s, 2 * s),
-                        makeColors(makeBox(-1, -1, -1, 2, 2, 2)),
-                        [(i - 4) * w, (j - 4) * w, 0]));
-                }
-            }
+            (function loadGrid() {
+                var s = .1;
+                var d = 5;
+                var w = 4;
+
+                for (var i = 0 - w; i <= w; ++i)
+                    for (var j = 0 - w; j <= w; ++j)
+                        load(new Mesh(vertex, fragment, g = makeDodecahedron2(s), makeSameColor(g, [1, 0, 0]), [d * i, d * j, 0]));
+            })();
 
             return function (delta) {
                 transitions.forEach(function (transition) { transition.apply(delta) });
@@ -977,26 +994,31 @@
 
         cam.pos = [50, 0, 10];
 
+        function abs(v) {
+            return Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+        }
+
         var controller = {
             k: 1.2,
-            qpan: deg / 10,
+            qpan: deg / 2,
             qpanv: deg / 30,
+            qpana: deg / 2,
+            qpanva: deg / 10,
             minfov: 2 * deg,
-            maxfov:130*deg,
-            zoom: function (delta) {
-                if(delta < 0)
+            maxfov: 130 * deg,
+            zoom: function(delta) {
+                if (delta > 0)
                     fov = clamp(fov * this.k, this.minfov, this.maxfov);
-                else if(delta  >0)
-                fov = clamp(fov / this.k, this.minfov, this.maxfov);
+                else if (delta < 0)
+                    fov = clamp(fov / this.k, this.minfov, this.maxfov);
             },
             pan: function(dx, dy) {
                 cam.lookat = rotateAArroundB(cam.lookat, cam.pos, dx * this.qpan, cam.up);
                 cam.lookat = rotateAArroundB(cam.lookat, cam.pos, dy * this.qpanv, cross(cam.up, diff(cam.pos, cam.lookat)));
-
             },
             orbit: function(dx, dy) {
-                cam.pos = rotateAArroundB(cam.pos, cam.lookat, dx * this.qpan, cam.up);
-                cam.pos = rotateAArroundB(cam.pos, cam.lookat, dy * this.qpanv, cross(cam.up, diff(cam.pos, cam.lookat)));
+                cam.pos = rotateAArroundB(cam.pos, cam.lookat, dx * this.qpana, cam.up);
+                cam.pos = rotateAArroundB(cam.pos, cam.lookat, -dy * this.qpanva, cross(cam.up, diff(cam.pos, cam.lookat)));
             }
         };
 
@@ -1010,6 +1032,7 @@
 
         var prevx = null;
         var prevy = null;
+
         window.addEventListener('mousemove', function (e) {
 
             var dx, dy;
