@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+</head>
+
+<body>
+
+    <!-- loop -->
+    <script type="text/javascript">
+    "use strict";
+
+    function loop(fixedDelta, fixedUpdate, update, sheduleFunction) {
+
+        var then;
+        var acc = 0;
+
+        var iteration = function() {
+            var now = new Date().getTime();
+            var delta = now - then;
+            then = now;
+
+            if (delta === undefined || isNaN(delta)) {
+                delta = fixedDelta;
+            }
+
+            acc += delta;
+
+            while (acc >= fixedDelta) {
+                fixedUpdate(fixedDelta);
+                acc -= fixedDelta;
+            }
+            update(delta);
+
+            sheduleFunction(iteration);
+        }
+
+        iteration();
+    }
+</script>
+    <!-- color -->
+    <script type="text/javascript">
+        
+            // hue Chroma luma
+            function hcy2rgb(h, c, y, a) {
+                // 601
+                var r = .3;
+                var g = .59;
+                var b = .11;
+
+                var h0 = h;
+                h /= 60;
+
+                var k = (1 - Math.abs((h % 2) - 1));
+
+                var K = h < 1 ? r + k * g
+                    : h < 2 ? g + k * r
+                    : h < 3 ? g + k * b
+                    : h < 4 ? b + k * g
+                    : h < 5 ? b + k * r
+                    : r + k * b;
+
+                var cmax = 1;
+
+                if (y <= 0 || y >= 1) cmax = 0;
+                else cmax *= K < y ? (y - 1) / (K - 1) : K > y ? y / K : 1;
+                //c *= cmax;
+                c = Math.min(c, cmax);
+
+                var x = c * k;
+                var rgb = h < 1 ? [c, x, 0]
+                    : h < 2 ? [x, c, 0]
+                    : h < 3 ? [0, c, x]
+                    : h < 4 ? [0, x, c]
+                    : h < 5 ? [x, 0, c]
+                    : [c, 0, x];
+
+                var m = y - (r * rgb[0] + g * rgb[1] + b * rgb[2]);
+
+                var rgbdata = [rgb[0] + m, rgb[1] + m, rgb[2] + m];
+                return 'rgba(' + (rgbdata[0] * 255).toFixed(0) + ',' + (rgbdata[1] * 255).toFixed(0) + ',' + (rgbdata[2] * 255).toFixed(0) + ', ' + (a || 1) + ')';
+            }
+
+        </script>
+
+
+    <!-- canvas -->
+    <script type="text/javascript">
+    "use strict";
+
+    function fullscreenCanvas() {
+
+        var c = document.createElement('canvas');
+        var ctx = c.getContext('2d');
+
+        ctx.canvas.width = window.innerWidth;
+        ctx.canvas.height = window.innerHeight;
+        ctx.canvas.style.position = 'absolute';
+        ctx.canvas.style.top = 0;
+        ctx.canvas.style.left = 0;
+
+        ctx.clear = function() {
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        };
+
+        var q = 1 / Math.sqrt(3);
+
+        ctx.makePath = function(vertices) {
+            this.beginPath();
+            this.moveTo(vertices[0], vertices[1]);
+            for (var i = 2; i < vertices.length; i += 2) {
+                this.lineTo(vertices[i], vertices[i + 1]);
+            }
+            this.closePath();
+        }
+
+        document.body.appendChild(c);
+        return ctx;
+    }
+</script>
+
+    <script type="text/javascript">
+    "use strict";
+
+    var ctx = fullscreenCanvas();
+
+    ctx.strokeCircle = function(x, y, r){
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI, true);
+        ctx.closePath();
+        ctx.stroke();
+    }
+
+    var w = ctx.canvas.width;
+    var h = ctx.canvas.height;
+
+    ctx.fillStyle = 'rgb(0,0,0)';
+    ctx.fillRect(0,0,w,h);
+
+    var aspect = 1.8;
+    var size = 20;
+
+    var n =0;
+    var q = .05;
+    
+    loop(1000/30, fixedUpdate, update, window.requestAnimationFrame);
+    
+    function fixedUpdate(delta){
+        ++n;
+    }
+
+    function update(delta){
+
+        ctx.drawImage(ctx.canvas, 0, 0, w, h, 
+         -(q*w), -(q*h), (1+2*q)*w, (1+2*q)*h);
+
+        ctx.fillStyle = 'rgba(0,0,0,.01)';
+        ctx.fillRect(0,0,w,h);
+
+        ctx.save();
+        ctx.translate(w/2 + .25*size*Math.cos(n/97), h/2 + .25*size*Math.sin(n/41));
+        ctx.rotate(n / 100);
+        ctx.strokeStyle = hcy2rgb(n*2 + (((n/10)|0)%2 ? 60 : 0), 1, ((n/10)|0)%2?.3:.6)
+        ctx.lineWidth = size/6;
+        ctx.strokeRect(-size/2, -size/aspect/2, size, size/aspect);
+        ctx.strokeRect(-size/aspect/2, -size/2, size/aspect, size);
+        ctx.restore();
+    }
+
+
+</script>
+</body>
+
+</html>
