@@ -1,0 +1,887 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" >
+<head>
+    <title>Fraktur</title>
+    <style type="text/css">
+    #fraktur{display:none; font-weight:bold}
+    </style>
+</head>
+<body>
+<textarea id="input" rows="3" cols="20"></textarea>
+<pre id="output"></pre>
+<script type="text/javascript">
+
+	Array.prototype.times = function(num)
+	{
+		var res = [];
+		
+		for(var i=0;i<num;++i)
+			for(var j=0;j<this.length;++j)
+				res.push(this[j]);
+				
+		return res;
+	}
+	
+	Array.prototype.map = function(fn){
+		var res = [];
+		
+		for(var i=0;i<this.length;++i){
+			res.push(fn(this[i], i, this));
+		}
+		
+		return res;
+	}
+	
+	Array.prototype.reduce = function(init, fn){
+	
+		if(!fn){
+			fn = init;
+			var res = this[0];
+			var n = 1;
+		}
+		else	{
+			var res = init;
+			var n = 0;		
+		}
+		
+		for(var i=n;i<this.length;++i){
+			res = fn(res, this[i], i, this);
+		}
+		
+		return res;
+	}
+
+    var input = document.getElementById('input');
+    var output = document.getElementById('output');
+    var fontdef = document.getElementById('fraktur');
+
+    input.onkeyup = function () {
+	
+		// TODO: Kerning
+        var h = 15; 
+        var text = [''].times(h);        
+
+        for (var i = 0; i < input.value.length; ++i) {
+            var c = input.value[i];
+			
+			var n = c.charCodeAt(0) - 'A'.charCodeAt(0) - ((c.charCodeAt(0) >= 'a'.charCodeAt(0)) ? 6 : 0);
+            
+            var a = document.getElementById('fraktur').innerHTML;
+            var b = a.split(/\n/);
+            var g = b.slice(n * h, (n + 1) * h);
+			
+			var trailing = text.map(function(s){return s.match(/\s*$/)[0].length});
+			var leading = g.map(function(s){return s.match(/^\s*/)[0].length});
+			
+			var gap = trailing.reduce(1000, function(xgap, trail, i){
+				var haveSpecial = !!g[i].match(/^\s*[)'`,\\\/]/) || !!text[i].match(/[)'`,\\\/]\s*$/);
+				return Math.min(xgap, trail + leading[i] + (haveSpecial?1:0));
+				});
+
+			var spacing = 2;
+			if(gap > spacing){			
+				text = text.map(function(s, i){
+					var cut = Math.min(gap - spacing, trailing[i]);
+					var rx = new RegExp('\\s{'+cut+'}$');
+					return s.replace(rx, '');
+				});
+				g = g.map(function(s, i){
+					var cut = (gap-spacing) - Math.min(gap - spacing, trailing[i]);
+					var rx = new RegExp('^\\s{'+cut+'}');
+					return s.replace(rx, '');
+				});
+			}			
+
+            for (var j = 0; j < h; ++j) text[j] = text[j] + g[j];
+        }
+
+        output.innerHTML = text.join('<br/>').replace(/\s/g, '&nbsp;');
+    }
+
+</script>
+
+
+<pre id="fraktur">                      
+      __        :l,   
+   .dWAWAb-,  |  "fb, 
+  d'    'Y&0_ |   ; ' 
+ f        '%W |  f!   
+           WY |  B|   
+     _.    HP |==H!   
+    fd)   ,P' |P*M|   
+     ',_,f*   |  H!   
+      _,__    |  M|   
+   ,;*''**Gb,y/  WA,,'
+   f      'Y'    'V*  
+   ',       _         
+     *-===-'          
+                      
+                     
+      __          _  
+   .dWAWAb-   , 'd"  
+  d'    'Y&0_d'| A,  
+ f        '%W  | Yd  
+           WY  | :B  
+     _.    HP =|=*   
+    fdW   ,P'  | *b  
+     ',_.f*    |  Hb 
+     _,_    ,a,|  Mf 
+  ,;*'*Gb;,/("d| ,D' 
+  f     'V' '-==d*'  
+  ',       _         
+    *-===-'          
+                     
+                
+          __  , 
+        ,/AVb,/ 
+     ,-,d  *"   
+    d' Gb,   |  
+   dj  'Gb,  |  
+  ;Bj   *AV,-|- 
+  ;Mj     Yq |  
+   YA     'f |  
+   'VA==y_/  | ,
+  ,;'XMb,___,-' 
+  f   *YAVAV*'  
+  ',       _    
+    *-===-'     
+                
+                 
+.=_     ___      
+ 'YAbgfBGDEbj,   
+   '**' .  '*Yb, 
+      ,f      VM,
+      Hb,      VA
+      'Yb,     BD
+       'W;     Hf
+        Y'    dY 
+     __/     ;7  
+  ,;''*YNb,,-'   
+  f      V*      
+  ',       _     
+    *-===-'      
+                 
+                 
+           _     
+         ,dAb,,f 
+        d  **'   
+       ,b,     | 
+       :Gb,  -=| 
+        *AV,f GD 
+         'YM|  | 
+           Xf  | 
+    ,=g=_ ,P   | 
+  ,*'"*YAVb=,_  ,
+  f      '*YAVf* 
+  ',     _'      
+    *-=-'        
+                 
+                  
+     ____         
+   d*"*YBXbg=,_,j 
+  f      '*YdP*'  
+  \    ,-,/   |   
+   *=+*  b,  _|   
+         AV,f GD  
+         'YM| |   
+           Xf |   
+           Y* |   
+   ;'*YAb, /      
+  f    '*A*       
+  ',       _'     
+    *--==-'       
+                  
+           ,       
+          -hb      
+      _-,/ 'D      
+     dP'd  '       
+    dP  Gb,  ,,    
+   ;d|  'Gb,' 'G,  
+   ;B|   *Ab   *A; 
+   ;M;    *G|  ;M| 
+    YA     f'  ;HP 
+    \Vy=,_/   ,NP  
+  ,' 'b,*'   ,d*   
+  f    '"**"'      
+  ',      _        
+    *-==-'         
+                   
+                      
+           _g,  ,     
+          ,'qYaf      
+         d   ' | ;    
+        ,b,   .|4d,   
+        :Gb,,' |'VA   
+         *AV,  | *MA, 
+          YM|  |  'VA 
+           Xf  |   'H 
+    ,==_   P  GD    B 
+  ,*'"*YAb/   \'   d' 
+  f     '*     '**'   
+  ',     _ '          
+    *-=-'             
+                      
+               
+   ,ga,_       
+  f  *YAb,=-'  
+  l    |' 7    
+   '--'| ,G    
+       | ;W;   
+      _| 'QB,  
+      'T  'GD, 
+       |   '5| 
+  _,==,|    P' 
+,*'  '*Gb,,f'  
+f      'Y*'    
+*        '     
+ '-.__.-'      
+               
+               
+   ,ga,_       
+  f  *YAb,=-'  
+  l    |' 7    
+   '--'| ,G    
+       | ;W;   
+       | Gh,   
+       | VA\   
+      _| 'QB,  
+      'T  'GD, 
+       |   '5| 
+  _,==,|    P' 
+,*'  '*Gb,,f'  
+f      'Y*'    
+ '-.__.-'      
+                      
+          ,g, ,'      
+        ,f*bGf'       
+       ,d   " ,,dP    
+       !B,   .| YA    
+       :Gb, / | !M    
+        *AVf  | !P    
+         'YM-=|='     
+          'B| |'Y,    
+  ,;eg=_   P  | 'M,  .
+,f   "*YA,f   |  qYb' 
+f      '*         *'  
+',      _'            
+  *-==-'              
+                      
+                 
+           _   , 
+         ,dAb,f  
+        d, '"    
+       ;B,   |   
+       :Gb,  |   
+        *AV,_|_  
+         'YM |   
+          'f |   
+  ,ageg=_ d' |   
+,f   "*YAVb=,__,'
+f        '*Yf*'  
+',      _'       
+  *-==-'         
+                 
+                           
+      ____         _,,_   ,
+   .dPAPAXb,   ,f,'"*bqby' 
+  d'     'Y&b  f,      "'  
+ f         'W; *b,    ,f   
+            WY  Yy,   d'   
+     ,=     Hf   *&   H|   
+     dW;   d*  d  W   M!   
+     '-=df*    Yb *   N;   
+     _,,==_    '6b,   Xb   
+   /'   '*GBby/ 'YA,' YA,/ 
+  f        'V     *   'V   
+   i,       _              
+     *====-'               
+                           
+                       
+      _,_       _,_   ,
+   .d"'*YXb,  ,f*bqgy' 
+  d'     'Y&b/ |   d   
+           VH  |  ;f   
+           YM  |  d'   
+     ,qy,  fP  | !H|   
+     l"*   P'  | ;M!   
+      '=df*    | |N;   
+    ,=;;=,_    | ;Xb   
+   /    '*GBby/   YA,/ 
+  f        'V     'V   
+   i       _           
+    '*===-'            
+                       
+                   
+      db,_         
+       *YAVb-_     
+     ,/' '*YAVA,   
+    dP  ,f   'XGb  
+   dP   Hb     YA; 
+  ;Ml   *Vb    'Mj 
+  |Nj    'Gb    HP 
+  'Gb     YP   ,MY 
+   *B;_   f'   AV  
+  -'*Yb'-='  ,d'   
+ f    '*===-*      
+ i       _         
+  *-____-'         
+                   
+                     
+      _,_        _,_ 
+   .d"'*YXb,   .' 7' 
+  d'     'Y&,,/  dA  
+           VH  | 'Gb 
+           YM  db jD 
+      ,    fP  *__=' 
+     !GD  ,P'  |     
+      '-=f*    |     
+      _,_,_    | ,   
+     '  '*GBb,,f'    
+    f      'VP       
+    i       _        
+     ".___. '        
+                     
+                    
+      fb,_          
+       *YAs=-_      
+     gf' '*YAVA,    
+    dP  ,/'  'XGb   
+   dP   fb     YA;  
+  ;Ml   Vb,    'Mj  
+  |Nj   'Gb;    HP  
+  'Gb     YP   ,MY  
+   *B;    f'   AV   
+    *Yb-'"*a,,d'    
+     ,'*===-*Yb,  . 
+     l        *gKf  
+      -.__.-'       
+                    
+                       
+      _,_        _,_   
+   .d"'*YXb,   .' X    
+  d'     'Y&, /| ;D;   
+           VH7 | 'Gb   
+           YM' |  jD   
+      ,_   fP =|_-'    
+     !GD  ,P'  |'Y,    
+      '-=f*    | 'M,   
+      _,_,_    |  VA  ,
+   . '  '*GBb,,f  YBl/ 
+   f       'V'    'Yf  
+   i        _          
+    '*-___-'           
+                       
+                     
+           _,        
+       ,=' 'Gb,_/    
+      /d'   '*"      
+      GH     +       
+      Ydb    |       
+       'Mb=--|*Yb;_  
+             |  YAV, 
+             +   HM' 
+      ,-==_  |   AV  
+   . '  '*GBb, ,f'   
+   f       'V*       
+   i        _        
+    '.___.-'         
+                     
+                  
+     ___          
+  d*'"**Yby-,_  , 
+,'       ,'*YAVP* 
+f      ,d .f  |   
+ -._.-A*  G,  |   
+     dB   *A, |_  
+     HN    \V;|   
+     ME     *P|   
+     *Wb,_  f'| , 
+    .'"MA,"* _,f' 
+   f    "YVAVf'   
+   i              
+    '-.___.-'     
+                  
+                       
+       ___             
+    ,adYGXb,   |   /   
+  ,'     *Y&b  |  d    
+ ;         VHb | fG    
+ '         'HM | Hj    
+      ,    ,MP | M!    
+     GD:   dP' | H|    
+     '*._.f'   | M!    
+     __,_,_    |,VA   ,
+   .'  '*GBb,,-' YBl / 
+  f       'V'     'Yf  
+   i        _          
+    '-.__.-'           
+                       
+                        
+      _,_       _,_   , 
+   .d"'*YXb,  fHYbqgy'  
+  d'     'Y&b' |   /    
+  "        VH  |  f     
+           YM  | ,M     
+     ,-,   fP _|_!H;    
+     l0*  d"   |  Yb;   
+      '==f'    |  |D'   
+     ,==:ag=,  |  Xf    
+    /     'YBb, ,-'     
+   f        'V*'        
+    i       _           
+     '*===*'            
+                        
+                          
+      __        __      , 
+   .dVAVAb-,  ;fD&Vbgegi' 
+  d'    'Y&0_f ,; '"*"7   
+ f        '%Y  d;    A'   
+           AY  YA;   GA   
+     _.    bP   *Yb  VAb  
+    fdY; .d*'  d 'V   YA  
+     '*=dP*    Ysj*   ;Y; 
+     _,,--_    '69b,  jP  
+   ,;*''"*GYby/  'YA;,'   
+   f       'V     'V*     
+   i,       _             
+     *====*'              
+                          
+                     
+      ,,_       ,  , 
+   ,df"*YAb   /GDby  
+  ,f     'YA,f  "'   
+          'MY        
+           Bh        
+         ,=YE=-'     
+       -'""BN"       
+           EH        
+    __    ,YG,  ,    
+ ,='*Yg-,,  "Ai,'    
+f     'Y*    *V      
+l        ,           
+ '+,_,-+'            
+                     
+                      
+     ___      __    , 
+  ,f*"*GXa, ,dMNHbgf  
+.'      'V&,f | "'/   
+;         VP  |  f    
+ '        !H  | j;    
+     .,   Jf  | Gl    
+     GD: ,P'  | Ml    
+     '-=''    | YA    
+     _,==,_   | 'V,   
+   .'  '*GBb,-'  'B   
+  f       'V'     Y;  
+   i     _. ay    jf  
+    '*--'  f*'    /   
+           '-____'    
+                      
+                 
+  \,__,=gyjr,    
+   '*YdP*|"*Yb   
+         |   'l  
+       GD|    f  
+       *_|__-'   
+       .*|PYA;,  
+         |_ 'YA; 
+         |   XB; 
+ ,=++eg,_|  ,MP  
+/     'YAb,-*'   
+f       *'       
+'-_     _-       
+   '**'"         
+          
+          
+          
+          
+    ,gj   
+  ,f''WA* 
+ ,A'  HG  
+ gD   DE  
+ GW   HW  
+ 'Db ,*%b/
+  'W'  'V 
+          
+          
+          
+          
+   ,-,   
+ .f'gD   
+ A! '*   
+ N|      
+ M! ,;   
+ DE/*YA  
+ FW  'M. 
+ B|   W| 
+ W|  ,W' 
+,MN,,d*  
+ *VP'    
+         
+         
+         
+         
+       
+       
+       
+       
+  .dg ,
+,f' **'
+fG     
+HF     
+WA     
+'Wb./  
+ 'W'   
+       
+       
+       
+       
+   ,    
+  f,    
+  Wb    
+  'WA   
+  ,'VX  
+,f; 'WA 
+fW   VG|
+DG   'W!
+'W,  .Q'
+ '%,,f' 
+  'W'   
+        
+        
+        
+        
+       
+       
+       
+       
+   ,=g;
+  f' W'
+ Af j* 
+ DL-'  
+ Wj    
+ *W;./ 
+  'W'  
+       
+       
+       
+       
+    ,,  ,
+  .d*Gy* 
+  fj     
+  Wj     
+_=Hf__   
+ 'Mf     
+  W!     
+  Hj     
+  %!     
+  Wj     
+  Mj     
+  P      
+  |      
+  |      
+         
+        
+        
+        
+        
+   ,gj  
+ ,f 'WP'
+;W   HE 
+BH   BF 
+DA   HE 
+'WA.-WA 
+ 'W* Hb 
+     'Yb
+  ,g; 'B
+  f*'  y
+  '.__. 
+   ,-,   
+ .f'gD   
+ AU '*   
+ NH      
+ Mh  ,,  
+ DE,*YA  
+ FW' 'W; 
+ BF   EJ 
+ WH   RU 
+,MN,  B7 
+ Y'  ,H' 
+    .7'  
+    |V   
+    'i_e 
+         
+      
+ _L_  
+ 'T'  
+      
+ ,d,  
+,YGf  
+  W|  
+  M|  
+  H|  
+ ,YA,'
+  'V  
+      
+      
+      
+      
+      
+   _L_
+   'T'
+      
+   .q,
+  .fhf
+    H|
+    D!
+    N|
+    M|
+    D!
+    H|
+    W!
+aW: B'
+\*_.* 
+   ,-,    
+ .f'gD    
+ A| '*    
+ N|       
+ M!  ,a   
+ D|.'YA;  
+ F!  jV'  
+ B|-=P'   
+ W!  Yb   
+,M|, 'WA./
+ Y'   *V' 
+          
+          
+          
+          
+   _-.
+ ,f gb
+ fB '*
+ DG   
+ HM   
+ NH   
+ BF   
+ ME   
+ HG   
+,WA,' 
+ 'Y   
+      
+      
+      
+      
+                
+                
+                
+                
+  ,a,  g,  ,a,  
+ ' Yb,"VAf'*Yb- 
+   hW' |W   BN  
+   HM  |M   NH  
+   DG  |N   EN  
+  ,HM, jK_  fW ,
+   *P  'W'  'VP 
+                
+                
+                
+                
+            
+            
+            
+            
+  ,i  ,g,   
+ '*Ab,'VAY' 
+   Yf   Wh  
+   H!   BH  
+   D|   UN  
+  .Hj,  KA,-
+   'V   'P' 
+            
+            
+            
+            
+         
+         
+         
+         
+   ,'Yb  
+ ,j'  YA 
+ fb   'G|
+ DG    W!
+ 'W;   Q'
+  '%b,f' 
+   '*P   
+         
+         
+         
+         
+         
+         
+         
+         
+ ,b   d, 
+.dW;,'Yb,
+  Bf   W|
+  D!   G|
+  E|   H|
+ _Bj, ,P 
+f D|'V'  
+' E!     
+  B|     
+  D!     
+  P'     
+         
+         
+         
+         
+    ,g;, 
+  ,f''WV'
+ ,A'  !G 
+ gD   |B 
+ GW   !E 
+ 'Db ,jB 
+  'Y" |E 
+      !B 
+      |E 
+      |B 
+      !' 
+         
+         
+         
+         
+  ,   d.,
+,dhb,*Gf'
+  Hf     
+  NE     
+  M5     
+ _DG,-   
+ '*V'    
+         
+         
+         
+         
+           
+           
+           
+           
+    ./db__/
+  ,df 'db' 
+  GH,      
+  '*ba=mdb,
+         YW
+  ,-=g, ,9*
+ (   Vf*   
+           
+           
+           
+           
+      
+   ,;'
+  ,M  
+  fW  
+--hM--
+  MH' 
+  BM  
+  DG  
+  HM  
+ .MH,/
+  'W' 
+      
+      
+      
+      
+           
+           
+           
+           
+ ,d,   d;  
+.fA,  *YA  
+  Wf   M|  
+  HE   W|  
+  DG   D|  
+ .WK,-*WA.'
+  'Y'  'V  
+           
+           
+           
+           
+         
+         
+         
+         
+ .a,  ,b.
+/ WA,* YA
+  |W   WH
+  |G   HD
+  jH   DP
+  'Wp.-* 
+   'V'   
+         
+         
+         
+         
+             
+             
+             
+             
+ .a  .b,  ,b.
+.fhAf'YA,* YA
+  BH   W|  WH
+  DG   G|  HD
+  EH   Hj  DP
+ .WA_ ,hp.-* 
+   Y'   'V'  
+             
+             
+             
+             
+            
+            
+            
+            
+     a,  q,_
+   ,f*b,f ='
+      Ml    
+    _,M|_,  
+   f"'Hf    
+  _, ,M|,-  
+.'*P" 'V'   
+            
+            
+            
+            
+          
+          
+          
+          
+   g, ,g, 
+ ,fYb,fYb,
+ ' |W'  Wh
+   !M   YH
+   |G   |N
+  .fM,  AP
+   'V  dV'
+      dP' 
+      f'  
+      Y e 
+       '" 
+       
+       
+       
+       
+   g,  
+ ,fYb, 
+    W; 
+  _+P _
+ " *g" 
+  ,'Yb,
+ ,  'Mj
+ |   Bf
+ '  jB'
+  '=p* 
+       
+</pre>
+
+</body>
+</html>
