@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html>
+<body>
+    
+    <script type="text/javascript">
+    
+        (function(global){
+            'use strict';
+
+            global.fullscreenCanvas = function() {
+
+                var c = document.createElement('canvas');
+                var ctx = c.getContext('2d');
+
+                ctx.canvas.width = window.innerWidth;
+                ctx.canvas.height = window.innerHeight;
+                ctx.canvas.style.position = 'absolute';
+                ctx.canvas.style.top = 0;
+                ctx.canvas.style.left = 0;
+
+                ctx.clear = function(){
+                    ctx.clearRect(-ctx.canvas.width/2, -ctx.canvas.height/2, ctx.canvas.width, ctx.canvas.height);
+                };
+
+                var q = 1 / Math.sqrt(3);
+
+                ctx.getHexPath = function(h){
+                    var dx = q * h / 2;
+                    var dy = h / 2;
+
+                    return [2 * dx, 0
+                            ,dx, -dy
+                            ,-dx, -dy
+                            ,-2 * dx, 0
+                            ,-dx, dy
+                            ,dx, dy];
+                }
+
+                ctx.makePath = function(vertices){
+                    this.beginPath();
+                    this.moveTo(vertices[0], vertices[1]);
+                    for(var i=2;i<vertices.length;i+=2){
+                        this.lineTo(vertices[i], vertices[i+1]);
+                    }
+                    this.closePath();
+                }
+
+                ctx.translate(ctx.canvas.width / 2, ctx.canvas.height / 2);
+                document.body.appendChild(c);
+                return ctx;
+            }
+        }(this));
+    
+    </script>
+    
+    <script type="text/javascript">
+        
+        function randomsin(seed){
+            return function () {
+                var x = Math.sin(seed++) * 10000;
+                return x - Math.floor(x);
+            }
+        }
+        
+        function randommagic(seed){
+            var m_w = seed | 0;
+            var m_z = 987654321;
+            var mask = 0xffffffff;
+
+            // Returns number between 0 (inclusive) and 1.0 (exclusive),
+            // just like Math.random().
+            return function()
+            {
+                m_z = (36969 * (m_z & 65535) + (m_z >> 16)) & mask;
+                m_w = (18000 * (m_w & 65535) + (m_w >> 16)) & mask;
+                var result = ((m_z << 16) + m_w) & mask;
+                result /= 4294967296;
+                return result + 0.5;
+            }
+        }
+        
+        function xoroshiro(seed){
+            
+            function long(lo, hi){
+                return new Int32Array([lo, hi]);
+            }
+            
+            function add(a, b){
+                // Divide each number into 4 chunks of 16 bits, and then sum the chunks.
+                var a48 = a[1] >>> 16;
+                var a32 = a[1] & 0xFFFF;
+                var a16 = a[0] >>> 16;
+                var a00 = a[0] & 0xFFFF;
+                
+                var b48 = b[1] >>> 16;
+                var b32 = b[1] & 0xFFFF;
+                var b16 = b[0] >>> 16;
+                var b00 = b[0] & 0xFFFF;
+                
+                var c48 = 0, c32 = 0, c16 = 0, c00 = 0;
+                c00 += a00 + b00;
+                c16 += c00 >>> 16;
+                c00 &= 0xFFFF;
+                c16 += a16 + b16;
+                c32 += c16 >>> 16;
+                c16 &= 0xFFFF;
+                c32 += a32 + b32;
+                c48 += c32 >>> 16;
+                c32 &= 0xFFFF;
+                c48 += a48 + b48;
+                c48 &= 0xFFFF;
+                
+                return long((c16 << 16) | c00, (c48 << 16) | c32);
+            }
+            
+            function neg(a){
+                return add(long(~a[0], ~a[1]), long(1,0));
+            }
+            
+            function mul(a, b){
+                if((a[0] === 0 && a[1] === 0)||(b[0]===0&&b[1]===0))
+                    return long(0,0);
+                    
+                    // Divide each number into 4 chunks of 16 bits, and then sum the chunks.
+                    var a48 = a[1] >>> 16;
+                    var a32 = a[1] & 0xFFFF;
+                    var a16 = a[0] >>> 16;
+                    var a00 = a[0] & 0xFFFF;
+
+                    var b48 = b[1] >>> 16;
+                    var b32 = b[1] & 0xFFFF;
+                    var b16 = b[0] >>> 16;
+                    var b00 = b[0] & 0xFFFF;
+
+                    var c48 = 0, c32 = 0, c16 = 0, c00 = 0;
+                    c00 += a00 * b00;
+                    c16 += c00 >>> 16;
+                    c00 &= 0xFFFF;
+                    c16 += a16 * b00;
+                    c32 += c16 >>> 16;
+                    c16 &= 0xFFFF;
+                    c16 += a00 * b16;
+                    c32 += c16 >>> 16;
+                    c16 &= 0xFFFF;
+                    c32 += a32 * b00;
+                    c48 += c32 >>> 16;
+                    c32 &= 0xFFFF;
+                    c32 += a16 * b16;
+                    c48 += c32 >>> 16;
+                    c32 &= 0xFFFF;
+                    
+                    return long((c16 << 16) | c00, (c48 << 16) | c32);
+            }
+            
+            var splitSeed = seed | 0;
+            
+            function splitmix64(seed){
+                splitSeed = add(splitSeed, long(0x7F4A7C15, 0x9E3779B9));
+                
+                var z = mul(xor(splitSeed, shiftr(splitSeed, 30)), long(0x1CE4E5B9, 0xBF58476D));
+                z = mul(xor(z, shiftr(z, 37)), long(0x133111EB, 0x94D049BB));
+                
+                return xor(z, shiftr(z, 31));
+            }
+            
+            function rotl(a, n) {
+                n=n%32; 
+                var hi = a[1];
+                var lo = a[0];
+                
+                return  n===0
+                    ? long(hi, lo)
+                    : long((lo << n) | (hi >>> (32-n)), (hi << n) | (lo >>> (32-n)));
+            }
+            
+            function xor(a, b){
+                return long(a[0] ^ b[0], a[1] ^ b[1]);
+            }
+            
+            function shiftl(a, n){
+                n = n % 64;
+                
+                if(n === 0)
+                    return a;
+                
+                var hi = a[1];
+                var lo = a[0];
+                
+                if(n<32)
+                    return long(lo << n, (hi << n) | (lo >> (32 - n)));
+                else
+                    return long(0, lo << (n - 32));
+            }
+            
+            function shiftr(a, n){
+                n = n % 64;
+                
+                if(n === 0)
+                    return a;
+                
+                var hi = a[1];
+                var lo = a[0];
+                
+                if(n<32)
+                    return long((lo >>> n) | (hi << (32 - n)), hi >> n);
+                else
+                    return long(hi >> (n-32), hi >=0 ? 0 : -1);
+            }
+            
+            var s0 = splitmix64(long(seed | 0, seed | 0));
+            var s1 = splitmix64(s0);
+            
+            var seed128 = [s0, s1];
+            
+            return function(){
+                
+                var s0 = seed128[0];
+                var s1 = seed128[1];
+                
+                var next = add(s0, s1);
+                
+                s1 = xor(s1, s0);
+                
+                seed128 = [
+                    xor(xor(rotl(s0, 55), s1), shiftr(s1, 14)),
+                    rotl(s1, 36)
+                ];
+                
+                return ((next[0] ^ next[1]) / 4294967296) + .5;
+            }
+        }
+        
+        var ctx = fullscreenCanvas();
+                
+        var r1 = randomsin(1);
+        var r2 = randomsin(1);
+        r2 = Math.random;
+        r2 = xoroshiro(1);
+        
+        window.setInterval(render, 20);
+        
+        function rndp(r, x, y, w, h){
+            ctx.fillRect((x + w*r())|0+.5, (y+h*r())|0+.5, 1, 1);
+        }
+        
+        function render(){
+            var w = ctx.canvas.width;
+            var h = ctx.canvas.height;
+            
+            ctx.fillStyle = 'rgba(128,0,0,.5)';
+            for(var i=0;i<100;++i)
+            rndp(r1, -.95*w/2, -.9*h/2, .9*w/2, .9*h);
+            ctx.fillStyle = 'rgba(0,128,0,.5)';
+            for(var i=0;i<100;++i)
+            rndp(r2, .05*w/2, -.9*h/2, .9*w/2, .9*h);
+        }
+        
+    </script>
+</body>
+</html>
