@@ -1,0 +1,397 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>craft</title>
+    <style type="text/css">
+        html
+        {
+            font-family: Monaco, Consolas, Lucida Console, Monospace;
+            background-color: #1a1917;
+            color: #bbb;
+        }
+        #entry:before
+        {
+            content: '> ';
+        }
+        .red
+        {
+            color: Red;
+        }
+    </style>
+</head>
+<body>
+    <div id="out">
+    </div>
+    <div id="entry">
+    </div>
+    <script type="text/javascript">
+
+    if (!('map' in Array)) Array.prototype.map = function (fn) {
+        var res = [];
+        var n = this.length;
+        var i = -1;
+        while (++i < n) res.push(fn(this[i], i, this));
+        return res;
+    }
+
+    if (!('filter' in Array)) Array.prototype.filter = function (fn) {
+        var res = [];
+        var n = this.length;
+        var i = -1;
+        while (++i < n) { var item = this[i]; if (fn(item, i, this)) res.push(item); }
+        return res;
+    }
+
+    if (!('indexOf' in Array)) Array.prototype.indexOf = function (needle) {
+        var n = this.length;
+        var i = -1;
+        while (++i < n)
+            if (needle == this[i])
+                return i;
+
+        return -1;
+    }
+
+    if (!('contains' in Array)) Array.prototype.contains = function (needle) {
+        return this.indexOf(needle) != -1;
+    }
+
+    if (!('async' in Function)) Function.prototype.async = function () {
+        var fn = this;
+        var args = arguments;
+
+        window.setTimeout(function () { fn.apply(null, args) }, 10);
+    }
+
+    function append(array, n, item) {
+        if (item === undefined) {
+            item = n;
+            n = 1;
+        }
+
+        array.push([n, item]);
+    }
+
+    var reactions = [];
+
+    function ReactionInit() {
+        this.inlets = [];
+
+        this.and = function (n, item) {
+            append(this.inlets, n, item);
+            return this;
+        }
+
+        this.use = function (n, item) {
+            var intra = new ReactionIntra(this)
+            return intra.and(n, item);
+        }
+
+        
+         this.get = function(n, item){
+            var post = new ReactionPost(this);
+            return post.and(n, item);
+         }
+     }
+
+     function ReactionIntra(init){
+         this.inlets = init.inlets || [];
+         this.tools = [];
+
+         this.and = function(n, item){
+            append(this.tools, n, item);
+            return this;
+         }
+
+         this.get = function(n, item){
+            var post = new ReactionPost(this);
+            return post.and(n, item);
+         }
+    }
+
+    function ReactionPost(initOrIntra) {
+        this.inlets = initOrIntra.inlets || [];
+        this.tools = initOrIntra.tools || [];
+        this.results = [];
+
+        this.and = function (n, item) {
+            append(this.results, n, item);
+            return this;
+        }
+
+        this.spend = function (cost) {
+            var r = new Reaction(this, cost);
+            reactions.push(r);
+            return r;
+        }
+    }
+
+    function join(array) {
+        var i = -1, n = array.length;
+        var text = [];
+        while (++i < n) text.push((i==0?'':(i==n-1)?' and ':', ')+    (array[i][0] > 1 ? array[i][0] + ' ' : '') + array[i][1] + (array[i][0] > 1 ? 's' : ''));
+        return text.join('');
+    }
+
+    function Reaction(post, cost) {
+        this.inlets = post.inlets || [];
+        this.tools = post.tools || [];
+        this.results = post.results || [];
+        this.cost = cost;
+
+        this.toString = function () {
+            var text = [];
+
+            var a = join(this.inlets);
+            var b = join(this.tools);
+            var c = join(this.results);
+
+            text.push(a);
+            text.push(' --> ');
+            text.push(c);
+            text.push(' ('+this.cost+' whiles using '+b+')')
+
+            return text.join('');
+        }
+
+        this.applyTo = function (world) {
+            if (!contains(world, this.inlets.concat(this.tools))) {
+
+                //out('can\'t execute ' + this);
+
+                return null;
+            }
+
+            var w = [];
+            for (var i = 0; i < world.length; ++i) {
+                w.push([world[i][0], world[i][1]]);
+                //w.push(world[i]);
+
+                for (var j = 0; j < this.inlets.length; ++j) {
+                    if (w[i][1] == this.inlets[j][1])
+                        w[i][0] -= this.inlets[j][0];
+                }
+
+                for (var j = 0; j < this.results.length; ++j) {
+                    if (w[i][1] == this.results[j][1])
+                        w[i][0] += this.results[j][0];
+                }
+            }
+
+            w = w.concat(this.results.filter(function (r) {
+                var present = false;
+                for (var i = 0; i < w.length; ++i) {
+                    if (w[i][1] == r[1]) {
+                        present = true;
+                        break;
+                    }
+                }
+
+                return !present;
+            }));
+
+            return [this.cost, w.sort(function (a, b) { return a[1] > b[1] ? 1 : a[1] < b[1] ? -1 : 0})];
+        }
+     }
+
+    function take(n, item) {
+        var init = new ReactionInit();
+        return init.and(n, item);
+    }
+
+    out('Tasks:');
+    out('    ' + take('tree').use('saw').get(3, 'log').spend(20));
+    out('    ' + take('log').use('saw').get(10, 'plank').spend(10));
+    out('    ' + take(2, 'log').use('furnace').get('coal').spend(20));
+    out('    ' + take('coal').and('ore').use('forge').get('iron').spend(30));
+    out('    ' + take('coal').and('iron').use('forge').and('hammer').get(100, 'nail').spend(40));
+    out('    ' + take(17, 'plank').and(14, 'nail').use('hammer').get('chair').spend(30));
+    out(' ');
+
+
+    var world = [[10, 'tree'], [1, 'saw'], [1, 'hammer'], [1, 'forge'], [1, 'furnace'], [20, 'ore']];
+    var goal = [[1, 'chair']];
+
+    search.async(world, reactions, goal);
+
+    function keys(array) {
+        var r = [];
+        for (var i = 0; i < array.length; ++i)
+            r.push(array[i][1]);
+        return r;
+    }
+
+    /**
+     *  Check that heystack contains enough of all members of needles.
+     */
+    function contains(heystack, needles) {
+        var yes = true;
+        var found = [];
+
+        for (var j = 0; j < heystack.length; ++j) {
+            for (var i = 0; i < needles.length; ++i) {
+                if (heystack[j][1] == needles[i][1]) {
+
+                    if (heystack[j][0] < needles[i][0])
+                        yes = false;
+                    else
+                        found.push(needles[i][1]);
+                    break;
+                }
+                if (!yes) break;
+            }
+        }
+
+        return yes && found.length == needles.length;
+    }
+
+    function match(worlds, world) {
+        var isMatch = false;
+
+        for (var i = 0; i < worlds.length; ++i) {
+            if (worlds[i].length == world.length) {
+                var matches = 0;
+                   
+                for (var j = 0; j < world.length; ++j) {
+                    if (worlds[i][j][0] == world[j][0] || worlds[i][j][1] == world[j][1]) {
+                        matches++
+                    }
+                }
+
+                isMatch |= matches == world.length;
+            }
+
+            if (isMatch) {
+                break;
+            }
+        }
+
+        return isMatch;
+    }
+
+    function abbr(world) {
+        // TODO: invent some kind of hashcode.
+        return join(world);
+    }
+
+    // TODO: Find out why it does not want to cut all trees first.
+    function search(world, reactions, goal) {
+        var starttime = (new Date()).getTime();
+
+        out('We have ' + join(world));
+        out('We want ' + join(goal));
+        out(' ');
+
+        var maxIterations = 1500;
+        var toolcost = 5;
+        
+        //       [price, path, world]
+        var open = [[0, [], world.sort(function (a, b) { return a[1] > b[1] ? 1 : a[1] < b[1] ? -1 : 0 })]];
+        var visited = [abbr(world)]; // world states already under consideration
+
+        var cheapest = Infinity;
+
+        var n=0;
+        while (++n < maxIterations && (node = open.pop()) !== undefined) {
+               
+                var price = node[0];
+                var path = node[1];
+                var world = node[2];
+
+                if (contains(world, goal)) {
+
+                    out('Found path that would take ' + price + ' whiles');
+                    out('and would end us with ' + join(world));
+                    out(path.map(function (p) { return '    --> ' + p[0] }).join('<br/>') + '<br/> ');
+
+                    cheapest = Math.min(price, cheapest);
+
+                    continue;
+                }
+
+                var i = -1;
+                var x = reactions.length;
+
+                while (++i < x) {
+                    var r = reactions[i];
+                    var res = r.applyTo(world);
+
+                    if (res != null) {
+                        var wld = res[1];
+                        var bbr = abbr(wld);
+
+                        var workcost = price + res[0];
+
+                        var toolchangecost = 0;
+                        if (workcost < cheapest && path.length > 1) {
+                            var prevr = path[path.length - 1][0];
+                            var toolschanged = r.tools.length + prevr.tools.length;
+                            
+                            for (var u = 0; u < prevr.tools.length; ++u)
+                                for (var v = 0; v < r.tools.length; ++v)
+                                    if (r.tools[v][1] == prevr.tools[u][1]) toolschanged-=2;
+
+                            toolchangecost = toolschanged * toolcost;
+                        }
+
+                        var nextprice = workcost + toolchangecost;
+
+                        var cheapEnough = nextprice < cheapest;
+
+                        if (cheapEnough && !visited.contains(bbr)) {
+                            visited.push(bbr);
+                            open.push([nextprice, path.concat([[r, wld]]), wld]);
+                        }
+                    }
+                }
+
+                open.sort(function (a, b) { return b[0] - a[0] });
+            
+        }
+
+        out('Done after expanding ' + n + ' nodes. Elapsed ' + ((new Date()).getTime() - starttime) / 1000 + ' seconds.');
+        out(visited.join('<br/>'));
+    }
+    
+    // ------------------------------------------------------------------------------------ //
+
+    function out() {
+        var elt = document.getElementById('out');
+        out = function () {
+            elt.innerHTML += '<div>' + [].join.apply(arguments, [' ']).replace(/ /g, '&nbsp;') + '</div>';
+        }
+
+        out.apply(null, arguments)
+    }
+
+    var commands = [];
+    commands['print'] = function () {
+
+        for (var i = 0; i < reactions.length; ++i) out(reactions[i]);
+
+    }
+
+    function run(command) {
+        out('> ' + command);
+        var parts = command.split(' ');
+        if (parts[0] in commands) commands[parts[0]](parts);
+    }
+
+    var elt = document.getElementById('entry');
+    var pending = '';
+
+    document.onkeypress = function (e) {
+        if (window.event.keyCode == 13) {
+            run(pending);
+            pending = '';
+            elt.innerHTML = '';
+        }
+        else {
+            var letter = String.fromCharCode(window.event.keyCode);
+            elt.innerHTML += letter;
+            pending += letter;
+        }
+    }
+    </script>
+</body>
+</html>
