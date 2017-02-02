@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+</head>
+<body>
+    <script type="text/javascript">
+        function makeCanvas(w, h) {
+            var can = document.createElement('canvas');
+            can.width = w;
+            can.height = h;
+
+            return can;
+        }
+
+        function placeCanvas(w, h) {
+            var can = makeCanvas(w, h);
+            document.body.appendChild(can);
+            return can.getContext('2d');
+        }
+    </script>
+    <script type="text/javascript">
+        var a = 100;
+
+        var q = 1 / Math.sqrt(3);
+        var b = 1;
+        var w = 2 * q * a;
+        var h = a;
+
+        var tau = 2 * Math.PI;
+
+        function circle(ctx, x, y, r) {
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, tau);
+            ctx.closePath();
+            ctx.stroke();
+        }
+
+        function prepCanvas() {
+            var ctx = placeCanvas(2 * b + w, 2 * b + h)
+            ctx.translate(b + w / 2, b + h / 2);
+            ctx.scale(a,-a);
+            ctx.lineWidth = 1 / a;
+            return ctx;
+        }
+
+        var hexv = [
+            [q / 2, 1 / 2],
+            [q, 0],
+            [q / 2, -1 / 2],
+            [-q / 2, -1 / 2],
+            [-q, 0],
+            [-q / 2, 1 / 2]
+        ];
+
+        function plotPath(ctx, path){
+        
+            ctx.beginPath();
+            var n=0;
+
+            ctx.moveTo(path[n][0], path[n][1]);
+            while(++n<path.length){
+                ctx.lineTo(path[n][0], path[n][1]);
+            }
+
+            ctx.closePath();
+
+        }
+
+        function renderHex(ctx) {
+            plotPath(ctx, hexv)
+
+            ctx.stroke();
+        }
+
+
+        var base = '#002366';
+        var colors = [
+            '#C80815',
+            base,
+            '#FFD300',
+            base
+        ];
+
+        function fetch(a, i) {
+            i = i % a.length;
+            while (i < 0)
+                i += a.length;
+
+            return a[i];
+        }
+
+        function add(v1, v2) {
+            return [v1[0] + v2[0], v1[1] + v2[1]];
+        }
+
+        function mul(s, v) {
+            return [s * v[0], s * v[1]];
+        }
+
+        function averagePoint(a, i, j) {
+            return mul(1 / 2, add(fetch(a, i), fetch(a, j)));
+        }
+
+        var numRender = 0;
+        function render(s) {
+            console.log(++numRender, s)
+
+            var ctx = prepCanvas();
+            
+
+            var n = -1;
+            var l = s.length;
+
+            var k = -1;
+
+            ctx.fillStyle = colors[1];
+            plotPath(ctx, hexv);
+            ctx.fill();
+
+            while (++n < l) {
+                ctx.fillStyle = colors[n % colors.length];
+                if (ctx.fillStyle == base) {
+                    k += s[n];
+                    continue;
+                }
+
+                var path = [];
+
+                path.push(averagePoint(hexv, k, k+1));
+
+                for (var i = 0; i < s[n]; ++i) {
+                    ++k;
+                    path.push(hexv[k]);
+                    path.push(averagePoint(hexv, k, k + 1));
+                }
+
+                for (var i = 0; i < s[n]; ++i) {
+                    path.push(mul(.3, hexv[k-i]));
+                }
+
+                plotPath(ctx, path);
+                ctx.fill();
+            }
+        }
+
+        for (var i = 5; i >= 1; --i) {
+            for (var j = 6 - i; j >= 1; --j) {
+                if (i + j < 6)
+                    for (var k = 5 - i - j; k > 0; --k) {
+                        if (i + j + k < 6)
+                            for (var l = 6 - i - j - k; l > 0; --l) {
+                                if (i + j + k + l == 6)
+                                    render([i, j, k, l]);
+                            }
+                        else
+                            render([i, j, k]);
+                    }
+                else render([i, j]);
+            }
+        }
+
+    </script>
+</body>
+</html>
