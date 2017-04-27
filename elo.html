@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta charset="utf-8" />
+    <title>ELO Rating tracker</title>
+</head>
+
+<body>
+    <script type="text/javascript">
+        function Elo(initScore, x10diff, kFactor) {
+            this.initScore = initScore || 800;
+            this.x10diff = x10diff || 400;
+            this.kFactor = kFactor || 32;
+        }
+
+        Elo.prototype.expectWin = function(a, b){
+            return 1 / (1 + Math.pow(10, ((a.score || this.initScore) - (b.score || this.initScore)) / this.x10diff));
+        }
+
+        Elo.prototype.update = function (winner, looser, tie) {
+            this.updatePlayer(winner, looser, tie ? .5 : 1);
+            this.updatePlayer(looser, winner, tie ? .5 : 0);
+        }
+
+        Elo.prototype.updatePlayer = function (a, b, scoreForA) {
+            var expected = this.expectWin(a, b);
+
+            var delta = this.kFactor * (scoreForA - expected);
+            a.score = Math.max(0, (a.score || this.initScore) + delta);
+            a.numMatches = (a.numMatches || 0) + 1;
+        }
+    </script>
+
+    <script type="text/javascript">
+        function p(name){
+            return {name:name};
+        }
+
+        var elo = new Elo();
+        var contenders = 'pineaple; mango; apple; grapefruit; pommegranate; peach; melon; plum; cherry; banana'.split(';').map(function(a){return p(a.trim())});
+
+        for(var i=0;i<contenders.length;++i){
+            for(var j=i+1;j<contenders.length;++j){
+
+                if(Math.random()<.8)
+                    elo.update(contenders[i], contenders[j]);
+                else
+                    elo.update(contenders[j], contenders[i]);
+
+                console.log('new score: ' + contenders[i].name + ' '+ contenders[i].score+' vs ' + contenders[j].name+' '+contenders[j].score);
+            }
+        }
+    </script>
+
+</body>
+
+</html>
