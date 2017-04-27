@@ -857,7 +857,7 @@
         function init() {
             var canvas = makeCanvas();
             var gl = canvas.getContext('experimental-webgl');
-            gl.clearColor(1, 1, 1, 1);
+            gl.clearColor(0,0,0, 1);
 
             var aspect = canvas.clientWidth / canvas.clientHeight;
 
@@ -872,30 +872,8 @@
             var vertex = createShader(gl, 'vertex');
             var fragment = createShader(gl, 'fragment');
 
-            // load(new Mesh(
-            //     document.getElementById('vertex').text,
-            //     document.getElementById('fragment').text,
-            //     makeHex([0, 0, 0], hexSide, 10, hexq), makeHexColors(hexSide),
-            //     [0, 0, 0]
-            // ));
-
-            // load(new Mesh(
-            //     document.getElementById('vertex').text,
-            //     document.getElementById('fragment').text,
-            //     makeHex([0, 0, 0], hexSide, 10, hexq), makeHexColors(hexSide),
-            //     [0, 0, 0]
-            // ));
-
-            // load(new Mesh(
-            //     document.getElementById('vertex').text,
-            //     document.getElementById('fragment').text,
-            //     makeGeometry(10), makeColors(makeGeometry(10)),
-            //     [0, 0, 10]
-            // ));
-
             var posAnalytic = [0, 0, 5];
             cam.lookat = posAnalytic;
-
 
             (function loadSomeObjects(a, o) {
 
@@ -929,7 +907,7 @@
 
                 for (var i = 0 - w; i <= w; ++i)
                     for (var j = 0 - w; j <= w; ++j)
-                        load(new Mesh(vertex, fragment, g = makeDodecahedron2(s), makeSameColor(g, [1, 0, 0]), [d * i, d * j, 0]));
+                        load(new Mesh(vertex, fragment, g = makeDodecahedron2(s), makeSameColor(g, [.6, .6, .6]), [d * i, d * j, 0]));
             })();
 
             return function (delta) {
@@ -1000,10 +978,10 @@
 
         var controller = {
             k: 1.2,
-            qpan: deg / 2,
+            qpanh: deg / 12,
             qpanv: deg / 30,
-            qpana: deg / 2,
-            qpanva: deg / 10,
+            qorbh: deg / 2,
+            qorbv: deg / 10,
             minfov: 2 * deg,
             maxfov: 130 * deg,
             zoom: function(delta) {
@@ -1013,12 +991,12 @@
                     fov = clamp(fov / this.k, this.minfov, this.maxfov);
             },
             pan: function(dx, dy) {
-                cam.lookat = rotateAArroundB(cam.lookat, cam.pos, dx * this.qpan, cam.up);
+                cam.lookat = rotateAArroundB(cam.lookat, cam.pos, dx * this.qpanh, cam.up);
                 cam.lookat = rotateAArroundB(cam.lookat, cam.pos, dy * this.qpanv, cross(cam.up, diff(cam.pos, cam.lookat)));
             },
             orbit: function(dx, dy) {
-                cam.pos = rotateAArroundB(cam.pos, cam.lookat, dx * this.qpana, cam.up);
-                cam.pos = rotateAArroundB(cam.pos, cam.lookat, -dy * this.qpanva, cross(cam.up, diff(cam.pos, cam.lookat)));
+                cam.pos = rotateAArroundB(cam.pos, cam.lookat, dx * this.qorbh, cam.up);
+                cam.pos = rotateAArroundB(cam.pos, cam.lookat, -dy * this.qorbv, cross(cam.up, diff(cam.pos, cam.lookat)));
             }
         };
 
@@ -1034,27 +1012,23 @@
         var prevy = null;
 
         window.addEventListener('mousemove', function (e) {
-
             var dx, dy;
 
             if (prevx == null) {
                 dx = 0;
                 dy = 0;
             } else {
-                dx = e.x - prevx;
-                dy = e.y - prevy;
+                dx = e.clientX - prevx;
+                dy = e.clientY - prevy;
             }
 
-            prevx = e.x;
-            prevy = e.y;
+            prevx = e.clientX;
+            prevy = e.clientY;
 
-            switch (e.which) {
-                case 1:
-                    controller.pan(dx, dy);
-                    break;
-                case 3:
-                    controller.orbit(dx, dy);
-                }
+            if(!!(e.buttons & 1))
+                controller.pan(dx, dy);
+            else if(!!(e.buttons & 2))
+                controller.orbit(dx,dy);
         });
 
         window.addEventListener('contextmenu', function (e) { e.preventDefault() }, true);
