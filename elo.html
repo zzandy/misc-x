@@ -9,6 +9,21 @@
         .disabled {
             color: gray
         }
+        .picker{
+            border-collapse: collapse;
+        }
+        .picker td, .picker th{
+            padding: .1em .5em;
+            min-height: 1em;
+        }
+        .red{
+            background-color: hsla(0, 100%, 85%, 1);
+            color: hsla(0,100%, 15%, 1);
+        }
+        .blue{
+            background-color: hsla(215, 100%, 90%, 1);
+            color: hsla(215,100%, 15%, 1);
+        }
     </style>
     <script type="text/javascript" src="knockout.js"></script>
 
@@ -21,20 +36,26 @@
         </div>
     </script>
 
-    <div id="player-list" data-bind="template: {name: 'player-template', foreach: players().sort()}"></div>
+    <div id="player-list" data-bind="visible: isPicking(), template: {name: 'player-template', foreach: players().sort()}"></div>
 
-    <table>
+    <table class="picker">
         <tr>
-            <th colspan="2">Red</th><th colspan="2">Blue</th>
+            <th class="red" colspan="2">Red</th><th class="blue" colspan="2">Blue</th>
         </tr>
         <tr>
-            <th>Defence</th><th>Offence</th><th>Offence</th><th>Defence</th>
+            <th class="red">Defence</th><th class="red">Offence</th><th class="blue">Offence</th><th class="blue">Defence</th>
         </tr>
         <tr>
-            <td data-bind="text: picks.red.defence"></td>
-            <td data-bind="text: picks.red.offence"></td>
-            <td data-bind="text: picks.blue.offence"></td>
-            <td data-bind="text: picks.blue.defence"></td>
+            <td class="red" data-bind="text: picks.red.defence"></td>
+            <td class="red" data-bind="text: picks.red.offence"></td>
+            <td class="blue" data-bind="text: picks.blue.offence"></td>
+            <td class="blue" data-bind="text: picks.blue.defence"></td>
+        </tr>
+        <tr>
+            <td class="red"><button data-bind="click: winBlue">Win</button></td>
+            <td class="red" data-bind="text: expectRed"></td>
+            <td class="blue" data-bind="text: expectBlue"></td>
+            <td class="blue"><button data-bind="click: winRed">Win</button></td>
         </tr>
     </table>
 
@@ -93,12 +114,12 @@
             $.pickStatus = ko.observable('Red Defence');
             $.picks = {
                 red: {
-                    defence: ko.observable(),
-                    offence: ko.observable()
+                    defence: ko.observable('---'),
+                    offence: ko.observable('---')
                 },
                 blue: {
-                    defence: ko.observable(),
-                    offence: ko.observable()
+                    defence: ko.observable('---'),
+                    offence: ko.observable('---')
                 }
             };
 
@@ -122,16 +143,32 @@
                         break;
                 }
 
-                console.log($.pickStatus());
+                if($.pickStatus() == "Ready"){
+                    pullExpected();
+                }
             }
 
-            $.isPicked = function (player) {
-                var status = $.pickStatus();
-                var v = 'Offence;Defence'.split(';').some(function (word) { return status.indexOf(word) > -1 })
-                    && ($.picks.red.defence() == player || $.picks.red.offence() == player || $.picks.blue.defence() == player || $.picks.blue.offence() == player);
+            $.winBlue = function(){}
+            $.winRed = function(){}
 
-                console.log(player + ' is ' + (v ? 'picked' : 'not picked'), 'Offence;Defence'.split(';').some(function (word) { status.indexOf(word) > -1 })
-                    , ($.picks.red.defence() == player || $.picks.red.offence() == player || $.picks.blue.defence() == player || $.picks.blue.offence() == player));
+            $.expectRed = ko.observable('');
+            $.expectBlue = ko.observable('');
+
+            function pullExpected(){
+                var red = findTeam($.picks.red.defence(), $.picks.red.offence());
+                var blue = findTeam($.picks.blue.defence(), $.picks.blue.offence());
+            }
+
+            function findTeam(defence, offence){
+
+            }
+
+            $.isPicking = ko.computed(function(){var status = $.pickStatus();return 'Offence;Defence'.split(';').some(function (word) { return status.indexOf(word) > -1 })});
+
+            $.isPicked = function (player) {
+                
+                var v = $.isPicking()
+                    && ($.picks.red.defence() == player || $.picks.red.offence() == player || $.picks.blue.defence() == player || $.picks.blue.offence() == player);
 
                 return v;
             }
