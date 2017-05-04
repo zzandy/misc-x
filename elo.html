@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <title data-bind="text: windowTitle">Elo Rating tracker</title>
     <style type="text/css">
-        html, body{
+        html, body, button{
             font-size: 1cm;
         }
 
@@ -46,8 +46,8 @@
 <body>
     <table class="picker">
         <tr>
-            <th class="red" colspan="2">Red <span data-bind="text: redScore"></span></th>
-            <th class="blue" colspan="2">Blue <span data-bind="text: blueScore"></span></th>
+            <th class="red" colspan="2">Red</th>
+            <th class="blue" colspan="2">Blue</th>
         </tr>
         <tr>
             <th class="red">Defence</th>
@@ -62,10 +62,10 @@
             <td class="blue" data-bind="text: picks.blue.defence"></td>
         </tr>
         <tr>
-            <td class="red"><button data-bind="click: winRed">Win</button></td>
+            <td class="red"><button data-bind="click: winRed, disable: isPicking">Win</button></td>
             <td class="red" data-bind="text: expectRed"></td>
             <td class="blue" data-bind="text: expectBlue"></td>
-            <td class="blue"><button data-bind="click: winBlue">Win</button></td>
+            <td class="blue"><button data-bind="click: winBlue, disable: isPicking">Win</button></td>
         </tr>
     </table>
 
@@ -77,7 +77,7 @@
         </div>
     </script>
 
-    <div id="player-list" data-bind="visible: isPicking(), template: {name: 'player-template', foreach: players().sort()}"></div>
+    <div id="player-list" data-bind="visible: isPicking, template: {name: 'player-template', foreach: players().sort()}"></div>
 
     <script type="text/javascript">
         function Elo(initScore, x10diff, kFactor) {
@@ -103,25 +103,6 @@
 
             a.score = Math.max(0, (a.score || this.initScore) + delta);
             a.numMatches = (a.numMatches || 0) + 1;
-        }
-    </script>
-
-    <script type="text/javascript">
-        function p(name) {
-            return { name: name };
-        }
-
-        var elo = new Elo();
-        var contenders = 'pineaple; mango; apple; grapefruit; pommegranate; peach; melon; plum; cherry; banana'.split(';').map(function (a) { return p(a.trim()) });
-
-        for (var i = 0; i < contenders.length; ++i) {
-            for (var j = i + 1; j < contenders.length; ++j) {
-
-                if (Math.random() < .8)
-                    elo.update(contenders[i], contenders[j]);
-                else
-                    elo.update(contenders[j], contenders[i]);
-            }
         }
     </script>
 
@@ -206,14 +187,16 @@
             function win(winner, looser) {
                 var won = $.picks[winner].team();
                 var lost = $.picks[looser].team();
-
+                
+                elo.update(won, lost);
+                
                 $.reset()
             }
 
             $.expectRed = ko.observable('');
             $.expectBlue = ko.observable('');
 
-            dbgTeams = $.teams = ko.observableArray([]);
+            dbgTeams = $.teams = ko.observableArray((data && data.teams) || []);
             var elo = new Elo();
 
             function pullExpected() {
