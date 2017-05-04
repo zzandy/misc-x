@@ -6,23 +6,28 @@
     <meta charset="utf-8" />
     <title data-bind="text: windowTitle">Elo Rating tracker</title>
     <style type="text/css">
-        .disabled {
-            color: gray
-        }
-        .picker{
+        .picker {
             border-collapse: collapse;
         }
-        .picker td, .picker th{
+
+        button{
+            min-width: 6em;
+        }
+        
+        .picker td,
+        .picker th {
             padding: .1em .5em;
             min-height: 1em;
         }
-        .red{
+        
+        .red {
             background-color: hsla(0, 100%, 85%, 1);
-            color: hsla(0,100%, 15%, 1);
+            color: hsla(0, 100%, 15%, 1);
         }
-        .blue{
+        
+        .blue {
             background-color: hsla(215, 100%, 90%, 1);
-            color: hsla(215,100%, 15%, 1);
+            color: hsla(215, 100%, 15%, 1);
         }
     </style>
     <script type="text/javascript" src="knockout.js"></script>
@@ -30,20 +35,16 @@
 </head>
 
 <body>
-    <script id="player-template" type="text/html">
-        <div>
-            <span data-bind="text: $data, css: { disabled: $root.isPicked($data)}, click: function(){$root.pick($data)}"></span>
-        </div>
-    </script>
-
-    <div id="player-list" data-bind="visible: isPicking(), template: {name: 'player-template', foreach: players().sort()}"></div>
-
     <table class="picker">
         <tr>
-            <th class="red" colspan="2">Red</th><th class="blue" colspan="2">Blue</th>
+            <th class="red" colspan="2">Red <span data-bind="text: redScore"></span></th>
+            <th class="blue" colspan="2">Blue <span data-bind="text: blueScore"></span></th>
         </tr>
         <tr>
-            <th class="red">Defence</th><th class="red">Offence</th><th class="blue">Offence</th><th class="blue">Defence</th>
+            <th class="red">Defence</th>
+            <th class="red">Offence</th>
+            <th class="blue">Offence</th>
+            <th class="blue">Defence</th>
         </tr>
         <tr>
             <td class="red" data-bind="text: picks.red.defence"></td>
@@ -52,12 +53,22 @@
             <td class="blue" data-bind="text: picks.blue.defence"></td>
         </tr>
         <tr>
-            <td class="red"><button data-bind="click: winBlue">Win</button></td>
+            <td class="red"><button data-bind="click: winRed">Win</button></td>
             <td class="red" data-bind="text: expectRed"></td>
             <td class="blue" data-bind="text: expectBlue"></td>
-            <td class="blue"><button data-bind="click: winRed">Win</button></td>
+            <td class="blue"><button data-bind="click: winBlue">Win</button></td>
         </tr>
     </table>
+
+    <button data-bind="click: reset, disable:pickStatus()=='Red Defence'">Reset selection</button>
+
+    <script id="player-template" type="text/html">
+        <div>
+            <button data-bind="text: $data, disable: $root.isPicked($data), click: function(){$root.pick($data)}"></button>
+        </div>
+    </script>
+
+    <div id="player-list" data-bind="visible: isPicking(), template: {name: 'player-template', foreach: players().sort()}"></div>
 
     <script type="text/javascript">
         function Elo(initScore, x10diff, kFactor) {
@@ -67,18 +78,20 @@
         }
 
         Elo.prototype.expectWin = function (a, b) {
-            return 1 / (1 + Math.pow(10, ((a.score || this.initScore) - (b.score || this.initScore)) / this.x10diff));
+            return 1 / (1 + Math.pow(10, ((b.score || this.initScore) - (a.score || this.initScore)) / this.x10diff));
         }
 
         Elo.prototype.update = function (winner, looser, tie) {
-            this.updatePlayer(winner, looser, tie ? .5 : 1);
-            this.updatePlayer(looser, winner, tie ? .5 : 0);
+            var expecta = this.expectWin(winner, looser);
+            var expectb = this.expectWin(looser, winner);
+
+            this.updatePlayer(winner, expecta, tie ? .5 : 1);
+            this.updatePlayer(looser, expectb, tie ? .5 : 0);
         }
 
-        Elo.prototype.updatePlayer = function (a, b, scoreForA) {
-            var expected = this.expectWin(a, b);
-
+        Elo.prototype.updatePlayer = function (a, expected, scoreForA) {
             var delta = this.kFactor * (scoreForA - expected);
+
             a.score = Math.max(0, (a.score || this.initScore) + delta);
             a.numMatches = (a.numMatches || 0) + 1;
         }
@@ -99,13 +112,13 @@
                     elo.update(contenders[i], contenders[j]);
                 else
                     elo.update(contenders[j], contenders[i]);
-
-                //console.log('new score: ' + contenders[i].name + ' '+ contenders[i].score+' vs ' + contenders[j].name+' '+contenders[j].score);
             }
         }
     </script>
 
     <script type="text/javascript">
+        var dbgTeams;
+
         function KickerModel(data) {
             var $ = this;
 
@@ -115,16 +128,31 @@
             $.picks = {
                 red: {
                     defence: ko.observable('---'),
-                    offence: ko.observable('---')
+                    offence: ko.observable('---'),
+                    team: ko.observable(null)
                 },
                 blue: {
                     defence: ko.observable('---'),
-                    offence: ko.observable('---')
+                    offence: ko.observable('---'),
+                    team: ko.observable(null)
                 }
             };
 
+            $.redScore = ko.computed(getScore($.picks.red.team));
+            $.blueScore = ko.computed(getScore($.picks.blue.team));
+
+            function getScore(team) {
+                return function () {
+                    var t = team();
+
+                    return t == null || t.score === undefined
+                        ? ''
+                        : t.score.toFixed(0);
+                }
+            }
+
             $.pick = function (player) {
-                if($.isPicked(player))
+                if ($.isPicked(player))
                     return;
 
                 var status = $.pickStatus();
@@ -143,30 +171,112 @@
                         break;
                 }
 
-                if($.pickStatus() == "Ready"){
+                if ($.pickStatus() == "Ready") {
                     pullExpected();
                 }
             }
 
-            $.winBlue = function(){}
-            $.winRed = function(){}
+            $.winRed = function () { win('red', 'blue') }
+            $.winBlue = function () { win('blue', 'red') }
+
+            $.reset = function () {
+                $.pickStatus('Red Defence');
+
+                $.expectRed('');
+                $.expectBlue('');
+
+                $.picks.red.defence('---');
+                $.picks.red.offence('---');
+                $.picks.red.team(null);
+
+                $.picks.blue.defence('---');
+                $.picks.blue.offence('---');
+                $.picks.blue.team(null);
+            }
+
+            function win(winner, looser) {
+                var won = $.picks[winner].team();
+                var lost = $.picks[looser].team();
+
+                $.reset()
+            }
 
             $.expectRed = ko.observable('');
             $.expectBlue = ko.observable('');
 
-            function pullExpected(){
+            dbgTeams = $.teams = ko.observableArray([]);
+            var elo = new Elo();
+
+            function pullExpected() {
                 var red = findTeam($.picks.red.defence(), $.picks.red.offence());
                 var blue = findTeam($.picks.blue.defence(), $.picks.blue.offence());
+
+                $.expectRed((elo.expectWin(red, blue) * 100).toFixed(0) + '%');
+                $.expectBlue((elo.expectWin(blue, red) * 100).toFixed(0) + '%');
+
+                $.picks.red.team(red);
+                $.picks.blue.team(blue);
             }
 
-            function findTeam(defence, offence){
+            function findTeam(defence, offence) {
+                var teams = $.teams();
 
+                var team = null;
+
+                // search for exact match
+                for (var i = 0; i < teams.length; ++i) {
+                    var item = teams[i];
+                    if (item.team.offence == offence && item.team.defence == defence) {
+                        team = item;
+                        break;
+                    }
+                }
+
+                // search for reverse match
+                for (var i = 0; i < teams.length; ++i) {
+                    var item = teams[i];
+                    if (item.team.offence == defence && item.team.defence == offence) {
+                        team = { team: { offence: offence, defence: defence }, score: item.score };
+                        $.teams.push(team);
+                        break;
+                    }
+                }
+
+                // search score by players average score is similar teams
+                var score1 = findScore(defence, 'defence', 'offence', teams), score2 = findScore(offence, 'offence', 'defence', teams);
+
+                if (score1 > 0 && score2 > 0) {
+                    team = { team: { offence: offence, defence: defence }, score: (score1 + score2) / 2 };
+                    $.teams.push(team);
+                }
+
+                // if nothing found create new
+                if (team == null) {
+                    team = { team: { offence: offence, defence: defence } }
+                    $.teams.push(team);
+                }
+
+                return team;
             }
 
-            $.isPicking = ko.computed(function(){var status = $.pickStatus();return 'Offence;Defence'.split(';').some(function (word) { return status.indexOf(word) > -1 })});
+            function findScore(player, role1, role2, teams) {
+                var match = teams.filter(function (team) { return team[role1] == player });
+
+                if (match.length > 0)
+                    return match.reduce(function (sum, team) { return sum + team.team.score }, 0) / match.length;
+
+                match = teams.filter(function (team) { return team[role2] == player });
+
+                if (match.length > 0)
+                    return match.reduce(function (sum, team) { return sum + team.team.score }, 0) / match.length;
+
+                return 0;
+            }
+
+            $.isPicking = ko.computed(function () { var status = $.pickStatus(); return 'Offence;Defence'.split(';').some(function (word) { return status.indexOf(word) > -1 }) });
 
             $.isPicked = function (player) {
-                
+
                 var v = $.isPicking()
                     && ($.picks.red.defence() == player || $.picks.red.offence() == player || $.picks.blue.defence() == player || $.picks.blue.offence() == player);
 
