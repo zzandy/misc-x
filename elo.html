@@ -109,11 +109,12 @@
     <script type="text/javascript">
         var dbgTeams;
 
-        function KickerModel(data) {
+        function KickerModel() {
             var $ = this;
 
             $.windowTitle = ko.observable('Elo Rating Tracker');
-            $.players = ko.observableArray((data && data.players) || ('Vova T; Vova G; Sergii K; Sergii S; Dmytro; Andriy; Almaz; Anton'.split('; ')));
+            var players = localStorage.getItem('kicker-players')
+            $.players = ko.observableArray((players && JSON.parse(players)) || ('Vova T; Vova G; Sergii K; Sergii S; Dmytro; Andriy; Almaz; Anton'.split('; ')));
             $.pickStatus = ko.observable('Red Defence');
             $.picks = {
                 red: {
@@ -189,6 +190,8 @@
                 var lost = $.picks[looser].team();
                 
                 elo.update(won, lost);
+
+                localStorage.setItem('kicker-teams',JSON.stringify($.teams()));
                 
                 $.reset()
             }
@@ -196,7 +199,8 @@
             $.expectRed = ko.observable('');
             $.expectBlue = ko.observable('');
 
-            dbgTeams = $.teams = ko.observableArray((data && data.teams) || []);
+            var teams = localStorage.getItem('kicker-teams');
+            $.teams = ko.observableArray((teams&&JSON.parse(teams)) || []);
             var elo = new Elo();
 
             function pullExpected() {
@@ -276,7 +280,7 @@
             }
         }
 
-        ko.applyBindings(new KickerModel(localStorage.getItem('kicker-data')), document.getElementById('doc'));
+        ko.applyBindings(new KickerModel(), document.getElementById('doc'));
     </script>
 
 </body>
