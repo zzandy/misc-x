@@ -1,13 +1,43 @@
 <!DOCTYPE html>
 
-<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<html id="doc" lang="en" xmlns="http://www.w3.org/1999/xhtml">
 
 <head>
     <meta charset="utf-8" />
-    <title>ELO Rating tracker</title>
+    <title data-bind="text: windowTitle">Elo Rating tracker</title>
+    <style type="text/css">
+        .disabled {
+            color: gray
+        }
+    </style>
+    <script type="text/javascript" src="knockout.js"></script>
+
 </head>
 
 <body>
+    <script id="player-template" type="text/html">
+        <div>
+            <span data-bind="text: $data, css: { disabled: $root.isPicked($data)}, click: function(){$root.pick($data)}"></span>
+        </div>
+    </script>
+
+    <div id="player-list" data-bind="template: {name: 'player-template', foreach: players().sort()}"></div>
+
+    <table>
+        <tr>
+            <th colspan="2">Red</th><th colspan="2">Blue</th>
+        </tr>
+        <tr>
+            <th>Defence</th><th>Offence</th><th>Offence</th><th>Defence</th>
+        </tr>
+        <tr>
+            <td data-bind="text: picks.red.defence"></td>
+            <td data-bind="text: picks.red.offence"></td>
+            <td data-bind="text: picks.blue.offence"></td>
+            <td data-bind="text: picks.blue.defence"></td>
+        </tr>
+    </table>
+
     <script type="text/javascript">
         function Elo(initScore, x10diff, kFactor) {
             this.initScore = initScore || 800;
@@ -15,7 +45,7 @@
             this.kFactor = kFactor || 32;
         }
 
-        Elo.prototype.expectWin = function(a, b){
+        Elo.prototype.expectWin = function (a, b) {
             return 1 / (1 + Math.pow(10, ((a.score || this.initScore) - (b.score || this.initScore)) / this.x10diff));
         }
 
@@ -34,24 +64,80 @@
     </script>
 
     <script type="text/javascript">
-        function p(name){
-            return {name:name};
+        function p(name) {
+            return { name: name };
         }
 
         var elo = new Elo();
-        var contenders = 'pineaple; mango; apple; grapefruit; pommegranate; peach; melon; plum; cherry; banana'.split(';').map(function(a){return p(a.trim())});
+        var contenders = 'pineaple; mango; apple; grapefruit; pommegranate; peach; melon; plum; cherry; banana'.split(';').map(function (a) { return p(a.trim()) });
 
-        for(var i=0;i<contenders.length;++i){
-            for(var j=i+1;j<contenders.length;++j){
+        for (var i = 0; i < contenders.length; ++i) {
+            for (var j = i + 1; j < contenders.length; ++j) {
 
-                if(Math.random()<.8)
+                if (Math.random() < .8)
                     elo.update(contenders[i], contenders[j]);
                 else
                     elo.update(contenders[j], contenders[i]);
 
-                console.log('new score: ' + contenders[i].name + ' '+ contenders[i].score+' vs ' + contenders[j].name+' '+contenders[j].score);
+                //console.log('new score: ' + contenders[i].name + ' '+ contenders[i].score+' vs ' + contenders[j].name+' '+contenders[j].score);
             }
         }
+    </script>
+
+    <script type="text/javascript">
+        function KickerModel(data) {
+            var $ = this;
+
+            $.windowTitle = ko.observable('Elo Rating Tracker');
+            $.players = ko.observableArray((data && data.players) || ('Vova T; Vova G; Sergii K; Sergii S; Dmytro; Andriy; Almaz; Anton'.split('; ')));
+            $.pickStatus = ko.observable('Red Defence');
+            $.picks = {
+                red: {
+                    defence: ko.observable(),
+                    offence: ko.observable()
+                },
+                blue: {
+                    defence: ko.observable(),
+                    offence: ko.observable()
+                }
+            };
+
+            $.pick = function (player) {
+                if($.isPicked(player))
+                    return;
+
+                var status = $.pickStatus();
+                switch (status) {
+                    case 'Red Defence': $.picks.red.defence(player);
+                        $.pickStatus('Red Offence');
+                        break;
+                    case 'Red Offence': $.picks.red.offence(player);
+                        $.pickStatus('Blue Offence');
+                        break;
+                    case 'Blue Offence': $.picks.blue.offence(player);
+                        $.pickStatus('Blue Defence');
+                        break;
+                    case 'Blue Defence': $.picks.blue.defence(player);
+                        $.pickStatus('Ready');
+                        break;
+                }
+
+                console.log($.pickStatus());
+            }
+
+            $.isPicked = function (player) {
+                var status = $.pickStatus();
+                var v = 'Offence;Defence'.split(';').some(function (word) { return status.indexOf(word) > -1 })
+                    && ($.picks.red.defence() == player || $.picks.red.offence() == player || $.picks.blue.defence() == player || $.picks.blue.offence() == player);
+
+                console.log(player + ' is ' + (v ? 'picked' : 'not picked'), 'Offence;Defence'.split(';').some(function (word) { status.indexOf(word) > -1 })
+                    , ($.picks.red.defence() == player || $.picks.red.offence() == player || $.picks.blue.defence() == player || $.picks.blue.offence() == player));
+
+                return v;
+            }
+        }
+
+        ko.applyBindings(new KickerModel(localStorage.getItem('kicker-data')), document.getElementById('doc'));
     </script>
 
 </body>
