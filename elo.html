@@ -6,21 +6,43 @@
     <meta charset="utf-8" />
     <title data-bind="text: windowTitle">Elo Rating tracker</title>
     <style type="text/css">
-        html, body, button{
+        html,
+        body,
+        button {
             font-size: 1cm;
+            background-color: black;
+            color: grey;
         }
-
+        
         .picker {
+            border-radius: .3em;
+        }
+        
+        .picker table {
             border-collapse: collapse;
         }
-
-        #player-list{
+        
+        #player-list {
             column-count: 2;
         }
-
-        button{
+        
+        #player-list button {
+            font-size: 120%;
+        }
+        
+        button {
             min-width: 7em;
             padding: .5em 1em;
+            margin: .1em;
+            border-color: hsla(0, 0%, 50%, .5);
+            border-radius: .3em;
+            background-color: hsla(0, 0%, 1%, .1);
+            color: hsla(0, 100%, 100%, .8);
+        }
+        
+        button:disabled {
+            color: hsla(0, 0%, 50%, .3);
+            border-color: hsla(0, 0%, 50%, .2);
         }
         
         .picker td,
@@ -30,13 +52,13 @@
         }
         
         .red {
-            background-color: hsla(0, 100%, 85%, 1);
-            color: hsla(0, 100%, 15%, 1);
+            background-color: hsla(0, 100%, 35%, 1);
+            color: hsla(0, 100%, 85%, 1);
         }
         
         .blue {
-            background-color: hsla(215, 100%, 90%, 1);
-            color: hsla(215, 100%, 15%, 1);
+            background-color: hsla(215, 100%, 40%, 1);
+            color: hsla(215, 100%, 85%, 1);
         }
     </style>
     <script type="text/javascript" src="knockout.js"></script>
@@ -44,32 +66,36 @@
 </head>
 
 <body>
-    <table class="picker">
-        <tr>
-            <th class="red" colspan="2">Red</th>
-            <th class="blue" colspan="2">Blue</th>
-        </tr>
-        <tr>
-            <th class="red">Defence</th>
-            <th class="red">Offence</th>
-            <th class="blue">Offence</th>
-            <th class="blue">Defence</th>
-        </tr>
-        <tr>
-            <td class="red" data-bind="text: picks.red.defence"></td>
-            <td class="red" data-bind="text: picks.red.offence"></td>
-            <td class="blue" data-bind="text: picks.blue.offence"></td>
-            <td class="blue" data-bind="text: picks.blue.defence"></td>
-        </tr>
-        <tr>
-            <td class="red"><button data-bind="click: winRed, disable: isPicking">Win</button></td>
-            <td class="red" data-bind="text: expectRed"></td>
-            <td class="blue" data-bind="text: expectBlue"></td>
-            <td class="blue"><button data-bind="click: winBlue, disable: isPicking">Win</button></td>
-        </tr>
-    </table>
+    <div class="picker">
+        <table style="width: 100%">
+            <tr>
+                <th class="red" colspan="2">Red</th>
+                <th class="blue" colspan="2">Blue</th>
+            </tr>
+            <tr>
+                <th class="red">Defence</th>
+                <th class="red">Offence</th>
+                <th class="blue">Offence</th>
+                <th class="blue">Defence</th>
+            </tr>
+            <tr>
+                <td class="red" data-bind="text: picks.red.defence"></td>
+                <td class="red" data-bind="text: picks.red.offence"></td>
+                <td class="blue" data-bind="text: picks.blue.offence"></td>
+                <td class="blue" data-bind="text: picks.blue.defence"></td>
+            </tr>
+            <tr>
+                <td class="red"><button data-bind="click: winRed, disable: isPicking">Win</button></td>
+                <td class="red" data-bind="text: expectRed"></td>
+                <td class="blue" data-bind="text: expectBlue"></td>
+                <td class="blue"><button data-bind="click: winBlue, disable: isPicking">Win</button></td>
+            </tr>
+        </table>
+    </div>
 
-    <button data-bind="click: reset, disable:pickStatus()=='Red Defence'">Reset selection</button>
+    <div style="align-content: center">
+        <button style="display: block; margin-left: auto; margin-right: auto; width: 5em"  data-bind="click: reset, disable:pickStatus()=='Red Defence'">Cancel</button>
+    </div>
 
     <script id="player-template" type="text/html">
         <div>
@@ -188,11 +214,11 @@
             function win(winner, looser) {
                 var won = $.picks[winner].team();
                 var lost = $.picks[looser].team();
-                
+
                 elo.update(won, lost);
 
-                localStorage.setItem('kicker-teams',JSON.stringify($.teams()));
-                
+                localStorage.setItem('kicker-teams', JSON.stringify($.teams()));
+
                 $.reset()
             }
 
@@ -200,7 +226,7 @@
             $.expectBlue = ko.observable('');
 
             var teams = localStorage.getItem('kicker-teams');
-            $.teams = ko.observableArray((teams&&JSON.parse(teams)) || []);
+            $.teams = ko.observableArray((teams && JSON.parse(teams)) || []);
             var elo = new Elo();
 
             function pullExpected() {
