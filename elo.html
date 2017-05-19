@@ -157,8 +157,6 @@
             var teams = localStorage.getItem('kicker-teams');
             teams = (teams && JSON.parse(teams)) || [];
 
-            teams = [];
-
             var players = teams.reduce(function (plyrs, team) {
                 function tryAdd(plyr) {
                     if (plyrs.indexOf(plyr) == -1)
@@ -266,7 +264,6 @@
 
                 // trigger stats update
                 teamsUpdate(teamsUpdate() + 1);
-                console.log(teams);
                 localStorage.setItem('kicker-teams', JSON.stringify($.teams()));
 
                 $.reset()
@@ -370,7 +367,7 @@
                     };
                 }
 
-                function singleTeam(sortBy, reverse) {
+                function pickTeam(sortBy, reverse) {
                     var sorted = $.teams.slice();
                     sorted.sort(function (a, b) { var cmp = sortBy(a) - sortBy(b); return reverse ? - cmp : cmp });
                     return sorted[0] && {
@@ -380,7 +377,7 @@
                     };
                 }
 
-                function singlePlayer(sortBy, reverse) {
+                function pickPlayer(sortBy, reverse) {
                     var obj = $.teams().reduce(function (acc, team) {
                         function upd(player) {
                             var record = acc[player] || { scores: [] };
@@ -408,11 +405,13 @@
 
                 var dummy = teamsUpdate();
                 return [
-                    stat('highest rating', singleTeam(teamScore, true), singlePlayer(teamScore, true)),
-                    stat('lowest rating', singleTeam(teamScore, false), singlePlayer(teamScore, false)),
-                    stat('most games', singleTeam(matches, true), singlePlayer(matches, true)),
-                    stat('most wins', singleTeam(numWins, true), singlePlayer(numWins, true)),
-                    stat('most losses', singleTeam(numLosses, true), singlePlayer(numLosses, true))
+                    {label: "total", team:$.teams().length+ ' teams', player: $.teams().reduce(function(sum, team){return sum + team.numMatches}, 0)/2 + ' games'},
+                    stat('highest rating', pickTeam(teamScore, true), pickPlayer(teamScore, true)),
+                    stat('lowest rating', pickTeam(teamScore, false), pickPlayer(teamScore, false)),
+                    stat('most games', pickTeam(matches, true), pickPlayer(matches, true)),
+                    stat('most wins', pickTeam(numWins, true), pickPlayer(numWins, true)),
+                    stat('most losses', pickTeam(numLosses, true), pickPlayer(numLosses, true)),
+                    
                 ];
             });
         }
@@ -420,12 +419,12 @@
         ko.applyBindings(new KickerModel(), document.getElementById('doc'));
 
         function sortCI(a, b) { return a.toLowerCase() > b.toLowerCase() ? 1 : -1; }
-        function sum(acc, s) { return acc + s }
+        function sum(acc, s) { return acc + (s || 0) }
 
-        function matches(team) { return team.numMatches }
-        function teamScore(team) { return team.score }
-        function numWins(team) { return team.numWins }
-        function numLosses(team) { return team.numMatches - team.numWins }
+        function matches(team) { return team.numMatches || 0 }
+        function teamScore(team) { return team.score || 0 }
+        function numWins(team) { return team.numWins || 0 }
+        function numLosses(team) { return (team.numMatches - team.numWins) || 0 }
     </script>
 
 </body>
