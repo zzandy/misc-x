@@ -201,7 +201,7 @@
 
             $.players = ko.observableArray(players);
             $.playersSorted = ko.computed(function () {
-                var sorted = $.players.slice().sort(function (a, b) { return a.toLowerCase() > b.toLowerCase() ? 1 : -1 });
+                var sorted = $.players.slice().sort(sortCI);
                 return sorted.concat('{add new}');
             });
 
@@ -360,15 +360,19 @@
             }
 
             function findScore(player, role1, role2, teams) {
+                function sum(acc, team){
+                    return acc + team.team.score;
+                }
+
                 var match = teams.filter(function (team) { return team[role1] == player });
 
                 if (match.length > 0)
-                    return match.reduce(function (sum, team) { return sum + team.team.score }, 0) / match.length;
+                    return match.reduce(sum, 0) / match.length;
 
                 match = teams.filter(function (team) { return team[role2] == player });
 
                 if (match.length > 0)
-                    return match.reduce(function (sum, team) { return sum + team.team.score }, 0) / match.length;
+                    return match.reduce(sum, 0) / match.length;
 
                 return 0;
             }
@@ -420,7 +424,7 @@
                     var players = []
 
                     for (var i in obj) {
-                        players.push([i, obj[i].scores.reduce(function (sum, s) { return sum + s }) / obj[i].scores.length]);
+                        players.push([i, obj[i].scores.reduce(sum) / obj[i].scores.length]);
                     }
 
                     var top = players.sort(function (a, b) { return reverse ? b[1] - a[1] : a[1] - b[1] })[0];
@@ -462,6 +466,12 @@
         }
 
         ko.applyBindings(new KickerModel(), document.getElementById('doc'));
+
+        function sortCI(a, b){
+            return a.toLowerCase() > b.toLowerCase() ? 1 : -1;
+        }
+
+        function sum(acc, s) { return acc + s }
     </script>
 
 </body>
