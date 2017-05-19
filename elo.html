@@ -112,6 +112,12 @@
 
     <div id="player-list" data-bind="visible: isPicking, template: {name: 'player-template', foreach: playersSorted}"></div>
 
+    <div data-bind="foreach: stats">
+        <div><label data-bind="text: label"></label>: <span data-bind="text:team"></span>, <span data-bind="text:player"></span></div>
+    </div>
+
+    </div>
+
     <script type="text/javascript">
         function Elo(initScore, x10diff, kFactor) {
             this.initScore = initScore || 800;
@@ -146,16 +152,13 @@
             var $ = this;
 
             $.windowTitle = ko.observable('Elo Rating Tracker');
-            
+
             var teams = localStorage.getItem('kicker-teams');
             teams = (teams && JSON.parse(teams)) || [];
 
-            var players = teams.reduce(function(plyrs, team){
-
-console.log(plyrs);
-
-                function tryAdd(plyr){
-                    if(plyrs.indexOf(plyr) == -1)
+            var players = teams.reduce(function (plyrs, team) {
+                function tryAdd(plyr) {
+                    if (plyrs.indexOf(plyr) == -1)
                         plyrs.push(plyr);
                 }
 
@@ -198,7 +201,7 @@ console.log(plyrs);
 
             $.players = ko.observableArray(players);
             $.playersSorted = ko.computed(function () {
-                var sorted = $.players.slice().sort(function (a, b) { return a > b ? 1 : -1 });
+                var sorted = $.players.slice().sort(function (a, b) { return a.toLowerCase() > b.toLowerCase() ? 1 : -1 });
                 return sorted.concat('{add new}');
             });
 
@@ -281,11 +284,14 @@ console.log(plyrs);
                 $.picks.blue.team(null);
             }
 
+            teamsUpdate = ko.observable();
+
             function win(winner, looser) {
                 var won = $.picks[winner].team();
                 var lost = $.picks[looser].team();
 
                 elo.update(won, lost);
+                teamsUpdate(teamsUpdate() + 1);
 
                 localStorage.setItem('kicker-teams', JSON.stringify($.teams()));
 
@@ -376,6 +382,83 @@ console.log(plyrs);
 
                 return v;
             }
+
+            $.stats = ko.computed(function () {
+                function stat(label, team, player) {
+                    return {
+                        label: label,
+                        team: team === undefined ? 'n/a' : team.defence + "(d)+" + team.offence + "(o) - " + team.score.toFixed(0),
+                        player: player.player + ' - ' + player.score.toFixed(0)
+                    };
+                }
+
+                function singleTeam(teams, sortBy, reverse) {
+                    var sorted = teams.slice();
+                    sorted.sort(function (a, b) { var cmp = sortBy(a) - sortBy(b); return reverse ? - cmp : cmp });
+                    return sorted[0] && {
+                        offence: sorted[0].team.offence,
+                        defence: sorted[0].team.defence,
+                        score: sortBy(sorted[0])
+                    };
+                }
+
+                function singlePlayer(teams, sortBy, reverse) {
+                    var obj = teams().reduce(function (acc, team) {
+                        function upd(player) {
+                            var record = acc[player] || { scores: [] };
+                            record.scores.push(sortBy(team));
+
+                            acc[player] = record;
+                        }
+
+                        upd(team.team.defence);
+                        upd(team.team.offence);
+
+                        return acc;
+                    }, {});
+
+                    var players = []
+
+                    for (var i in obj) {
+                        players.push([i, obj[i].scores.reduce(function (sum, s) { return sum + s }) / obj[i].scores.length]);
+                    }
+
+                    var top = players.sort(function (a, b) { return reverse ? b[1] - a[1] : a[1] - b[1] })[0];
+
+                    return { player: top[0], score: top[1] };
+                }
+
+                function topTeam() {
+                    return singleTeam($.teams, function (team) { return team.score }, true);
+                }
+
+                function bottomTeam() {
+                    return singleTeam($.teams, function (team) { return team.score }, false);
+                }
+
+                function mostGamesTeam() {
+                    return singleTeam($.teams, function (team) { return team.numMatches }, true);
+                }
+
+                function topPlayer() {
+                    return singlePlayer($.teams, function (team) { return team.score }, true);
+                }
+
+                function bottomPlayer() {
+                    return singlePlayer($.teams, function (team) { return team.score }, false);
+                }
+
+                function mostGamesPlayer() {
+                    return singlePlayer($.teams, function (team) { return team.numMatches }, true);
+                }
+
+                var dummy = teamsUpdate();
+                return [
+                    stat('highest rating', topTeam(), topPlayer()),
+                    stat('lowest rating', bottomTeam(), bottomPlayer()),
+                    stat('most games', mostGamesTeam(), mostGamesPlayer())
+                ];
+            });
         }
 
         ko.applyBindings(new KickerModel(), document.getElementById('doc'));
