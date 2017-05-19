@@ -142,6 +142,7 @@
 
             a.score = Math.max(0, (a.score || this.initScore) + delta);
             a.numMatches = (a.numMatches || 0) + 1;
+            a.numWins = (a.numWins || 0) + (scoreForA == 1);
         }
     </script>
 
@@ -156,6 +157,8 @@
             var teams = localStorage.getItem('kicker-teams');
             teams = (teams && JSON.parse(teams)) || [];
 
+            teams = [];
+
             var players = teams.reduce(function (plyrs, team) {
                 function tryAdd(plyr) {
                     if (plyrs.indexOf(plyr) == -1)
@@ -167,37 +170,6 @@
 
                 return plyrs;
             }, 'Vova T; Vova G; Sergii K; Sergii S; Dmytro; Andriy; Almaz; Anton'.split('; '));
-
-            function fixTeams(teams) {
-
-                var duplicates = teams.reduce(function (acc, team) {
-                    var x = acc[team.team.defence + '/' + team.team.offence] || { min: Infinity, max: -Infinity, num: 0, scores: [], games: 0, defence: team.team.defence, offence: team.team.offence };
-
-                    x.num++;
-                    x.min = Math.min(team.score, x.min);
-                    x.max = Math.max(team.score, x.max);
-                    x.scores.push(team.score);
-                    x.games += team.numMatches
-
-                    acc[team.team.defence + '/' + team.team.offence] = x;
-
-                    return acc;
-                }, {})
-
-                fixed = []
-
-                for (var i in duplicates) {
-                    var x = duplicates[i];
-
-                    team = { team: { offence: x.offence, defence: x.defence }, score: x.scores.reduce(function (sum, score) { return sum + score }) / x.scores.length, numMatches: x.games };
-
-                    fixed.push(team);
-                };
-
-                return fixed;
-            }
-
-            teams = fixTeams(teams)
 
             $.players = ko.observableArray(players);
             $.playersSorted = ko.computed(function () {
@@ -291,8 +263,10 @@
                 var lost = $.picks[looser].team();
 
                 elo.update(won, lost);
-                teamsUpdate(teamsUpdate() + 1);
 
+                // trigger stats update
+                teamsUpdate(teamsUpdate() + 1);
+                console.log(teams);
                 localStorage.setItem('kicker-teams', JSON.stringify($.teams()));
 
                 $.reset()
@@ -360,7 +334,7 @@
             }
 
             function findScore(player, role1, role2, teams) {
-                function sum(acc, team){
+                function sum(acc, team) {
                     return acc + team.team.score;
                 }
 
@@ -396,18 +370,18 @@
                     };
                 }
 
-                function singleTeam(teams, sortBy, reverse) {
-                    var sorted = teams.slice();
+                function singleTeam(sortBy, reverse) {
+                    var sorted = $.teams.slice();
                     sorted.sort(function (a, b) { var cmp = sortBy(a) - sortBy(b); return reverse ? - cmp : cmp });
                     return sorted[0] && {
                         offence: sorted[0].team.offence,
                         defence: sorted[0].team.defence,
-                        score: sortBy(sorted[0])
+                        score: sortBy(sorted[0]) || NaN
                     };
                 }
 
-                function singlePlayer(teams, sortBy, reverse) {
-                    var obj = teams().reduce(function (acc, team) {
+                function singlePlayer(sortBy, reverse) {
+                    var obj = $.teams().reduce(function (acc, team) {
                         function upd(player) {
                             var record = acc[player] || { scores: [] };
                             record.scores.push(sortBy(team));
@@ -429,49 +403,29 @@
 
                     var top = players.sort(function (a, b) { return reverse ? b[1] - a[1] : a[1] - b[1] })[0];
 
-                    return { player: top[0], score: top[1] };
-                }
-
-                function topTeam() {
-                    return singleTeam($.teams, function (team) { return team.score }, true);
-                }
-
-                function bottomTeam() {
-                    return singleTeam($.teams, function (team) { return team.score }, false);
-                }
-
-                function mostGamesTeam() {
-                    return singleTeam($.teams, function (team) { return team.numMatches }, true);
-                }
-
-                function topPlayer() {
-                    return singlePlayer($.teams, function (team) { return team.score }, true);
-                }
-
-                function bottomPlayer() {
-                    return singlePlayer($.teams, function (team) { return team.score }, false);
-                }
-
-                function mostGamesPlayer() {
-                    return singlePlayer($.teams, function (team) { return team.numMatches }, true);
+                    return top === undefined ? {player:'n/a', score:NaN} : { player: top[0], score: top[1] };
                 }
 
                 var dummy = teamsUpdate();
                 return [
-                    stat('highest rating', topTeam(), topPlayer()),
-                    stat('lowest rating', bottomTeam(), bottomPlayer()),
-                    stat('most games', mostGamesTeam(), mostGamesPlayer())
+                    stat('highest rating', singleTeam(teamScore, true), singlePlayer(teamScore, true)),
+                    stat('lowest rating', singleTeam(teamScore, false), singlePlayer(teamScore, false)),
+                    stat('most games', singleTeam(matches, true), singlePlayer(matches, true)),
+                    stat('most wins', singleTeam(numWins, true), singlePlayer(numWins, true)),
+                    stat('most losses', singleTeam(numLosses, true), singlePlayer(numLosses, true))
                 ];
             });
         }
 
         ko.applyBindings(new KickerModel(), document.getElementById('doc'));
 
-        function sortCI(a, b){
-            return a.toLowerCase() > b.toLowerCase() ? 1 : -1;
-        }
-
+        function sortCI(a, b) { return a.toLowerCase() > b.toLowerCase() ? 1 : -1; }
         function sum(acc, s) { return acc + s }
+
+        function matches(team) { return team.numMatches }
+        function teamScore(team) { return team.score }
+        function numWins(team) { return team.numWins }
+        function numLosses(team) { return team.numMatches - team.numWins }
     </script>
 
 </body>
