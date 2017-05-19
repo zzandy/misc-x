@@ -13,25 +13,26 @@
             background-color: black;
             color: grey;
         }
-        
+
         .picker {
             border-radius: .3em;
         }
-        
+
         .picker table {
             border-collapse: collapse;
         }
-        
+
         #player-list {
             column-count: 2;
-            text-align: center
+            text-align: center;
+            transition: all 1s ease-out;
         }
-        
+
         #player-list button {
             font-size: 150%;
-            margin:.3em 0;
+            margin: .3em 0;
         }
-        
+
         button {
             font-size: 120%;
             min-width: 7em;
@@ -42,24 +43,24 @@
             background-color: hsla(0, 0%, 1%, .1);
             color: hsla(0, 100%, 100%, .8);
         }
-        
+
         button:disabled {
             color: hsla(0, 0%, 50%, .3);
             border-color: hsla(0, 0%, 50%, .2);
         }
-        
+
         .picker td,
         .picker th {
             padding: .1em .5em;
             min-height: 1em;
         }
-        
+
         .red {
             text-align: left;
             background-color: hsla(0, 100%, 35%, 1);
             color: hsla(0, 100%, 85%, 1);
         }
-        
+
         .blue {
             text-align: right;
             background-color: hsla(215, 100%, 40%, 1);
@@ -99,16 +100,17 @@
     </div>
 
     <div style="align-content: center">
-        <button style="display: block; margin-left: auto; margin-right: auto; width: 5em"  data-bind="click: reset, disable:pickStatus()=='Red Defence'">Cancel</button>
+        <button style="display: block; margin-left: auto; margin-right: auto; width: 5em" data-bind="click: reset, disable:pickStatus()=='Red Defence'">Cancel</button>
     </div>
 
     <script id="player-template" type="text/html">
         <div>
-            <button data-bind="text: $data, disable: $root.isPicked($data), click: function(){$root.pick($data)}"></button>
+            <button data-bind="text: $data, visible: $data != '{add new}', disable: $root.isPicked($data), click: function(){$root.pick($data)}"></button>
+            <button data-bind="visible: $data == '{add new}', click: $root.queryForUser"><u>Add Player</u></button>
         </div>
     </script>
 
-    <div id="player-list" data-bind="visible: isPicking, template: {name: 'player-template', foreach: players().sort()}"></div>
+    <div id="player-list" data-bind="visible: isPicking, template: {name: 'player-template', foreach: playersSorted}"></div>
 
     <script type="text/javascript">
         function Elo(initScore, x10diff, kFactor) {
@@ -144,8 +146,31 @@
             var $ = this;
 
             $.windowTitle = ko.observable('Elo Rating Tracker');
-            var players = localStorage.getItem('kicker-players')
-            $.players = ko.observableArray((players && JSON.parse(players)) || ('Vova T; Vova G; Sergii K; Sergii S; Dmytro; Andriy; Almaz; Anton'.split('; ')));
+            
+            var teams = localStorage.getItem('kicker-teams');
+            teams = (teams && JSON.parse(teams)) || [];
+
+            var players = teams.reduce(function(plyrs, team){
+
+console.log(plyrs);
+
+                function tryAdd(plyr){
+                    if(plyrs.indexOf(plyr) == -1)
+                        plyrs.push(plyr);
+                }
+
+                tryAdd(team.team.defence);
+                tryAdd(team.team.offence);
+
+                return plyrs;
+            }, 'Vova T; Vova G; Sergii K; Sergii S; Dmytro; Andriy; Almaz; Anton'.split('; '));
+            
+            $.players = ko.observableArray(players);
+            $.playersSorted = ko.computed(function () {
+                var sorted = $.players.slice().sort(function (a, b) { return a > b ? 1 : -1 });
+                return sorted.concat('{add new}');
+            });
+
             $.pickStatus = ko.observable('Red Defence');
             $.picks = {
                 red: {
@@ -170,6 +195,15 @@
                     return t == null || t.score === undefined
                         ? ''
                         : t.score.toFixed(0);
+                }
+            }
+
+            $.queryForUser = function () {
+                var name = prompt("Enter new player name").trim();
+
+                if (name != '' && !$.players().some(function (p) { return p == name })) {
+                    $.players.push(name)
+                    $.pick(name);
                 }
             }
 
@@ -230,8 +264,7 @@
             $.expectRed = ko.observable('');
             $.expectBlue = ko.observable('');
 
-            var teams = localStorage.getItem('kicker-teams');
-            $.teams = ko.observableArray((teams && JSON.parse(teams)) || []);
+            $.teams = ko.observableArray(teams);
             var elo = new Elo();
 
             function pullExpected() {
