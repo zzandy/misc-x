@@ -164,7 +164,38 @@ console.log(plyrs);
 
                 return plyrs;
             }, 'Vova T; Vova G; Sergii K; Sergii S; Dmytro; Andriy; Almaz; Anton'.split('; '));
-            
+
+            function fixTeams(teams) {
+
+                var duplicates = teams.reduce(function (acc, team) {
+                    var x = acc[team.team.defence + '/' + team.team.offence] || { min: Infinity, max: -Infinity, num: 0, scores: [], games: 0, defence: team.team.defence, offence: team.team.offence };
+
+                    x.num++;
+                    x.min = Math.min(team.score, x.min);
+                    x.max = Math.max(team.score, x.max);
+                    x.scores.push(team.score);
+                    x.games += team.numMatches
+
+                    acc[team.team.defence + '/' + team.team.offence] = x;
+
+                    return acc;
+                }, {})
+
+                fixed = []
+
+                for (var i in duplicates) {
+                    var x = duplicates[i];
+
+                    team = { team: { offence: x.offence, defence: x.defence }, score: x.scores.reduce(function (sum, score) { return sum + score }) / x.scores.length, numMatches: x.games };
+
+                    fixed.push(team);
+                };
+
+                return fixed;
+            }
+
+            teams = fixTeams(teams)
+
             $.players = ko.observableArray(players);
             $.playersSorted = ko.computed(function () {
                 var sorted = $.players.slice().sort(function (a, b) { return a > b ? 1 : -1 });
