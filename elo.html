@@ -287,8 +287,7 @@ console.log(plyrs);
                 for (var i = 0; i < teams.length; ++i) {
                     var item = teams[i];
                     if (item.team.offence == offence && item.team.defence == defence) {
-                        team = item;
-                        break;
+                        return item;
                     }
                 }
 
@@ -298,7 +297,7 @@ console.log(plyrs);
                     if (item.team.offence == defence && item.team.defence == offence) {
                         team = { team: { offence: offence, defence: defence }, score: item.score };
                         $.teams.push(team);
-                        break;
+                        return team;
                     }
                 }
 
@@ -308,12 +307,16 @@ console.log(plyrs);
                 if (score1 > 0 && score2 > 0) {
                     team = { team: { offence: offence, defence: defence }, score: (score1 + score2) / 2 };
                     $.teams.push(team);
+
+                    return team;
                 }
 
                 // if nothing found create new
                 if (team == null) {
                     team = { team: { offence: offence, defence: defence } }
                     $.teams.push(team);
+
+                    return team;
                 }
 
                 return team;
