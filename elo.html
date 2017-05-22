@@ -433,8 +433,9 @@
                 }
 
                 function pickTeam(sortBy, reverse) {
-                    var sorted = $.teams.slice();
-                    sorted.sort(function (a, b) { var cmp = sortBy(a) - sortBy(b); return reverse ? - cmp : cmp });
+                    var sorted = $.teams.slice().filter(notNan(sortBy));
+                    sorted.sort(function (a, b) { var cmp = (sortBy(a) || 0) - (sortBy(b) || 0); return reverse ? - cmp : cmp });
+
                     return sorted[0] && {
                         offence: sorted[0].team.offence,
                         defence: sorted[0].team.defence,
@@ -442,13 +443,16 @@
                     };
                 }
 
-                function pickPlayer(sortBy, reverse) {
+                function pickPlayer(sortBy, reverse, total) {
                     var obj = $.teams().reduce(function (acc, team) {
                         function upd(player) {
                             var record = acc[player] || { scores: [] };
-                            record.scores.push(sortBy(team));
+                            var val = sortBy(team);
 
-                            acc[player] = record;
+                            if (val) {
+                                record.scores.push(val);
+                                acc[player] = record;
+                            }
                         }
 
                         upd(team.team.defence);
@@ -460,7 +464,7 @@
                     var players = []
 
                     for (var i in obj) {
-                        players.push([i, obj[i].scores.reduce(sum) / obj[i].scores.length]);
+                        players.push([i, total ? obj[i].scores.reduce(sum) : obj[i].scores.reduce(sum) / obj[i].scores.length]);
                     }
 
                     var top = players.sort(function (a, b) { return reverse ? b[1] - a[1] : a[1] - b[1] })[0];
@@ -470,13 +474,12 @@
 
                 var dummy = teamsUpdate();
                 return [
-                    { label: "total", team: $.teams().length + ' teams', player: $.teams().reduce(function (sum, team) { return sum + team.numMatches }, 0) / 2 + ' games' },
+                    { label: "total", team: $.teams().length + ' teams', player: $.teams().filter(function (team) { return 'numMatches' in team }).reduce(function (sum, team) { return sum + team.numMatches }, 0) / 2 + ' games' },
                     stat('highest rating', pickTeam(teamScore, true), pickPlayer(teamScore, true)),
                     stat('lowest rating', pickTeam(teamScore, false), pickPlayer(teamScore, false)),
-                    stat('most games', pickTeam(matches, true), pickPlayer(matches, true)),
-                    stat('most wins', pickTeam(numWins, true), pickPlayer(numWins, true)),
-                    stat('most losses', pickTeam(numLosses, true), pickPlayer(numLosses, true)),
-
+                    stat('most games', pickTeam(matches, true), pickPlayer(matches, true, true)),
+                    stat('most wins', pickTeam(numWins, true), pickPlayer(numWins, true, true)),
+                    stat('most losses', pickTeam(numLosses, true), pickPlayer(numLosses, true, true)),
                 ];
             });
         }
@@ -486,10 +489,16 @@
         function sortCI(a, b) { return a.toLowerCase() > b.toLowerCase() ? 1 : -1; }
         function sum(acc, s) { return acc + (s || 0) }
 
-        function matches(team) { return team.numMatches || 0 }
-        function teamScore(team) { return team.score || 0 }
-        function numWins(team) { return team.numWins || 0 }
-        function numLosses(team) { return (team.numMatches - team.numWins) || 0 }
+        function matches(team) { return team.numMatches }
+        function teamScore(team) { return team.score }
+        function numWins(team) { return team.numWins }
+        function numLosses(team) { return team.numMatches - team.numWins }
+
+        function notNan(getter) {
+            return function (i) {
+                return !isNaN(getter(i));
+            }
+        }
     </script>
 
 </body>
