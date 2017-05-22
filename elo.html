@@ -245,7 +245,13 @@
             $.winRed = function () { win('red', 'blue') }
             $.winBlue = function () { win('blue', 'red') }
 
+            var winStreakTeam = null;
+            var winStreak = 0;
+
             $.reset = function () {
+                winTeam = null;
+                winStreak = 0;
+
                 $.pickStatus('Red Defence');
 
                 $.expectRed('');
@@ -266,13 +272,47 @@
                 var won = $.picks[winner].team();
                 var lost = $.picks[looser].team();
 
+                if (won == winStreakTeam)
+                    winStreak += 1;
+                else {
+                    winStreak = 1;
+                    winStreakTeam = won;
+                }
+
+                if (winStreak < 3) {
+                    $.expectRed('');
+                    $.expectBlue('');
+
+                    $.picks[winner].defence(won.team.defence);
+                    $.picks[winner].offence(won.team.offence);
+                    $.picks[winner].team(won);
+
+                    $.picks[looser].defence(lost.team.offence);
+                    $.picks[looser].offence(noPick);
+                    $.picks[looser].team(null);
+
+                    $.pickStatus(winner == 'red' ? 'Blue Offence' : 'Red Offence');
+                }
+                else {
+                    $.expectRed('');
+                    $.expectBlue('');
+
+                    $.picks[winner].defence(won.team.defence);
+                    $.picks[winner].offence(noPick);
+                    $.picks[winner].team(null);
+
+                    $.picks[looser].defence(lost.team.offence);
+                    $.picks[looser].offence(won.team.offence);
+                    $.picks[looser].team(findTeam(lost.team.offence, won.team.offence));
+
+                    $.pickStatus(winner == 'blue' ? 'Blue Offence' : 'Red Offence');
+                }
+
                 elo.update(won, lost);
 
                 // trigger stats update
                 teamsUpdate(teamsUpdate() + 1);
                 localStorage.setItem('kicker-teams', JSON.stringify($.teams()));
-
-                $.reset()
             }
 
             var resetTimer = null;
