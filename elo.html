@@ -175,16 +175,18 @@
                 return sorted.concat('{add new}');
             });
 
+            var noPick = '---';
+
             $.pickStatus = ko.observable('Red Defence');
             $.picks = {
                 red: {
-                    defence: ko.observable('---'),
-                    offence: ko.observable('---'),
+                    defence: ko.observable(noPick),
+                    offence: ko.observable(noPick),
                     team: ko.observable(null)
                 },
                 blue: {
-                    defence: ko.observable('---'),
-                    offence: ko.observable('---'),
+                    defence: ko.observable(noPick),
+                    offence: ko.observable(noPick),
                     team: ko.observable(null)
                 }
             };
