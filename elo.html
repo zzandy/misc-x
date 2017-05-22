@@ -233,8 +233,12 @@
                         break;
                 }
 
-                if ($.pickStatus() == "Ready") {
+                if ($.picks.red.defence() != noPick
+                    && $.picks.red.offence() != noPick
+                    && $.picks.blue.defence() != noPick
+                    && $.picks.blue.offence() != noPick) {
                     pullExpected();
+                    $.pickStatus('Ready');
                 }
             }
 
