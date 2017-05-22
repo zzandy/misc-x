@@ -100,7 +100,7 @@
     </div>
 
     <div style="align-content: center">
-        <button style="display: block; margin-left: auto; margin-right: auto; width: 5em" data-bind="click: reset, disable:pickStatus()=='Red Defence', event: {mousedown: cancelDown, mouseup: cancelUp}">Cancel</button>
+        <button style="display: block; margin-left: auto; margin-right: auto; width: 5em" data-bind="click: reset, disable:pickStatus()=='Red Defence', event: {mousedown: initateRestCountdown, mouseup: cancelRestCountdown, touchstart: initateRestCountdown, touchend: cancelRestCountdown}">Cancel</button>
     </div>
 
     <script id="player-template" type="text/html">
@@ -270,11 +270,11 @@
             }
 
             var resetTimer = null;
-            $.cancelDown = function () {
+            $.initateRestCountdown = function () {
                 resetTimer = setTimeout(initiateReset, 5000);
             }
 
-            $.cancelUp = function () {
+            $.cancelRestCountdown = function () {
                 clearTimeout(resetTimer)
             }
 
