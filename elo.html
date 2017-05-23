@@ -99,6 +99,9 @@
         </table>
     </div>
 
+    <div id='log'></div>
+
+
     <div style="align-content: center">
         <button style="display: block; margin-left: auto; margin-right: auto; width: 5em" data-bind="click: reset, disable:pickStatus()=='Red Defence', event: {mousedown: initateRestCountdown, mouseup: cancelRestCountdown, touchstart: initateRestCountdown, touchend: cancelRestCountdown}">Cancel</button>
     </div>
@@ -318,6 +321,10 @@
             var resetTimer = null;
             $.initateRestCountdown = function (model, e) {
                 resetTimer = setTimeout(initiateReset, 5000);
+
+                document.getElementById('log').innerHTML += '<div>'+e.type+'</div>';
+
+
                 e.stopPropagation();
             }
 
