@@ -316,8 +316,9 @@
             }
 
             var resetTimer = null;
-            $.initateRestCountdown = function () {
+            $.initateRestCountdown = function (model, e) {
                 resetTimer = setTimeout(initiateReset, 5000);
+                e.stopPropagation();
             }
 
             $.cancelRestCountdown = function () {
