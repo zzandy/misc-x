@@ -486,6 +486,7 @@
                     stat('highest rating', pickTeam(teamScore, true), pickPlayer(teamScore, true)),
                     stat('lowest rating', pickTeam(teamScore, false), pickPlayer(teamScore, false)),
                     stat('most games', pickTeam(matches, true), pickPlayer(matches, true, true)),
+                    stat('least games', pickTeam(matches, false), pickPlayer(matches, false, true)),
                     stat('most wins', pickTeam(numWins, true), pickPlayer(numWins, true, true)),
                     stat('most losses', pickTeam(numLosses, true), pickPlayer(numLosses, true, true)),
                 ];
