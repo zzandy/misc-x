@@ -323,9 +323,6 @@
                 resetTimer = setTimeout(initiateReset, 5000);
 
                 document.getElementById('log').innerHTML += '<div>'+e.type+'</div>';
-
-
-                e.stopPropagation();
             }
 
             $.cancelRestCountdown = function () {
