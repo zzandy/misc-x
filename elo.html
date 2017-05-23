@@ -319,14 +319,25 @@
             }
 
             var resetTimer = null;
-            $.initateRestCountdown = function (model, e) {
+            var clickTimer = null;
+            var click = false;
+            $.initateRestCountdown = function () {
                 resetTimer = setTimeout(initiateReset, 5000);
+                click = true;
+                clickTimer = setTimeout(cancelClick, 100);
+            }
 
-                document.getElementById('log').innerHTML += '<div>'+e.type+'</div>';
+            function cancelClick(){
+                click = false;
             }
 
             $.cancelRestCountdown = function () {
                 clearTimeout(resetTimer)
+                clearTimeout(clickTimer);
+
+                if(click){
+                    $.reset()
+                }
             }
 
             function initiateReset() {
