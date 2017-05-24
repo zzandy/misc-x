@@ -99,9 +99,6 @@
         </table>
     </div>
 
-    <div id='log'></div>
-
-
     <div style="align-content: center">
         <button style="display: block; margin-left: auto; margin-right: auto; width: 5em" data-bind="click: reset, disable:pickStatus()=='Red Defence', event: {mousedown: initateRestCountdown, mouseup: cancelRestCountdown, touchstart: initateRestCountdown, touchend: cancelRestCountdown}">Cancel</button>
     </div>
@@ -323,11 +320,12 @@
             var click = false;
             $.initateRestCountdown = function () {
                 resetTimer = setTimeout(initiateReset, 5000);
+
                 click = true;
                 clickTimer = setTimeout(cancelClick, 100);
             }
 
-            function cancelClick(){
+            function cancelClick() {
                 click = false;
             }
 
@@ -335,7 +333,7 @@
                 clearTimeout(resetTimer)
                 clearTimeout(clickTimer);
 
-                if(click){
+                if (click) {
                     $.reset()
                 }
             }
@@ -448,18 +446,21 @@
                     };
                 }
 
-                function pickTeam(sortBy, reverse) {
+                function pickTeam(sortBy, reverse, skip) {
+                    skip = skip || 0;
                     var sorted = $.teams.slice().filter(notNan(sortBy));
+
                     sorted.sort(function (a, b) { var cmp = (sortBy(a) || 0) - (sortBy(b) || 0); return reverse ? - cmp : cmp });
 
-                    return sorted[0] && {
-                        offence: sorted[0].team.offence,
-                        defence: sorted[0].team.defence,
-                        score: sortBy(sorted[0]) || NaN
+                    return sorted[0 + skip] && {
+                        offence: sorted[0 + skip].team.offence,
+                        defence: sorted[0 + skip].team.defence,
+                        score: sortBy(sorted[0 + skip]) || NaN
                     };
                 }
 
-                function pickPlayer(sortBy, reverse, total) {
+                function pickPlayer(sortBy, reverse, total, skip) {
+                    skip = skip || 0;
                     var obj = $.teams().reduce(function (acc, team) {
                         function upd(player) {
                             var record = acc[player] || { scores: [] };
@@ -480,10 +481,11 @@
                     var players = []
 
                     for (var i in obj) {
-                        players.push([i, total ? obj[i].scores.reduce(sum) : obj[i].scores.reduce(sum) / obj[i].scores.length]);
+                        var scores = obj[i].scores
+                        players.push([i, scores.reduce(max) / 10000 + (total ? scores.reduce(sum) : scores.reduce(sum) / scores.length)]);
                     }
 
-                    var top = players.sort(function (a, b) { return reverse ? b[1] - a[1] : a[1] - b[1] })[0];
+                    var top = players.sort(function (a, b) { return reverse ? b[1] - a[1] : a[1] - b[1] })[0 + skip];
 
                     return top === undefined ? { player: 'n/a', score: NaN } : { player: top[0], score: top[1] };
                 }
@@ -491,7 +493,9 @@
                 var dummy = teamsUpdate();
                 return [
                     { label: "total", team: $.teams().length + ' teams', player: $.teams().filter(function (team) { return 'numMatches' in team }).reduce(function (sum, team) { return sum + team.numMatches }, 0) / 2 + ' games' },
-                    stat('highest rating', pickTeam(teamScore, true), pickPlayer(teamScore, true)),
+                    stat('highest rating', pickTeam(teamScore, true), pickPlayer(teamScore, true, false)),
+                    stat('2nd highest', pickTeam(teamScore, true, 1), pickPlayer(teamScore, true, false, 1)),
+                    stat('3rd highest', pickTeam(teamScore, true, 2), pickPlayer(teamScore, true, false, 2)),
                     stat('lowest rating', pickTeam(teamScore, false), pickPlayer(teamScore, false)),
                     stat('most games', pickTeam(matches, true), pickPlayer(matches, true, true)),
                     stat('least games', pickTeam(matches, false), pickPlayer(matches, false, true)),
@@ -505,6 +509,7 @@
 
         function sortCI(a, b) { return a.toLowerCase() > b.toLowerCase() ? 1 : -1; }
         function sum(acc, s) { return acc + (s || 0) }
+        function max(acc, s) { return Math.max(acc, s || -Infinity) }
 
         function matches(team) { return team.numMatches }
         function teamScore(team) { return team.score }
