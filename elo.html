@@ -66,6 +66,18 @@
             background-color: hsla(215, 100%, 40%, 1);
             color: hsla(215, 100%, 85%, 1);
         }
+
+        .det-stats table:not(:last-child) {
+            margin-bottom: 1em;
+        }
+
+        .det-stats td:not(:last-child) {
+            padding-right: .5em;
+        }
+
+        .det-stats .number {
+            text-align: right
+        }
     </style>
     <script type="text/javascript" src="knockout.js"></script>
 
@@ -116,7 +128,29 @@
         <div><label data-bind="text: label"></label>: <span data-bind="text:team"></span>, <span data-bind="text:player"></span></div>
     </div>
 
-    </div>
+    <button data-bind="click: showStats, text: isStatsShown() ? 'Less stats' : 'More stats'"></button>
+
+    <script id="stats-template" type="text/html">
+        <table>
+            <thead>
+                <tr data-bind="foreach: columns">
+                    <!-- ko if: $index() == 0 -->
+                    <th>#</th>
+                    <!-- /ko -->
+                    <th data-bind="text: title + '&nbsp;' + ind(), click: toggle">Name</th>
+                </tr>
+            </thead>
+            <tbody data-bind="template: {name: 'stat-line-template', foreach: rows}"></tbody>
+        </table>
+    </script>
+
+    <script id="stat-line-template" type="text/html">
+        <tr data-bind="foreach: [$index()+1].concat(data)">
+            <td data-bind="text: $data, css: $parent.className[$index()-1]"></td>
+        </tr>
+    </script>
+
+    <div class="det-stats" data-bind="visible: isStatsShown, template: {name: 'stats-template', foreach: detailedStats}" />
 
     <script type="text/javascript">
         function Elo(initScore, x10diff, kFactor) {
@@ -503,6 +537,124 @@
                     stat('most losses', pickTeam(numLosses, true), pickPlayer(numLosses, true, true)),
                 ];
             });
+
+            var teamStats = [['defence;Defence', defence], ['offence;Offence', offence], ['score;Rank', teamScore2], ['wins;Wins', numWins], ['losses;Losses', numLosses], ['ratio;Wins%', ratio, percent], ['games;Games', matches]];
+            var playerStats = [['name;Name', name],
+            ['max;Max Rank', maxRank], ['maxd; (d)', maxRankd], ['maxd;(o)', maxRanko],
+            ['avg;Average Rank', avgRank], ['avgd;(d)', avgRankd], ['avgo;(o)', avgRanko],
+            ['wins;Wins', numWins], ['losses;Losses', numLosses],
+            ['ratio;Wins%', ratio, percent], ['ratiod;(d)', ratiod, percent], ['ratiod;(o)', ratioo, percent],
+            ['games;Games', matches]
+            ];
+
+            var up = '\u25b2'; // ▲
+            var down = '\u25bc'; // ▼
+            var none = '\u00a0\u00a0\u00a0';
+
+            teamStats = teamStats.map(parseStats);
+            playerStats = playerStats.map(parseStats)
+
+            teamStats.forEach(addSort);
+            playerStats.forEach(addSort);
+
+            function isText(name) { return name == 'defence' || name == 'offence' || name == 'name' }
+
+            function isDefault(name) { return name == 'score' || name == 'max' }
+
+            function parseStats(stat) {
+                var name = stat[0].split(';');
+                var ind = ko.observable(isDefault(name[0]) ? down : none);
+
+                return { name: name[0], title: name[1], fetch: stat[1], ind: ind, toggle: null, formatter: stat[2] || null, className: isText(name[0]) ? 'text' : 'number' }
+            }
+
+            function addSort(stat, i, a) {
+                stat.toggle = function () {
+                    var order = stat.ind();
+                    a.forEach(function (other) { other.ind(none) });
+                    stat.ind(order == down ? up : (isText(stat.name) && order == none) ? up : down);
+                }
+            }
+
+            $.detailedStats = ko.computed(function () {
+                var dummy = $.teamsUpdate;
+
+                var teamData = $.teams().map(fetchTeamStats);
+                teamData.sort(byTeamStats);
+
+                var playerData = $.teams().reduce(fetchPlayerData, [{}]).reduce(unwrap, []).map(fetchPlayerStats);
+
+                playerData.sort(byPlayerStats);
+
+                var teams = { columns: teamStats, rows: teamData };
+                var players = { columns: playerStats, rows: playerData }
+                return [teams, players];
+            });
+
+            function fetchTeamStats(team) {
+                return teamStats.reduce(function (data, stat) {
+                    data[stat.name] = stat.fetch(team);
+                    data.data.push(stat.formatter ? stat.formatter(data[stat.name]) : data[stat.name]);
+                    data.className.push(stat.className);
+                    return data;
+                }, { data: [], className: [] });
+            }
+
+            function byTeamStats(teama, teamb) {
+                var stat = teamStats.filter(function (stat) { return stat.ind() != none })[0];
+                return stat ? (stat.ind() == up ? cmp(teama[stat.name], teamb[stat.name]) : -cmp(teama[stat.name], teamb[stat.name]))
+                    : 0;
+            }
+
+            function updatePlayerAspect(team, player) {
+                (player.scores || (player.scores = [])).push(team.score);
+                player.numMatches = (player.numMatches || 0) + team.numMatches;
+                player.numWins = (player.numWins || 0) + team.numWins;
+            }
+
+            function updatePlayer(team, player, scope) {
+                updatePlayerAspect(team, player)
+                updatePlayerAspect(team, player[scope] || (player[scope] = {}));
+            }
+
+            function fetchPlayerData(acc, team) {
+                var obj = acc[0];
+
+                var defence = team.team.defence in obj ? obj[team.team.defence] : obj[team.team.defence] = {};
+                var offence = team.team.offence in obj ? obj[team.team.offence] : obj[team.team.offence] = {};
+
+                updatePlayer(team, defence, 'defence')
+                updatePlayer(team, offence, 'offence')
+
+                return acc;
+            }
+
+            function unwrap(acc, playerData) {
+                for (var i in playerData) { playerData[i].name = i; acc.push(playerData[i]) }
+                return acc;
+            }
+
+            function fetchPlayerStats(player) {
+                return playerStats.reduce(function (data, stat) {
+                    data[stat.name] = stat.fetch(player);
+                    data.data.push(stat.formatter ? stat.formatter(data[stat.name]) : data[stat.name]);
+                    data.className.push(stat.className);
+                    return data;
+                }, { data: [], className: [] });
+            }
+
+            function byPlayerStats(p1, p2) {
+                var stat = playerStats.filter(function (stat) { return stat.ind() != none })[0];
+
+                return stat ? (stat.ind() == up ? cmp(p1[stat.name], p2[stat.name]) : -cmp(p1[stat.name], p2[stat.name]))
+                    : 0;
+            }
+
+            $.isStatsShown = ko.observable(false);
+
+            $.showStats = function () {
+                $.isStatsShown(!$.isStatsShown());
+            }
         }
 
         ko.applyBindings(new KickerModel(), document.getElementById('doc'));
@@ -510,11 +662,31 @@
         function sortCI(a, b) { return a.toLowerCase() > b.toLowerCase() ? 1 : -1; }
         function sum(acc, s) { return acc + (s || 0) }
         function max(acc, s) { return Math.max(acc, s || -Infinity) }
+        function cmp(a, b) { return a > b ? 1 : a == b ? 0 : -1 }
 
         function matches(team) { return team.numMatches }
         function teamScore(team) { return team.score }
+        function teamScore2(team) { return team.score.toFixed(0) }
+        function defence(team) { return team.team.defence }
+        function offence(team) { return team.team.offence }
         function numWins(team) { return team.numWins }
         function numLosses(team) { return team.numMatches - team.numWins }
+        function name(player) { return player.name }
+
+        function maxRank(p) { return p.scores.reduce(max).toFixed(0) }
+        function maxRankd(p) { return p.defence && maxRank(p.defence) || 'n/a' }
+        function maxRanko(p) { return p.offence && maxRank(p.offence) || 'n/a' }
+
+
+        function avgRank(p) { return (p.scores.reduce(sum) / p.scores.length).toFixed(0) }
+        function avgRankd(p) { return p.defence && avgRank(p.defence) || 'n/a' }
+        function avgRanko(p) { return p.offence && avgRank(p.offence) || 'n/a' }
+
+        function ratiod(p) { return p.defence && ratio(p.defence) || 'n/a' }
+        function ratioo(p) { return p.offence && ratio(p.offence) || 'n/a' }
+
+        function ratio(team) { return (team.numMatches == 0 ? 0 : team.numWins / team.numMatches) }
+        function percent(v) { return isNaN(v) ? 'n/a' : (v * 100).toFixed(0) + "%" }
 
         function notNan(getter) {
             return function (i) {
