@@ -78,6 +78,7 @@
         .det-stats .number {
             text-align: right
         }
+
         .det-stats .text {
             white-space: nowrap
         }
@@ -90,8 +91,10 @@
     <div class="picker">
         <table style="width: 100%">
             <tr>
-                <th class="red" colspan="2">Red</th>
-                <th class="blue" colspan="2">Blue</th>
+                <th class="red">Red</th>
+                <th class="red" data-bind="text: redMatches"></th>
+                <th class="blue" data-bind="text: blueMatches"></th>
+                <th class="blue">Blue</th>
             </tr>
             <tr>
                 <th class="red">Defence</th>
@@ -115,7 +118,7 @@
     </div>
 
     <div style="align-content: center">
-        <button style="display: block; margin-left: auto; margin-right: auto; width: 5em" data-bind="click: reset, disable:pickStatus()=='Red Defence', event: {mousedown: initateRestCountdown, mouseup: cancelRestCountdown, touchstart: initateRestCountdown, touchend: cancelRestCountdown}">Cancel</button>
+        <button style="display: block; margin-left: auto; margin-right: auto; width: 5em" data-bind="click: reset, disable:pickStatus()=='Red Defence'">Cancel</button>
     </div>
 
     <script id="player-template" type="text/html">
@@ -132,6 +135,7 @@
     </div>
 
     <button data-bind="click: showStats, text: isStatsShown() ? 'Less stats' : 'More stats'"></button>
+    <button data-bind="event: {mousedown: initateRestCountdown, mouseup: cancelRestCountdown, touchstart: initateRestCountdown, touchend: cancelRestCountdown}">Clear stats</button>
 
     <script id="stats-template" type="text/html">
         <table>
@@ -281,6 +285,23 @@
 
             $.winRed = function () { win('red', 'blue') }
             $.winBlue = function () { win('blue', 'red') }
+
+            $.redMatches = ko.computed(function () {
+                return reprMatches($.picks.red.team());
+            });
+
+            $.blueMatches = ko.computed(function () {
+                return reprMatches($.picks.blue.team());
+            });
+
+            function reprMatches(team) {
+
+                if (properTeam(team)) {
+                    var n = team.numMatches;
+                    return n + ' game' + (n == 1 ? '' : 's');
+                }
+                return '';
+            }
 
             var winStreakTeam = null;
             var winStreak = 0;
@@ -582,10 +603,10 @@
             $.detailedStats = ko.computed(function () {
                 var dummy = $.teamsUpdate;
 
-                var teamData = $.teams().map(fetchTeamStats);
+                var teamData = $.teams().filter(properTeam).map(fetchTeamStats);
                 teamData.sort(byTeamStats);
 
-                var playerData = $.teams().reduce(fetchPlayerData, [{}]).reduce(unwrap, []).map(fetchPlayerStats);
+                var playerData = $.teams().filter(properTeam).reduce(fetchPlayerData, [{}]).reduce(unwrap, []).map(fetchPlayerStats);
 
                 playerData.sort(byPlayerStats);
 
@@ -649,7 +670,8 @@
             function byPlayerStats(p1, p2) {
                 var stat = playerStats.filter(function (stat) { return stat.ind() != none })[0];
 
-                return stat ? (stat.ind() == up ? cmp(p1[stat.name], p2[stat.name]) : -cmp(p1[stat.name], p2[stat.name]))
+                return stat
+                    ? (stat.ind() == up ? cmp(p1[stat.name], p2[stat.name]) : -cmp(p1[stat.name], p2[stat.name]))
                     : 0;
             }
 
@@ -669,7 +691,7 @@
 
         function matches(team) { return team.numMatches }
         function teamScore(team) { return team.score }
-        function teamScore2(team) { return team.score.toFixed(0) }
+        function teamScore2(team) { return team.score && team.score.toFixed(0) || 'n/a' }
         function defence(team) { return team.team.defence }
         function offence(team) { return team.team.offence }
         function numWins(team) { return team.numWins }
@@ -690,6 +712,8 @@
 
         function ratio(team) { return (team.numMatches == 0 ? 0 : team.numWins / team.numMatches) }
         function percent(v) { return isNaN(v) ? 'n/a' : (v * 100).toFixed(0) + "%" }
+
+        function properTeam(team) { return !!team && 'numMatches' in team && team.numMatches > 0 }
 
         function notNan(getter) {
             return function (i) {
