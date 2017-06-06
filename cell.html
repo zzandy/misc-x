@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+    <meta charset="utf-8" />
+</head>
+
+<body>
+    <script type="text/javascript">
+        (function () {
+            document.createElement('canvas');
+            var c = document.createElement('canvas');
+            ctx = c.getContext('2d');
+
+            ctx.w = ctx.canvas.width = window.innerWidth;
+            ctx.h = ctx.canvas.height = window.innerHeight;
+            ctx.canvas.style.position = 'absolute';
+            ctx.canvas.style.top = 0;
+            ctx.canvas.style.left = 0;
+
+            ctx.clear = function () {
+                ctx.clearRect(-ctx.canvas.width / 2, -ctx.canvas.height / 2, ctx.canvas.width, ctx.canvas.height);
+            };
+
+            document.body.appendChild(c);
+        })();
+    </script>
+
+    <script type="text/javascript">
+        "use strict";
+
+        function rnd(a) {
+            return Math.floor(Math.random() * a) | 0;
+        }
+
+        String.prototype.zerofill = function (w) {
+            return this.length < w
+                ? new Array(w - this.length + 1).join('0') + this
+                : this
+        }
+
+        const tau = Math.PI * 2;
+
+        CanvasRenderingContext2D.prototype.fillCircle = function (x, y, r) {
+            this.beginPath();
+            this.arc(x, y, r, 0, tau, false)
+            this.closePath();
+            this.fill();
+        }
+
+        CanvasRenderingContext2D.prototype.strokeCircle = function (x, y, r) {
+            this.beginPath();
+            this.arc(x, y, r, 0, tau, false)
+            this.closePath();
+            this.stroke();
+        }
+
+        function nextRow(row, rule, isShort) {
+            var next = [];
+
+            let prevDigit = '0', startIndex = 0;
+            if (isShort) {
+                prevDigit = row[0];
+                startIndex = 1;
+            }
+
+            for (var i = startIndex; i < row.length; ++i) {
+                let nextDigit = row[i];
+                var index = parseInt(prevDigit, 3) * 3 + parseInt(nextDigit, 3);
+                next.push(rule[index]);
+                prevDigit = nextDigit;
+            }
+
+            if (!isShort) {
+                next.push(rule[parseInt(prevDigit, 3) * 3])
+            }
+
+            return next;
+        }
+
+        var pad = '000000000000000000000000000000000000000000000000000000000000000'
+        var initial = (pad + '121' + pad + '121' + pad).split('');
+
+        let rule = rnd(Math.pow(3, 9)).toString(3).zerofill(9).split('');
+        console.log(rule.join(''))
+
+        var goodRules = ['010112021', '222210201', '220201001', '022010210'];
+
+        let total = 200;
+        let n = total, short = false;
+        let row = initial;
+
+        let r = ctx.w / 300;
+        let color = ['silver', 'red', 'black'];
+        let outline = ['black', 'white', 'white'];
+
+        ctx.lineWith = .1;
+
+        let ox = (ctx.w - row.length * r) / 2;
+        let oy = r;
+
+        render(row, 0)
+
+        while (n-- > 0) {
+            row = nextRow(row, rule, short);
+            render(row, total - n);
+            short = !short;
+        }
+
+
+        function render(row, index) {
+            for (var i = 0; i < row.length; ++i) {
+                ctx.fillStyle = color[row[i]];
+                ctx.strokeStyle = outline[row[i]];
+
+                ctx.fillCircle(ox + (i - (index % 2) / 2) * r, oy + index * r * .87, r / 2);
+                //ctx.strokeCircle(ox + (i - (index % 2) / 2) * r, oy + index * r * .87, r / 2);
+            }
+        }
+    </script>
+</body>
+
+</html>
