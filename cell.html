@@ -4,6 +4,7 @@
 
 <head>
     <meta charset="utf-8" />
+    <title>Cell</title>
 </head>
 
 <body>
@@ -79,20 +80,42 @@
             return next;
         }
 
-        var pad = '000000000000000000000000000000000000000000000000000000000000000'
-        var initial = (pad + '121' + pad + '121' + pad).split('');
+        function randomInitial(w) {
+            var ri = [];
+            for (var i = 0; i < w; ++i)ri.push(rnd(3))
+            return ri.join('')
+        }
+
+        function coreInitial(core, w, numCores) {
+            var cl = core.length;
+            var pl = ((w - (numCores || 1) * cl) / ((numCores || 1) + 1)) | 0;
+
+            var pad = new Array(pl + 1).join('2');
+            var r = [pad];
+            for (var i = 0; i < numCores; ++i) {
+                r.push(core);
+                r.push(pad)
+            }
+
+            return r.join('');
+        }
+
+        let total = 500;
+        var initial = coreInitial('101', total, total/150 | 0);
+        initial = randomInitial(total)
 
         let rule = rnd(Math.pow(3, 9)).toString(3).zerofill(9).split('');
-        console.log(rule.join(''))
+        console.log(rule.join(''));
 
-        var goodRules = ['010112021', '222210201', '220201001', '022010210'];
+        //rule = '112112220'
 
-        let total = 200;
+        var goodRules = ['010112021', '222210201', '220201001', '022010210', '220011012'];
+
         let n = total, short = false;
         let row = initial;
 
-        let r = ctx.w / 300;
-        let color = ['silver', 'red', 'black'];
+        let r = ctx.w / total;
+        let color = ['white', 'red', 'black'];
         let outline = ['black', 'white', 'white'];
 
         ctx.lineWith = .1;
@@ -100,23 +123,21 @@
         let ox = (ctx.w - row.length * r) / 2;
         let oy = r;
 
-        render(row, 0)
+        render(row, rule, 0)
 
-        while (n-- > 0) {
-            row = nextRow(row, rule, short);
-            render(row, total - n);
-            short = !short;
-        }
+        function render(row, rule, index) {
+            let y = oy + index * r * .87;
+            for (let i = 0; i < row.length; ++i) {
+                if(row[i] == 0)continue;
 
-
-        function render(row, index) {
-            for (var i = 0; i < row.length; ++i) {
                 ctx.fillStyle = color[row[i]];
                 ctx.strokeStyle = outline[row[i]];
 
-                ctx.fillCircle(ox + (i - (index % 2) / 2) * r, oy + index * r * .87, r / 2);
-                //ctx.strokeCircle(ox + (i - (index % 2) / 2) * r, oy + index * r * .87, r / 2);
+                ctx.fillCircle(ox + (i - (index % 2) / 2) * r, y, r / 2);
             }
+
+            if (y < ctx.h)
+                requestAnimationFrame(function () { render(nextRow(row, rule, (index % 2) == 1), rule, ++index) }, 20);
         }
     </script>
 </body>
