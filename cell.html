@@ -57,8 +57,9 @@
             this.stroke();
         }
 
-        function nextRow(row, rule, isShort) {
+        function pointyDerive(row, rule, index) {
             var next = [];
+            let isShort = (index % 2) == 0;
 
             let prevDigit = '0', startIndex = 0;
             if (isShort) {
@@ -101,15 +102,23 @@
         }
 
         let total = 500;
-        var initial = coreInitial('101', total, total/150 | 0);
-        initial = randomInitial(total)
+        var initial = coreInitial('101', total, total / 150 | 0);
+        initial = randomInitial(total);
 
-        let rule = rnd(Math.pow(3, 9)).toString(3).zerofill(9).split('');
+        var pointy = {
+            init: function () { return rnd(Math.pow(3, 9)).toString(3).zerofill(9).split('') },
+            draw: pointyDraw,
+            next: pointyDerive
+        };
+
+        let algo = pointy;
+
+        let rule = algo.init();
         console.log(rule.join(''));
 
         //rule = '112112220'
 
-        var goodRules = ['010112021', '222210201', '220201001', '022010210', '220011012'];
+        var goodRules = ['010112021', '222210201', '220201001', '022010210', '220011012', '200010002'];
 
         let n = total, short = false;
         let row = initial;
@@ -123,12 +132,21 @@
         let ox = (ctx.w - row.length * r) / 2;
         let oy = r;
 
-        render(row, rule, 0)
+        tick(row, rule, 0, algo.draw, algo.next);
 
-        function render(row, rule, index) {
+        function tick(row, rule, index, draw, derive) {
+            let over = draw(row, index);
+
+            if (!over) {
+                let next = derive(row, rule, index)
+                requestAnimationFrame(function () { tick(next, rule, ++index, draw, derive) });
+            }
+        }
+
+        function pointyDraw(row, index) {
             let y = oy + index * r * .87;
             for (let i = 0; i < row.length; ++i) {
-                if(row[i] == 0)continue;
+                if (row[i] == 0) continue;
 
                 ctx.fillStyle = color[row[i]];
                 ctx.strokeStyle = outline[row[i]];
@@ -136,8 +154,7 @@
                 ctx.fillCircle(ox + (i - (index % 2) / 2) * r, y, r / 2);
             }
 
-            if (y < ctx.h)
-                requestAnimationFrame(function () { render(nextRow(row, rule, (index % 2) == 1), rule, ++index) }, 20);
+            return y > ctx.h;
         }
     </script>
 </body>
