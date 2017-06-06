@@ -29,6 +29,48 @@
     </script>
 
     <script type="text/javascript">
+        // hue Chroma luma
+        function hcy2rgb(h, c, y, a) {
+            // 601
+            var r = .3;
+            var g = .59;
+            var b = .11;
+
+            var h0 = h;
+            h /= 60;
+
+            var k = (1 - Math.abs((h % 2) - 1));
+
+            var K = h < 1 ? r + k * g
+                : h < 2 ? g + k * r
+                    : h < 3 ? g + k * b
+                        : h < 4 ? b + k * g
+                            : h < 5 ? b + k * r
+                                : r + k * b;
+
+            var cmax = 1;
+
+            if (y <= 0 || y >= 1) cmax = 0;
+            else cmax *= K < y ? (y - 1) / (K - 1) : K > y ? y / K : 1;
+            //c *= cmax;
+            c = Math.min(c, cmax);
+
+            var x = c * k;
+            var rgb = h < 1 ? [c, x, 0]
+                : h < 2 ? [x, c, 0]
+                    : h < 3 ? [0, c, x]
+                        : h < 4 ? [0, x, c]
+                            : h < 5 ? [x, 0, c]
+                                : [c, 0, x];
+
+            var m = y - (r * rgb[0] + g * rgb[1] + b * rgb[2]);
+
+            var rgbdata = [rgb[0] + m, rgb[1] + m, rgb[2] + m];
+            return 'rgba(' + (rgbdata[0] * 255).toFixed(0) + ',' + (rgbdata[1] * 255).toFixed(0) + ',' + (rgbdata[2] * 255).toFixed(0) + ', ' + (a || 1) + ')';
+        }
+    </script>
+
+    <script type="text/javascript">
         "use strict";
 
         function rnd(a) {
@@ -81,6 +123,21 @@
             return next;
         }
 
+        function flatDerive(row, rule, index) {
+
+            let next = new Array(row.length);
+
+            for (let i = 1; i < row.length; i+=2) {
+                let cur = row[i];
+                let nxt = i < row.length ? row[i + 1] : '0';
+                let prev = i > 0 ? row[i - 1] : '0';
+                let index = parseInt(prev, 3) * 3 * 3 + parseInt(cur, 3) * 3 + parseInt(nxt, 3);
+                next[i] = rule[index];
+            }
+
+            return next;
+        }
+
         function randomInitial(w) {
             var ri = [];
             for (var i = 0; i < w; ++i)ri.push(rnd(3))
@@ -101,9 +158,10 @@
             return r.join('');
         }
 
-        let total = 500;
-        var initial = coreInitial('101', total, total / 150 | 0);
-        initial = randomInitial(total);
+        let total = 50;
+        var initial = coreInitial('101', total, total < 150 ? 1 : (total / 150 | 0));
+        console.log(initial.length)
+        //initial = randomInitial(total);
 
         var pointy = {
             init: function () { return rnd(Math.pow(3, 9)).toString(3).zerofill(9).split('') },
@@ -111,12 +169,19 @@
             next: pointyDerive
         };
 
-        let algo = pointy;
+        var flat = {
+            init: function () { return pointy.init().concat(pointy.init().concat(pointy.init())) },
+            draw: flatDraw,
+            next: flatDerive
+        }
+
+        let algo = flat;
 
         let rule = algo.init();
         console.log(rule.join(''));
 
         //rule = '112112220'
+        rule = '000000000020000000000000000'
 
         var goodRules = ['010112021', '222210201', '220201001', '022010210', '220011012', '200010002'];
 
@@ -124,8 +189,12 @@
         let row = initial;
 
         let r = ctx.w / total;
-        let color = ['white', 'red', 'black'];
-        let outline = ['black', 'white', 'white'];
+        let color = [];
+
+        let h = rnd(360);
+        color.push(hcy2rgb(h, .1, .8, 1));
+        color.push(hcy2rgb(h + 90, 1, .6, 1));
+        color.push(hcy2rgb(h + 180, .1, .2, 1));
 
         ctx.lineWith = .1;
 
@@ -146,12 +215,21 @@
         function pointyDraw(row, index) {
             let y = oy + index * r * .87;
             for (let i = 0; i < row.length; ++i) {
-                if (row[i] == 0) continue;
-
                 ctx.fillStyle = color[row[i]];
-                ctx.strokeStyle = outline[row[i]];
 
                 ctx.fillCircle(ox + (i - (index % 2) / 2) * r, y, r / 2);
+            }
+
+            return y > ctx.h;
+        }
+
+        function flatDraw(row, index) {
+            let y = oy + index *r;
+
+            for (let i = 0; i < row.length; ++i) {
+                ctx.fillStyle = color[row[i]];
+
+                ctx.fillCircle(ox + i * r, y - r*(i%2)/2, r / 2);
             }
 
             return y > ctx.h;
