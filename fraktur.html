@@ -1,107 +1,113 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" >
-<head>
-    <title>Fraktur</title>
-    <style type="text/css">
-    #fraktur{display:none; font-weight:bold}
-    </style>
-</head>
-<body>
-<textarea id="input" rows="3" cols="20"></textarea>
-<pre id="output"></pre>
-<script type="text/javascript">
+<html xmlns="http://www.w3.org/1999/xhtml">
 
-	Array.prototype.times = function(num)
-	{
-		var res = [];
-		
-		for(var i=0;i<num;++i)
-			for(var j=0;j<this.length;++j)
-				res.push(this[j]);
-				
-		return res;
-	}
-	
-	Array.prototype.map = function(fn){
-		var res = [];
-		
-		for(var i=0;i<this.length;++i){
-			res.push(fn(this[i], i, this));
-		}
-		
-		return res;
-	}
-	
-	Array.prototype.reduce = function(init, fn){
-	
-		if(!fn){
-			fn = init;
-			var res = this[0];
-			var n = 1;
-		}
-		else	{
-			var res = init;
-			var n = 0;		
-		}
-		
-		for(var i=n;i<this.length;++i){
-			res = fn(res, this[i], i, this);
-		}
-		
-		return res;
-	}
+<head>
+  <title>Fraktur</title>
+  <style type="text/css">
+    #fraktur {
+      display: none;
+    }
+
+    #output {
+      font-weight: bold;
+      text-shadow: 0 0 1px black;
+    }
+  </style>
+</head>
+
+<body>
+  <textarea id="input" rows="3" cols="20" autofocus></textarea>
+  <pre id="output"></pre>
+
+  <script type="text/javascript">
+    Array.prototype.times = function (num) {
+      var res = [];
+
+      for (var i = 0; i < num; ++i)
+        for (var j = 0; j < this.length; ++j)
+          res.push(this[j]);
+
+      return res;
+    }
 
     var input = document.getElementById('input');
     var output = document.getElementById('output');
-    var fontdef = document.getElementById('fraktur');
 
-    input.onkeyup = function () {
-	
-		// TODO: Kerning
-        var h = 15; 
-        var text = [''].times(h);        
+    var font;
 
-        for (var i = 0; i < input.value.length; ++i) {
-            var c = input.value[i];
-			
-			var n = c.charCodeAt(0) - 'A'.charCodeAt(0) - ((c.charCodeAt(0) >= 'a'.charCodeAt(0)) ? 6 : 0);
-            
-            var a = document.getElementById('fraktur').innerHTML;
-            var b = a.split(/\n/);
-            var g = b.slice(n * h, (n + 1) * h);
-			
-			var trailing = text.map(function(s){return s.match(/\s*$/)[0].length});
-			var leading = g.map(function(s){return s.match(/^\s*/)[0].length});
-			
-			var gap = trailing.reduce(1000, function(xgap, trail, i){
-				var haveSpecial = !!g[i].match(/^\s*[)'`,\\\/]/) || !!text[i].match(/[)'`,\\\/]\s*$/);
-				return Math.min(xgap, trail + leading[i] + (haveSpecial?1:0));
-				});
+    window.addEventListener('load', start);
 
-			var spacing = 2;
-			if(gap > spacing){			
-				text = text.map(function(s, i){
-					var cut = Math.min(gap - spacing, trailing[i]);
-					var rx = new RegExp('\\s{'+cut+'}$');
-					return s.replace(rx, '');
-				});
-				g = g.map(function(s, i){
-					var cut = (gap-spacing) - Math.min(gap - spacing, trailing[i]);
-					var rx = new RegExp('^\\s{'+cut+'}');
-					return s.replace(rx, '');
-				});
-			}			
+    function start() {
+      font = parseFont(document.getElementById('fraktur').innerText, 15);
 
-            for (var j = 0; j < h; ++j) text[j] = text[j] + g[j];
-        }
+      input.addEventListener('keyup', updateText);
 
-        output.innerHTML = text.join('<br/>').replace(/\s/g, '&nbsp;');
+      updateText({ target: input });
     }
 
-</script>
+    function parseFont(raw, h) {
+      var b = raw.split(/\n/);
+      var font = { ' ': ['    '].times(h) };
+      var letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 
+      var n = 0;
+      for (var letter of letters) {
+        font[letter] = b.slice(n * h, (n + 1) * h);;
+        ++n;
+      }
 
-<pre id="fraktur">                      
+      return font;
+    }
+
+    function updateText(e) {
+      output.innerHTML = renderText(e.target.value, font);
+    }
+
+    function renderText(message, font) {
+      var h = 15;
+      var text = [''].times(h);
+
+      for (var c of message) {
+        var glyph = (c in font) ? font[c] : font[' '];
+
+        var trailing = text.map(numTrailingSpace);
+        var leading = glyph.map(numLeadingSpace);
+
+        var minLeading = leading.reduce(min);
+        var minTrailing = trailing.reduce(min);
+        var minGap = leading.map(function (a, i) { return a + trailing[i] + adjustKerning(text[i], glyph[i]) }).reduce(min);
+
+        for (var j = 0; j < h; ++j) {
+          var cutLeading = min(minGap, leading[j]);
+          var cutTrailing = Math.max(0, minGap - leading[j]);
+
+          text[j] = text[j].substring(0, text[j].length - cutTrailing) + glyph[j].substring(cutLeading);
+        }
+      }
+
+      return text.join('<br/>').replace(/\s/g, '&nbsp;');
+    }
+
+    function min(a, b) { return Math.min(a, b); }
+
+    function numLeadingSpace(s) { return s.match(/^\s*/)[0].length }
+
+    function numTrailingSpace(s) { return s.match(/\s*$/)[0].length; }
+
+    function stripRows(leading, trailing) {
+      return function (row) {
+        return row.subs
+      }
+    }
+
+    function adjustKerning(a, b) {
+      return (a.match(/[.,']\s*$/) && b.match(/^\s*[.,']/))
+        ? 0
+        : -1;
+    }
+  </script>
+
+  <pre id="fraktur">                      
       __        :l,   
    .dWAWAb-,  |  "fb, 
   d'    'Y&0_ |   ; ' 
@@ -884,4 +890,5 @@ f D|'V'
 </pre>
 
 </body>
+
 </html>
