@@ -136,7 +136,7 @@
 
             for (let i = 0; i < row.length; i+=2) {
                 let cur = row[i];
-                let nxt = i < row.length ? next[i + 1] : '0';
+                let nxt =  next[i + 1] || '0';
                 let prev = i > 0 ? next[i - 1] : '0';
                 let index = parseInt(prev, 3) * 3 * 3 + parseInt(cur, 3) * 3 + parseInt(nxt, 3);
                 next[i] = rule[index];
@@ -165,9 +165,8 @@
             return r.join('');
         }
 
-        let total = 51;
+        let total = 251;
         var initial = coreInitial('101', total, total < 150 ? 1 : (total / 150 | 0));
-        console.log(initial.length)
         //initial = randomInitial(total);
 
         var pointy = {
@@ -188,7 +187,6 @@
         console.log(rule.join(''));
 
         //rule = '112112220'
-        rule = '000000000020000000000000000'
 
         var goodRules = ['010112021', '222210201', '220201001', '022010210', '220011012', '200010002'];
 
