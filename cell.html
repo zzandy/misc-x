@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>Cell</title>
+</head>
+
+<body>
+    <script type="text/javascript">
+        (function () {
+            document.createElement('canvas');
+            var c = document.createElement('canvas');
+            ctx = c.getContext('2d');
+
+            ctx.w = ctx.canvas.width = window.innerWidth;
+            ctx.h = ctx.canvas.height = window.innerHeight;
+            ctx.canvas.style.position = 'absolute';
+            ctx.canvas.style.top = 0;
+            ctx.canvas.style.left = 0;
+
+            ctx.clear = function () {
+                ctx.clearRect(-ctx.canvas.width / 2, -ctx.canvas.height / 2, ctx.canvas.width, ctx.canvas.height);
+            };
+
+            document.body.appendChild(c);
+        })();
+    </script>
+
+    <script type="text/javascript">
+        // hue Chroma luma
+        function hcy2rgb(h, c, y, a) {
+            // 601
+            var r = .3;
+            var g = .59;
+            var b = .11;
+
+            var h0 = h;
+            h /= 60;
+
+            var k = (1 - Math.abs((h % 2) - 1));
+
+            var K = h < 1 ? r + k * g
+                : h < 2 ? g + k * r
+                    : h < 3 ? g + k * b
+                        : h < 4 ? b + k * g
+                            : h < 5 ? b + k * r
+                                : r + k * b;
+
+            var cmax = 1;
+
+            if (y <= 0 || y >= 1) cmax = 0;
+            else cmax *= K < y ? (y - 1) / (K - 1) : K > y ? y / K : 1;
+            //c *= cmax;
+            c = Math.min(c, cmax);
+
+            var x = c * k;
+            var rgb = h < 1 ? [c, x, 0]
+                : h < 2 ? [x, c, 0]
+                    : h < 3 ? [0, c, x]
+                        : h < 4 ? [0, x, c]
+                            : h < 5 ? [x, 0, c]
+                                : [c, 0, x];
+
+            var m = y - (r * rgb[0] + g * rgb[1] + b * rgb[2]);
+
+            var rgbdata = [rgb[0] + m, rgb[1] + m, rgb[2] + m];
+            return 'rgba(' + (rgbdata[0] * 255).toFixed(0) + ',' + (rgbdata[1] * 255).toFixed(0) + ',' + (rgbdata[2] * 255).toFixed(0) + ', ' + (a || 1) + ')';
+        }
+    </script>
+
+    <script type="text/javascript">
+        "use strict";
+
+        function rnd(a) {
+            return Math.floor(Math.random() * a) | 0;
+        }
+
+        String.prototype.zerofill = function (w) {
+            return this.length < w
+                ? new Array(w - this.length + 1).join('0') + this
+                : this
+        }
+
+        const tau = Math.PI * 2;
+
+        CanvasRenderingContext2D.prototype.fillCircle = function (x, y, r) {
+            this.beginPath();
+            this.arc(x, y, r, 0, tau, false)
+            this.closePath();
+            this.fill();
+        }
+
+        CanvasRenderingContext2D.prototype.strokeCircle = function (x, y, r) {
+            this.beginPath();
+            this.arc(x, y, r, 0, tau, false)
+            this.closePath();
+            this.stroke();
+        }
+
+        function pointyDerive(row, rule, index) {
+            var next = [];
+            let isShort = (index % 2) == 0;
+
+            let prevDigit = '0', startIndex = 0;
+            if (isShort) {
+                prevDigit = row[0];
+                startIndex = 1;
+            }
+
+            for (var i = startIndex; i < row.length; ++i) {
+                let nextDigit = row[i];
+                var index = parseInt(prevDigit, 3) * 3 + parseInt(nextDigit, 3);
+                next.push(rule[index]);
+                prevDigit = nextDigit;
+            }
+
+            if (!isShort) {
+                next.push(rule[parseInt(prevDigit, 3) * 3])
+            }
+
+            return next;
+        }
+
+        function flatDerive(row, rule, index) {
+            let next = new Array(row.length);
+
+            for (let i = 1; i < row.length; i+=2) {
+                let cur = row[i];
+                let nxt = i < row.length ? row[i + 1] : '0';
+                let prev = i > 0 ? row[i - 1] : '0';
+                let index = parseInt(prev, 3) * 3 * 3 + parseInt(cur, 3) * 3 + parseInt(nxt, 3);
+                next[i] = rule[index];
+            }
+
+            for (let i = 0; i < row.length; i+=2) {
+                let cur = row[i];
+                let nxt =  next[i + 1] || '0';
+                let prev = i > 0 ? next[i - 1] : '0';
+                let index = parseInt(prev, 3) * 3 * 3 + parseInt(cur, 3) * 3 + parseInt(nxt, 3);
+                next[i] = rule[index];
+            }
+
+            return next;
+        }
+
+        function randomInitial(w) {
+            var ri = [];
+            for (var i = 0; i < w; ++i)ri.push(rnd(3))
+            return ri.join('')
+        }
+
+        function coreInitial(core, w, numCores) {
+            var cl = core.length;
+            var pl = ((w - (numCores || 1) * cl) / ((numCores || 1) + 1)) | 0;
+
+            var pad = new Array(pl + 1).join('2');
+            var r = [pad];
+            for (var i = 0; i < numCores; ++i) {
+                r.push(core);
+                r.push(pad)
+            }
+
+            return r.join('');
+        }
+
+        let total = 251;
+        var initial = coreInitial('101', total, total < 150 ? 1 : (total / 150 | 0));
+        //initial = randomInitial(total);
+
+        var pointy = {
+            init: function () { return rnd(Math.pow(3, 9)).toString(3).zerofill(9).split('') },
+            draw: pointyDraw,
+            next: pointyDerive
+        };
+
+        var flat = {
+            init: function () { return pointy.init().concat(pointy.init().concat(pointy.init())) },
+            draw: flatDraw,
+            next: flatDerive
+        }
+
+        let algo = flat;
+
+        let rule = algo.init();
+        console.log(rule.join(''));
+
+        //rule = '112112220'
+
+        var goodRules = ['010112021', '222210201', '220201001', '022010210', '220011012', '200010002'];
+
+        let n = total, short = false;
+        let row = initial;
+
+        let r = ctx.w / total;
+        let color = [];
+
+        let h = rnd(360);
+        color.push(hcy2rgb(h, .1, .8, 1));
+        color.push(hcy2rgb(h + 90, 1, .6, 1));
+        color.push(hcy2rgb(h + 180, .1, .2, 1));
+
+        ctx.lineWith = .1;
+
+        let ox = (ctx.w - row.length * r) / 2;
+        let oy = r;
+
+        tick(row, rule, 0, algo.draw, algo.next);
+
+        function tick(row, rule, index, draw, derive) {
+            let over = draw(row, index);
+
+            if (!over) {
+                let next = derive(row, rule, index)
+                requestAnimationFrame(function () { tick(next, rule, ++index, draw, derive) });
+            }
+        }
+
+        function pointyDraw(row, index) {
+            let y = oy + index * r * .87;
+            for (let i = 0; i < row.length; ++i) {
+                ctx.fillStyle = color[row[i]];
+
+                ctx.fillCircle(ox + (i - (index % 2) / 2) * r, y, r / 2);
+            }
+
+            return y > ctx.h;
+        }
+
+        function flatDraw(row, index) {
+            let y = oy + index *r;
+
+            for (let i = 0; i < row.length; ++i) {
+                ctx.fillStyle = color[row[i]];
+
+                ctx.fillCircle(ox + i * r, y - r*(i%2)/2, r / 2);
+            }
+
+            return y > ctx.h;
+        }
+    </script>
+</body>
+
+</html>
