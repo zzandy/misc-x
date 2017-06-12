@@ -71,7 +71,8 @@
             margin-bottom: 1em;
         }
 
-        .det-stats td:not(:last-child) {
+        .det-stats td:not(:last-child),
+        .stats td:not(:last-child) {
             padding-right: .5em;
         }
 
@@ -130,9 +131,15 @@
 
     <div id="player-list" data-bind="visible: isPicking, template: {name: 'player-template', foreach: playersSorted}"></div>
 
-    <div data-bind="foreach: stats">
-        <div><label data-bind="text: label"></label>: <span data-bind="text:team"></span>, <span data-bind="text:player"></span></div>
-    </div>
+    <table class="stats" data-bind="foreach: stats">
+        <tr>
+            <td data-bind="text: label"></td>
+            <td data-bind="text: team.label"></td>
+            <td class="number" data-bind="text: team.value"></td>
+            <td data-bind="text: player.label"></td>
+            <td class="number" data-bind="text: player.value"></td>
+        </tr>
+    </table>
 
     <button data-bind="click: showStats, text: isStatsShown() ? 'Less stats' : 'More stats'"></button>
     <button data-bind="event: {mousedown: initateRestCountdown, mouseup: cancelRestCountdown, touchstart: initateRestCountdown, touchend: cancelRestCountdown}">Clear stats</button>
@@ -499,8 +506,8 @@
                 function stat(label, team, player) {
                     return {
                         label: label,
-                        team: team === undefined ? 'n/a' : team.defence + "(d)+" + team.offence + "(o) - " + team.score.toFixed(0),
-                        player: player.player + ' - ' + player.score.toFixed(0)
+                        team: team === undefined ? { label: 'n/a', value: '' } : { label: team.defence + "(d)+" + team.offence + "(o)", value: team.score.toFixed(0) },
+                        player: { label: player.player, value: player.score.toFixed(0) }
                     };
                 }
 
@@ -550,7 +557,7 @@
 
                 var dummy = teamsUpdate();
                 return [
-                    { label: "total", team: $.teams().length + ' teams', player: $.teams().filter(function (team) { return 'numMatches' in team }).reduce(function (sum, team) { return sum + team.numMatches }, 0) / 2 + ' games' },
+                    { label: "total", team: { label: $.teams().length + ' teams', value: '' }, player: { label: $.teams().filter(properTeam).reduce(function (sum, team) { return sum + team.numMatches }, 0) / 2 + ' games', value: '' } },
                     stat('highest rating', pickTeam(teamScore, true), pickPlayer(teamScore, true, false)),
                     stat('2nd highest', pickTeam(teamScore, true, 1), pickPlayer(teamScore, true, false, 1)),
                     stat('3rd highest', pickTeam(teamScore, true, 2), pickPlayer(teamScore, true, false, 2)),
