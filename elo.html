@@ -564,10 +564,10 @@
 
             var teamStats = [['defence;Defence', defence], ['offence;Offence', offence], ['score;Rank', teamScore2], ['wins;Wins', numWins], ['losses;Losses', numLosses], ['ratio;Wins%', ratio, percent], ['games;Games', matches]];
             var playerStats = [['name;Name', name],
-            ['max;Max Rank', maxRank], ['maxd; (d)', maxRankd], ['maxd;(o)', maxRanko],
+            ['max;Max Rank', maxRank], ['maxd;(d)', maxRankd], ['maxd;(o)', maxRanko],
             ['avg;Average Rank', avgRank], ['avgd;(d)', avgRankd], ['avgo;(o)', avgRanko],
             ['wins;Wins', numWins], ['losses;Losses', numLosses],
-            ['ratio;Wins%', ratio, percent], ['ratiod;(d)', ratiod, percent], ['ratiod;(o)', ratioo, percent],
+            ['ratio;Wins%', ratio, percent], ['ratiod;(d)', ratiod, percent], ['ratioo;(o)', ratioo, percent],
             ['games;Games', matches]
             ];
 
@@ -600,22 +600,49 @@
                 }
             }
 
+            $.isStatsShown = ko.observable(false);
+
+            var properTeams = ko.computed(function () {
+                if (!$.isStatsShown()) return [];
+
+                var dummy = teamsUpdate();
+                return $.teams().filter(properTeam);
+            })
+
+            var teamData = ko.observable([]);
+
+            var teamDataX = ko.computed(function () {
+                teamData(properTeams().map(fetchTeamStats));
+            });
+
+            var sortedTeamData = ko.computed(function () {
+                var d = teamData();
+                d.sort(byTeamStats);
+
+                return d;
+            });
+
+            var playerData = ko.observable([]);
+            var playerDataX = ko.computed(function () {
+                playerData(properTeams().reduce(fetchPlayerData, [{}]).reduce(unwrap, []).map(fetchPlayerStats));
+            });
+
+            var sortedPlayerData = ko.computed(function () {
+                var data = playerData();
+                data.sort(byPlayerStats);
+
+                return data;
+            });
+
             $.detailedStats = ko.computed(function () {
-                var dummy = $.teamsUpdate;
-
-                var teamData = $.teams().filter(properTeam).map(fetchTeamStats);
-                teamData.sort(byTeamStats);
-
-                var playerData = $.teams().filter(properTeam).reduce(fetchPlayerData, [{}]).reduce(unwrap, []).map(fetchPlayerStats);
-
-                playerData.sort(byPlayerStats);
-
-                var teams = { columns: teamStats, rows: teamData };
-                var players = { columns: playerStats, rows: playerData }
+                var teams = { columns: teamStats, rows: sortedTeamData() };
+                var players = { columns: playerStats, rows: sortedPlayerData() };
                 return [teams, players];
             });
 
             function fetchTeamStats(team) {
+                var dummy = teamsUpdate();
+
                 return teamStats.reduce(function (data, stat) {
                     data[stat.name] = stat.fetch(team);
                     data.data.push(stat.formatter ? stat.formatter(data[stat.name]) : data[stat.name]);
@@ -675,8 +702,6 @@
                     : 0;
             }
 
-            $.isStatsShown = ko.observable(false);
-
             $.showStats = function () {
                 $.isStatsShown(!$.isStatsShown());
             }
@@ -687,7 +712,7 @@
         function sortCI(a, b) { return a.toLowerCase() > b.toLowerCase() ? 1 : -1; }
         function sum(acc, s) { return acc + (s || 0) }
         function max(acc, s) { return Math.max(acc, s || -Infinity) }
-        function cmp(a, b) { return a > b ? 1 : a == b ? 0 : -1 }
+        function cmp(a, b) { return a == 'n/a' ? -1 : b == 'n/a' ? 1 : a > b ? 1 : a == b ? 0 : -1 }
 
         function matches(team) { return team.numMatches }
         function teamScore(team) { return team.score }
@@ -701,7 +726,6 @@
         function maxRank(p) { return p.scores.reduce(max).toFixed(0) }
         function maxRankd(p) { return p.defence && maxRank(p.defence) || 'n/a' }
         function maxRanko(p) { return p.offence && maxRank(p.offence) || 'n/a' }
-
 
         function avgRank(p) { return (p.scores.reduce(sum) / p.scores.length).toFixed(0) }
         function avgRankd(p) { return p.defence && avgRank(p.defence) || 'n/a' }
