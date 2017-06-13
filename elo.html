@@ -40,7 +40,7 @@
 
         button,
         select {
-            font-size: 120%;
+            font-size: 140%;
             min-width: 7em;
             padding: .5em 1em;
             margin: .1em;
@@ -419,7 +419,7 @@
                 var a = $.redScore(); var b = $.blueScore();
                 return (a !== null && a >= 0 && a <= 10) || (b !== null && b >= 0 && b <= 10);
             });
-            
+
             $.allScoresPresent = ko.computed(function () {
                 var a = $.redScore(); var b = $.blueScore();
                 return a!=b && (a !== null && a >= 0 && a <= 10) && (b !== null && b >= 0 && b <= 10);
