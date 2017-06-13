@@ -373,11 +373,47 @@
                     $.pickStatus(winner == 'blue' ? 'Blue Offence' : 'Red Offence');
                 }
 
+                var updateObj = {
+                    date: new Date(),
+                    winner: winner
+                };
+
+                updateObj[winner] = {
+                    ratingBefore: won.score,
+                    defence: won.team.defence,
+                    offence: won.team.offence,
+                }
+
+                updateObj[looser] = {
+                    ratingBefore: lost.score,
+                    defence: lost.team.defence,
+                    offence: lost.team.offence,
+                }
+
                 elo.update(won, lost);
+
+                updateObj[winner].ratingAfter = won.score;
+                updateObj[looser].ratingAfter = lost.score;
+
+                updateGamesLog(updateObj);
 
                 // trigger stats update
                 teamsUpdate(teamsUpdate() + 1);
                 localStorage.setItem('kicker-teams', JSON.stringify($.teams()));
+            }
+
+            function updateGamesLog(upd) {
+                var maxGamesLength = 1000;
+                var games = localStorage.getItem('kicker-games');
+                games = (games && JSON.parse(games)) || [];
+
+                games.push(upd);
+
+                if (games.length > maxGamesLength) {
+                    games.splice(0, games.length - maxGamesLength);
+                }
+
+                localStorage.setItem('kicker-games', JSON.stringify(games))
             }
 
             var resetTimer = null;
