@@ -34,7 +34,7 @@
         }
 
         #player-list button {
-            font-size: 150%;
+            font-size: 180%;
             margin: .3em 0;
         }
 
@@ -66,9 +66,8 @@
         }
 
         .red,
-        .scores button.active-r,
-        .scores select.active-r {
-
+        .scores .red button.active,
+        .scores .red select.active {
             background-color: hsla(0, 100%, 35%, 1);
             color: hsla(0, 100%, 85%, 1);
         }
@@ -78,8 +77,8 @@
         }
 
         .blue,
-        .scores button.active-b,
-        .scores select.active-r {
+        .scores .blue button.active,
+        .scores .blue select.active {
             background-color: hsla(215, 100%, 40%, 1);
             color: hsla(215, 100%, 85%, 1);
         }
@@ -89,16 +88,16 @@
             font-weight: bold;
         }
 
-        .scores {
+        .scores .red,
+        .scores .blue {
             background-color: #76ff03;
             color: #33691e;
         }
 
         .scores button,
         .scores select {
-            margin: .5em 1% .5em 0;
-            min-width: 2em;
-            width: 18%;
+            font-size: 150%;
+            display: block;
         }
 
         .scores select {
@@ -154,19 +153,19 @@
                 <td class="blue"><button data-bind="click: winBlue, disable: isPicking">Win</button></td>
             </tr>
             <tr class="scores" data-bind="visible: !isPicking()">
-                <td colspan="2">
-                    <button data-bind="css: {'active-r': redScore() === 0}, click: function(){redScore(0)}, disable: isPicking">0</button>
-                    <button data-bind="css: {'active-r': redScore() === 1}, click: function(){redScore(1)}, disable: isPicking">1</button>
-                    <button data-bind="css: {'active-r': redScore() === 2}, click: function(){redScore(2)}, disable: isPicking">2</button>
-                    <button data-bind="css: {'active-r': redScore() === 3}, click: function(){redScore(3)}, disable: isPicking">3</button>
-                    <select data-bind="css: {'active-r': redScore() === redScoreX()}, options: ['+',4,5,6,7,8,9,10], value: redScoreX, disable: isPicking"></select>
+                <td colspan="2" class="red">
+                    <button data-bind="css: {'active': redScore() === 0}, click: function(){redScore(0)}, disable: isPicking">0</button>
+                    <button data-bind="css: {'active': redScore() === 1}, click: function(){redScore(1)}, disable: isPicking">1</button>
+                    <button data-bind="css: {'active': redScore() === 2}, click: function(){redScore(2)}, disable: isPicking">2</button>
+                    <button data-bind="css: {'active': redScore() === 3}, click: function(){redScore(3)}, disable: isPicking">3</button>
+                    <select data-bind="css: {'active': redScore() === redScoreX()}, options: ['+',4,5,6,7,8,9,10], value: redScoreX, disable: isPicking"></select>
                 </td>
-                <td colspan="2">
-                    <button data-bind="css: {'active-b': blueScore() === 0}, click: function(){blueScore(0)}, disable: isPicking">0</button>
-                    <button data-bind="css: {'active-b': blueScore() === 1}, click: function(){blueScore(1)}, disable: isPicking">1</button>
-                    <button data-bind="css: {'active-b': blueScore() === 2}, click: function(){blueScore(2)}, disable: isPicking">2</button>
-                    <button data-bind="css: {'active-b': blueScore() === 3}, click: function(){blueScore(3)}, disable: isPicking">3</button>
-                    <select data-bind="css: {'active-b': blueScore() === redScoreX()}, options: ['+',4,5,6,7,8,9,10], value: blueScoreX, disable: isPicking"></select>
+                <td colspan="2" class="blue">
+                    <button data-bind="css: {'active': blueScore() === 0}, click: function(){blueScore(0)}, disable: isPicking">0</button>
+                    <button data-bind="css: {'active': blueScore() === 1}, click: function(){blueScore(1)}, disable: isPicking">1</button>
+                    <button data-bind="css: {'active': blueScore() === 2}, click: function(){blueScore(2)}, disable: isPicking">2</button>
+                    <button data-bind="css: {'active': blueScore() === 3}, click: function(){blueScore(3)}, disable: isPicking">3</button>
+                    <select data-bind="css: {'active': blueScore() === blueScoreX()}, options: ['+',4,5,6,7,8,9,10], value: blueScoreX, disable: isPicking"></select>
                 </td>
             </tr>
         </table>
@@ -391,6 +390,11 @@
             var winStreakTeam = null;
             var winStreak = 0;
 
+            $.resetScores = function () {
+                $.redScore(null);
+                $.blueScore(null);
+            }
+
             $.reset = function () {
                 winTeam = null;
                 winStreak = 0;
@@ -407,20 +411,18 @@
                 $.picks.blue.defence('---');
                 $.picks.blue.offence('---');
                 $.picks.blue.team(null);
-            }
 
-            $.resetScores = function () {
-                $.redScore(null);
-                $.blueScore(null);
+                $.resetScores()
             }
 
             $.scoresPresent = ko.computed(function () {
                 var a = $.redScore(); var b = $.blueScore();
                 return (a !== null && a >= 0 && a <= 10) || (b !== null && b >= 0 && b <= 10);
             });
+            
             $.allScoresPresent = ko.computed(function () {
                 var a = $.redScore(); var b = $.blueScore();
-                return (a !== null && a >= 0 && a <= 10) && (b !== null && b >= 0 && b <= 10);
+                return a!=b && (a !== null && a >= 0 && a <= 10) && (b !== null && b >= 0 && b <= 10);
             });
 
             teamsUpdate = ko.observable();
