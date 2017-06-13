@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <title data-bind="text: windowTitle">Elo Rating tracker</title>
     <style type="text/css">
-        html{
+        html {
             font-size: .7cm;
             max-width: 50em;
             margin: 0 auto;
@@ -15,7 +15,6 @@
         html,
         body,
         button {
-            
             background-color: black;
             color: grey;
         }
@@ -39,7 +38,8 @@
             margin: .3em 0;
         }
 
-        button {
+        button,
+        select {
             font-size: 120%;
             min-width: 7em;
             padding: .5em 1em;
@@ -63,14 +63,46 @@
 
         .red {
             text-align: left;
+        }
+
+        .red,
+        .scores button.active-r,
+        .scores select.active-r {
+
             background-color: hsla(0, 100%, 35%, 1);
             color: hsla(0, 100%, 85%, 1);
         }
 
         .blue {
             text-align: right;
+        }
+
+        .blue,
+        .scores button.active-b,
+        .scores select.active-r {
             background-color: hsla(215, 100%, 40%, 1);
             color: hsla(215, 100%, 85%, 1);
+        }
+
+        .player {
+            font-size: 130%;
+            font-weight: bold;
+        }
+
+        .scores {
+            background-color: #76ff03;
+            color: #33691e;
+        }
+
+        .scores button,
+        .scores select {
+            margin: .5em 1% .5em 0;
+            min-width: 2em;
+            width: 18%;
+        }
+
+        .scores select {
+            padding-left: .2em;
         }
 
         .det-stats table:not(:last-child) {
@@ -110,10 +142,10 @@
                 <th class="blue">Defence</th>
             </tr>
             <tr>
-                <td class="red" data-bind="text: picks.red.defence"></td>
-                <td class="red" data-bind="text: picks.red.offence"></td>
-                <td class="blue" data-bind="text: picks.blue.offence"></td>
-                <td class="blue" data-bind="text: picks.blue.defence"></td>
+                <td class="red player" data-bind="text: picks.red.defence"></td>
+                <td class="red player" data-bind="text: picks.red.offence"></td>
+                <td class="blue player" data-bind="text: picks.blue.offence"></td>
+                <td class="blue player" data-bind="text: picks.blue.defence"></td>
             </tr>
             <tr>
                 <td class="red"><button data-bind="click: winRed, disable: isPicking">Win</button></td>
@@ -121,11 +153,29 @@
                 <td class="blue" data-bind="text: expectBlue"></td>
                 <td class="blue"><button data-bind="click: winBlue, disable: isPicking">Win</button></td>
             </tr>
+            <tr class="scores" data-bind="visible: !isPicking()">
+                <td colspan="2">
+                    <button data-bind="css: {'active-r': redScore() === 0}, click: function(){redScore(0)}, disable: isPicking">0</button>
+                    <button data-bind="css: {'active-r': redScore() === 1}, click: function(){redScore(1)}, disable: isPicking">1</button>
+                    <button data-bind="css: {'active-r': redScore() === 2}, click: function(){redScore(2)}, disable: isPicking">2</button>
+                    <button data-bind="css: {'active-r': redScore() === 3}, click: function(){redScore(3)}, disable: isPicking">3</button>
+                    <select data-bind="css: {'active-r': redScore() === redScoreX()}, options: ['+',4,5,6,7,8,9,10], value: redScoreX, disable: isPicking"></select>
+                </td>
+                <td colspan="2">
+                    <button data-bind="css: {'active-b': blueScore() === 0}, click: function(){blueScore(0)}, disable: isPicking">0</button>
+                    <button data-bind="css: {'active-b': blueScore() === 1}, click: function(){blueScore(1)}, disable: isPicking">1</button>
+                    <button data-bind="css: {'active-b': blueScore() === 2}, click: function(){blueScore(2)}, disable: isPicking">2</button>
+                    <button data-bind="css: {'active-b': blueScore() === 3}, click: function(){blueScore(3)}, disable: isPicking">3</button>
+                    <select data-bind="css: {'active-b': blueScore() === redScoreX()}, options: ['+',4,5,6,7,8,9,10], value: blueScoreX, disable: isPicking"></select>
+                </td>
+            </tr>
         </table>
     </div>
 
-    <div style="align-content: center">
-        <button style="display: block; margin-left: auto; margin-right: auto; width: 5em" data-bind="click: reset, disable:pickStatus()=='Red Defence'">Cancel</button>
+    <div style="text-align: center">
+        <button style="width: 5em" data-bind="click: reset, disable:pickStatus()=='Red Defence'">Cancel</button>
+        <button data-bind="click: resetScores, disable:!scoresPresent()">Drop Scores</button>
+        <button style="width: 5em" data-bind="click: saveScore, disable:!allScoresPresent()">Submit</button>
     </div>
 
     <script id="player-template" type="text/html">
@@ -245,8 +295,18 @@
                 }
             };
 
-            $.redScore = ko.computed(getScore($.picks.red.team));
-            $.blueScore = ko.computed(getScore($.picks.blue.team));
+            $.redScore = ko.observable(null);
+            $.blueScore = ko.observable(null);
+
+            $.redScoreX = ko.computed({
+                read: function () { return $.redScore() < 4 ? '+' : $.redScore() },
+                write: function (value) { if (value >= 4 && value <= 10) $.redScore(value) }
+            });
+
+            $.blueScoreX = ko.computed({
+                read: function () { return $.blueScore() < 4 ? '+' : $.blueScore() },
+                write: function (value) { if (value >= 4 && value <= 10) $.blueScore(value) }
+            });
 
             function getScore(team) {
                 return function () {
@@ -299,6 +359,18 @@
             $.winRed = function () { win('red', 'blue') }
             $.winBlue = function () { win('blue', 'red') }
 
+            $.saveScore = function () {
+                var a = $.redScore();
+                var b = $.blueScore();
+                if ((a !== null && a >= 0 && a <= 10) && (b !== null && b >= 0 && b <= 10)) {
+                    if (a > b)
+                        win('red', 'blue');
+                    else if (a < b)
+                        win('blue', 'red')
+                }
+                else (reset())
+            }
+
             $.redMatches = ko.computed(function () {
                 return reprMatches($.picks.red.team());
             });
@@ -336,6 +408,20 @@
                 $.picks.blue.offence('---');
                 $.picks.blue.team(null);
             }
+
+            $.resetScores = function () {
+                $.redScore(null);
+                $.blueScore(null);
+            }
+
+            $.scoresPresent = ko.computed(function () {
+                var a = $.redScore(); var b = $.blueScore();
+                return (a !== null && a >= 0 && a <= 10) || (b !== null && b >= 0 && b <= 10);
+            });
+            $.allScoresPresent = ko.computed(function () {
+                var a = $.redScore(); var b = $.blueScore();
+                return (a !== null && a >= 0 && a <= 10) && (b !== null && b >= 0 && b <= 10);
+            });
 
             teamsUpdate = ko.observable();
 
@@ -397,6 +483,13 @@
                 }
 
                 elo.update(won, lost);
+
+                if ($.allScoresPresent()) {
+                    updateObj[winner].score = $[winner + 'Score']();
+                    updateObj[looser].score = $[looser + 'Score']();
+                }
+
+                $.resetScores()
 
                 updateObj[winner].ratingAfter = won.score;
                 updateObj[looser].ratingAfter = lost.score;
