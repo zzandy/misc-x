@@ -295,6 +295,27 @@
             });
         }
     </script>
+
+    <script type="text/javascript">
+        // wrap a function for a promise chain
+        function gogo(fn) {
+            var args = [].slice.call(arguments, 1);
+            return function (a) {
+                return fn.apply(null, [a].concat(args));
+            }
+        }
+
+        // chain promises
+        function chain(promise) {
+            for (var prom of arguments) {
+                if (prom == promise) continue;
+                promise = promise.then(prom);
+            }
+
+            return promise;
+        }
+    </script>
+
         var dbgTeams;
 
         function KickerModel() {
