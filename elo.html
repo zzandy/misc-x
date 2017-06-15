@@ -250,6 +250,51 @@
     </script>
 
     <script type="text/javascript">
+        "use strict";
+        function postJson(url, data) {
+            return new Promise(function (resolve, reject) {
+                var http = new XMLHttpRequest();
+
+                http.open('POST', url, true);
+                http.setRequestHeader('Content-type', 'application/json; charset=utf-8');
+
+                http.onreadystatechange = function () {
+                    if (http.readyState == 4) {
+                        if (http.status == 200) {
+                            resolve(JSON.parse(http.responseText));
+                        }
+                        else {
+                            reject('POST ' + url + ': ' + http.statusText +'. ' + http.responseText);
+                        }
+                    }
+                }
+
+                http.send(JSON.stringify(data));
+            });
+        }
+
+        function getJson(url) {
+            return new Promise(function (resolve, reject) {
+                var http = new XMLHttpRequest();
+
+                http.open('GET', url, true);
+                http.setRequestHeader('Content-type', 'application/json; charset=utf-8');
+
+                http.onreadystatechange = function () {
+                    if (http.readyState == 4) {
+                        if (http.status == 200) {
+                            resolve(JSON.parse(http.responseText));
+                        }
+                        else {
+                            reject(http.status);
+                        }
+                    }
+                }
+
+                http.send(null);
+            });
+        }
+    </script>
         var dbgTeams;
 
         function KickerModel() {
