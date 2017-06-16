@@ -430,13 +430,13 @@
 
             $.windowTitle = ko.observable('Elo Rating Tracker');
 
-            var api = new AlmazApi('http://foosball-results.herokuapp.com/api/', 'og-source/' + apiSource);
+            var api = new AlmazApi('https://foosball-results.herokuapp.com/api/', 'og-source/' + apiSource);
 
             var teams = localStorage.getItem('kicker-teams');
             teams = (teams && JSON.parse(teams)) || [];
 
             (function () {
-                var flag = 'kicker-backlog';
+                var flag = 'kicker-backlog-submitted';
                 var games = localStorage.getItem('kicker-games');
 
                 games = (games && JSON.parse(games)) || [];
