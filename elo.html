@@ -435,22 +435,6 @@
             var teams = localStorage.getItem('kicker-teams');
             teams = (teams && JSON.parse(teams)) || [];
 
-            (function () {
-                var flag = 'kicker-backlog-submitted';
-                var games = localStorage.getItem('kicker-games');
-
-                games = (games && JSON.parse(games)) || [];
-
-                var backlogUploaded = localStorage.getItem(flag);
-                if (!backlogUploaded) {
-                    for (var game of games) {
-                        api.postMatch(game);
-                    }
-
-                    localStorage.setItem(flag, true);
-                }
-            })();
-
             var players = teams.reduce(function (plyrs, team) {
                 function tryAdd(plyr) {
                     if (plyrs.indexOf(plyr) == -1)
