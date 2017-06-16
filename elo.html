@@ -341,8 +341,8 @@
 
         function matchPlayer(players, customName) {
             for (var player of players) {
-                if (customName == player.firstName + ' ' + player.secondName
-                    || (customName in playerMapping && playerMapping[customName] == player.firstName + ' ' + player.secondName))
+                if (customName == player.firstName + ' ' + player.lastName
+                    || (customName in playerMapping && playerMapping[customName] == player.firstName + ' ' + player.lastName))
                     return player;
             }
         }
