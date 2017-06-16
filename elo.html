@@ -371,8 +371,8 @@
             }
             else {
                 ctx.match = {
-                    startDate: game.date,
-                    endDate: game.date,
+                    startDate: game.startDate,
+                    endDate: game.endDate,
                     source: ctx.source,
                     red: {
                         defense: redDefenceId,
@@ -563,6 +563,7 @@
 
             var winStreakTeam = null;
             var winStreak = 0;
+            var startDate = null;
 
             $.resetScores = function () {
                 $.redScore(null);
@@ -572,6 +573,7 @@
             $.reset = function () {
                 winTeam = null;
                 winStreak = 0;
+                startDate = null;
 
                 $.pickStatus('Red Defence');
 
@@ -642,7 +644,8 @@
                 }
 
                 var updateObj = {
-                    date: new Date(),
+                    startDate: startDate,
+                    endDate: new Date(),
                     winner: winner
                 };
 
@@ -676,8 +679,6 @@
                 teamsUpdate(teamsUpdate() + 1);
                 localStorage.setItem('kicker-teams', JSON.stringify($.teams()));
             }
-
-
 
             function updateGamesLog(upd) {
                 var maxGamesLength = 1000;
@@ -741,6 +742,8 @@
 
                 $.expectRed((elo.expectWin(red, blue) * 100).toFixed(0) + '%');
                 $.expectBlue((elo.expectWin(blue, red) * 100).toFixed(0) + '%');
+
+                startDate = new Date();
 
                 $.picks.red.team(red);
                 $.picks.blue.team(blue);
