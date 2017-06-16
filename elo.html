@@ -314,7 +314,7 @@
         var playerMapping = {
             'Almaz': 'Almaz Khannanov',
             'Nikita': 'Mykyta Datsko',
-            'Andriy': 'Andrey Vinogradov',
+            'Andriy': 'Andriy Vynogradov',
             'Sergii K': 'Sergii Kozak',
             'Vova T': 'Volodymyr Troskot',
             'Dmytro': 'Dmytro Kudryavtsev',
@@ -413,7 +413,7 @@
             delete ctx.match;
 
             return postJson(ctx.url + 'games', match)
-                .then(function (a) { console.log(a); return ctx })
+                .then(function (a) { return ctx })
                 .catch(function (e) { console.error(e); return ctx; })
         }
     </script>
@@ -430,8 +430,25 @@
 
             $.windowTitle = ko.observable('Elo Rating Tracker');
 
+            var api = new AlmazApi('http://foosball-results.herokuapp.com/api/', 'og-source/' + apiSource);
+
             var teams = localStorage.getItem('kicker-teams');
             teams = (teams && JSON.parse(teams)) || [];
+
+            (function () {
+                var games = localStorage.getItem('kicker-games');
+
+                games = (games && JSON.parse(games)) || [];
+
+                var backlogUploaded = localStorage.getItem('kicker-backlog-uploaded');
+                if (!backlogUploaded) {
+                    for (var game of games) {
+                        api.postMatch(game);
+                    }
+
+                    localStorage.setItem('kicker-backlog-uploaded', true);
+                }
+            })();
 
             var players = teams.reduce(function (plyrs, team) {
                 function tryAdd(plyr) {
@@ -675,11 +692,12 @@
                 localStorage.setItem('kicker-teams', JSON.stringify($.teams()));
             }
 
-            var api = new AlmazApi('http://foosball-results.herokuapp.com/api/', 'og-source/' + apiSource);
+
 
             function updateGamesLog(upd) {
                 var maxGamesLength = 1000;
                 var games = localStorage.getItem('kicker-games');
+
                 games = (games && JSON.parse(games)) || [];
 
                 games.push(upd);
