@@ -436,17 +436,18 @@
             teams = (teams && JSON.parse(teams)) || [];
 
             (function () {
+                var flag = 'kicker-backlog';
                 var games = localStorage.getItem('kicker-games');
 
                 games = (games && JSON.parse(games)) || [];
 
-                var backlogUploaded = localStorage.getItem('kicker-backlog-uploaded');
+                var backlogUploaded = localStorage.getItem(flag);
                 if (!backlogUploaded) {
                     for (var game of games) {
                         api.postMatch(game);
                     }
 
-                    localStorage.setItem('kicker-backlog-uploaded', true);
+                    localStorage.setItem(flag, true);
                 }
             })();
 
