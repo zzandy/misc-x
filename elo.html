@@ -4,6 +4,7 @@
 
 <head>
     <meta charset="utf-8" />
+    <link rel="icon" sizes="32x32" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAZdEVYdFNvZnR3YXJlAHBhaW50Lm5ldCA0LjAuMTZEaa/1AAADBUlEQVRYR62XS08aURTH+RikH8adpkm3NG660MR0YeKiq8Y1rRhZmPQTNDFdmiZNY9yYtpoKtJI+wCqFmgAaRREIw3Nm4PSey1y4cznMXIgn+Ykc4P8/9zH3EQCAIR8CgSAjzEgxLAb4EXh6ooPFSDHCjKDsKZuHGIYsroNjMA0GI+QqgAmhOWlA8T0UgruDA/i5skIZ6MKLEN0+Vcv7lsV+C9DrdilhXbAnglgAjjlpNAno93kB+KqITksYC8AJRxpNAluO0et0KNFpSGEBWrNdEFtYgJ5p8gI6NzeU6DRYWABppPJjeRnuj45Ys3vcXETH6sPnU4MS14Myk/m7sQF2u+3YTY7TYps28IMyFfxeXXXk9eLLLD1BGQtahYIjDWDV685/3lGqWbTRJChj5OvcHBfs2zacLC7y3PDxUwLTbXM0N8qGBbFMA55EsrSpjGos+Le9zcVK+/vDXCuf5zkqXr67hHShBT1WjM3+XJS6kMg2aFMZ2VSmuLPDhbEnRC63tcVzVOzGq7SBH7KpTCUehz575NQ8NQwWazEproNqIKjEYmBWq2N5yzAcW3d8TNZoAz9UAwEut81cbizvNRFJAz9UA0Fpbw+M8/OxPA4LFaY94zCoBn7YjYZj6Y57w6YN/KBMvMhubjqW7sB1gDTwgzLxo3x46NiOgpoDj57/guPMYNLiK75XvzNTAUg2EoH21RUXx8AFSBUX5iLwvfqdmQtA/qyvg/xMHLPlVxanQv6cQwnrUE0kHMlRqL3w4D1gVirQvb0dnogw8Km8rpr8YIJRro92wwedA7H5eb4zYuAiVUsmIRMOD4VevC3yzzBe7V67Tbxg4tqH0no6zQ3wPiByshhuwRjYG3LeA34ojQoxP3Dc8SQs51TRT+nBweX9N63dMYoFaF9MUmtr0C2XXTlCFM4u23xC5u88Ly6DiwkrFotYkkWnQREd0uwM9ozHryeeipbQmxeAMDEs4sEup8/eXEC1Se4P2HJu7irAKQKHA+eE9sRUxL3A63mUIV3PIfAf8eNsoPz6yjkAAAAASUVORK5CYII=" >
     <title data-bind="text: windowTitle">Elo Rating tracker</title>
     <style type="text/css">
         html {
@@ -250,7 +251,190 @@
     </script>
 
     <script type="text/javascript">
-        var dbgTeams;
+        "use strict";
+        function postJson(url, data) {
+            return new Promise(function (resolve, reject) {
+                var http = new XMLHttpRequest();
+
+                http.open('POST', url, true);
+                http.setRequestHeader('Content-type', 'application/json; charset=utf-8');
+
+                http.onreadystatechange = function () {
+                    if (http.readyState == 4) {
+                        if (http.status == 200) {
+                            resolve(JSON.parse(http.responseText));
+                        }
+                        else {
+                            reject('POST ' + url + ': ' + http.statusText + '. ' + http.responseText);
+                        }
+                    }
+                }
+                http.send(JSON.stringify(data));
+            });
+        }
+
+        function getJson(url) {
+            return new Promise(function (resolve, reject) {
+                var http = new XMLHttpRequest();
+
+                http.open('GET', url, true);
+                http.setRequestHeader('Content-type', 'application/json; charset=utf-8');
+
+                http.onreadystatechange = function () {
+                    if (http.readyState == 4) {
+                        if (http.status == 200) {
+                            resolve(JSON.parse(http.responseText));
+                        }
+                        else {
+                            reject('POST ' + url + ': ' + http.statusText + '. ' + http.responseText);
+                        }
+                    }
+                }
+
+                http.send(null);
+            });
+        }
+    </script>
+
+    <script type="text/javascript">
+        // wrap a function for a promise chain
+        function gogo(fn) {
+            var args = [].slice.call(arguments, 1);
+            return function (a) {
+                return fn.apply(null, [a].concat(args));
+            }
+        }
+
+        // chain promises
+        function chain(promise) {
+            for (var prom of arguments) {
+                if (prom == promise) continue;
+                promise = promise.then(prom);
+            }
+
+            return promise;
+        }
+    </script>
+
+    <script type="text/javascript">
+        function AlmazApi(baseUrl, source) {
+            this.scope = Promise.resolve({ url: baseUrl, source: source, players: [] });
+            this.scope.then(refreshPlayers);
+        }
+
+        var playerMapping = {
+            'Almaz': 'Almaz Khannanov',
+            'Nikita': 'Mykyta Datsko',
+            'Andriy': 'Andrey Vinogradov',
+            'Sergii K': 'Sergii Kozak',
+            'Vova T': 'Volodymyr Troskot',
+            'Dmytro': 'Dmytro Kudryavtsev',
+            'Vova G': 'Volodymyr Havrysh',
+            'Sergii S': 'Serhii Shelest',
+            'Anton': 'Anton Potashov'
+        }
+
+        AlmazApi.prototype.postMatch = function (game) {
+            this.scope = chain(this.scope,
+                gogo(checkPlayers, game),
+                gogo(postMatch)
+            )
+        }
+
+        function refreshPlayers(ctx) {
+            return getJson(ctx.url + 'players')
+                .then(function (players) { ctx.players = players; return ctx; })
+                .catch(function (e) {
+                    console.error(e);
+                    return ctx;
+                });
+        }
+
+        function matchPlayer(players, customName) {
+            for (var player of players) {
+                if (customName == player.firstName + ' ' + player.secondName
+                    || (customName in playerMapping && playerMapping[customName] == player.firstName + ' ' + player.secondName))
+                    return player;
+            }
+        }
+
+        function checkPlayers(ctx, game, secondTry) {
+            var redDefenceId = matchPlayer(ctx.players, game.red.defence);
+            var redOffenceId = matchPlayer(ctx.players, game.red.offence);
+            var blueDefenceId = matchPlayer(ctx.players, game.blue.defence);
+            var blueOffenceId = matchPlayer(ctx.players, game.blue.offence);
+
+            var missing = [];
+            if (redDefenceId == null) missing.push(redDefenceId);
+            if (redOffenceId == null) missing.push(redOffenceId);
+            if (blueDefenceId == null) missing.push(blueDefenceId);
+            if (blueOffenceId == null) missing.push(blueOffenceId);
+
+            if (missing.length != 0) {
+                if (secondTry) {
+                    if (redDefenceId == null) console.log('Player not found ' + game.red.defence);
+                    if (redOffenceId == null) console.log('Player not found ' + game.red.offence);
+                    if (blueDefenceId == null) console.log('Player not found ' + game.blue.defence);
+                    if (blueOffenceId == null) console.log('Player not found ' + game.blue.offence);
+                    return ctx;
+                }
+                return refreshPlayers(ctx).then(function (ctx) { return checkPlayers(ctx, game, true) });
+            }
+            else {
+                ctx.match = {
+                    startDate: game.date,
+                    endDate: game.date,
+                    source: ctx.source,
+                    red: {
+                        defense: redDefenceId,
+                        offense: redOffenceId,
+                        score: game.red.score || (game.winner == 'red' ? 1 : 0),
+                    },
+                    blue: {
+                        defense: blueDefenceId,
+                        offense: blueOffenceId,
+                        score: game.blue.score || (game.winner == 'blue' ? 1 : 0),
+                    },
+                    metadata: {
+                        ratingChange: {
+                            red: {
+                                from: game.red.ratingBefore,
+                                to: game.red.ratingAfter
+                            },
+                            blue: {
+                                from: game.blue.ratingBefore,
+                                to: game.blue.ratingAfter
+                            }
+                        }
+                    }
+                }
+
+                return ctx;
+            }
+        }
+
+        function postMatch(ctx) {
+            if (!('url' in ctx))
+                throw 'Invalid context';
+
+            if (!('match' in ctx))
+                return ctx;
+
+            var match = ctx.match;
+            delete ctx.match;
+
+            return postJson(ctx.url + 'games', match)
+                .then(function (a) { console.log(a); return ctx })
+                .catch(function (e) { console.error(e); return ctx; })
+        }
+    </script>
+
+    <script type="text/javascript">
+        var apiSource = localStorage.getItem('kicker-api-source');
+        if (apiSource == null) {
+            apiSource = prompt("Please enter a name for this client.");
+            localStorage.setItem('kicker-api-source', apiSource);
+        }
 
         function KickerModel() {
             var $ = this;
@@ -379,7 +563,6 @@
             });
 
             function reprMatches(team) {
-
                 if (properTeam(team)) {
                     var n = team.numMatches;
                     return n + ' game' + (n == 1 ? '' : 's');
@@ -422,7 +605,7 @@
 
             $.allScoresPresent = ko.computed(function () {
                 var a = $.redScore(); var b = $.blueScore();
-                return a!=b && (a !== null && a >= 0 && a <= 10) && (b !== null && b >= 0 && b <= 10);
+                return a != b && (a !== null && a >= 0 && a <= 10) && (b !== null && b >= 0 && b <= 10);
             });
 
             teamsUpdate = ko.observable();
@@ -503,12 +686,16 @@
                 localStorage.setItem('kicker-teams', JSON.stringify($.teams()));
             }
 
+            var api = new AlmazApi('http://foosball-results.herokuapp.com/api/', 'og-source/' + apiSource);
+
             function updateGamesLog(upd) {
                 var maxGamesLength = 1000;
                 var games = localStorage.getItem('kicker-games');
                 games = (games && JSON.parse(games)) || [];
 
                 games.push(upd);
+
+                api.postMatch(upd);
 
                 if (games.length > maxGamesLength) {
                     games.splice(0, games.length - maxGamesLength);
