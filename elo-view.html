@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+
+<html id="doc" lang="en" xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <title>Games</title>
+    <meta charset="utf-8" />
+    <link rel="icon" sizes="32x32" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAZdEVYdFNvZnR3YXJlAHBhaW50Lm5ldCA0LjAuMTZEaa/1AAADBUlEQVRYR62XS08aURTH+RikH8adpkm3NG660MR0YeKiq8Y1rRhZmPQTNDFdmiZNY9yYtpoKtJI+wCqFmgAaRREIw3Nm4PSey1y4cznMXIgn+Ykc4P8/9zH3EQCAIR8CgSAjzEgxLAb4EXh6ooPFSDHCjKDsKZuHGIYsroNjMA0GI+QqgAmhOWlA8T0UgruDA/i5skIZ6MKLEN0+Vcv7lsV+C9DrdilhXbAnglgAjjlpNAno93kB+KqITksYC8AJRxpNAluO0et0KNFpSGEBWrNdEFtYgJ5p8gI6NzeU6DRYWABppPJjeRnuj45Ys3vcXETH6sPnU4MS14Myk/m7sQF2u+3YTY7TYps28IMyFfxeXXXk9eLLLD1BGQtahYIjDWDV685/3lGqWbTRJChj5OvcHBfs2zacLC7y3PDxUwLTbXM0N8qGBbFMA55EsrSpjGos+Le9zcVK+/vDXCuf5zkqXr67hHShBT1WjM3+XJS6kMg2aFMZ2VSmuLPDhbEnRC63tcVzVOzGq7SBH7KpTCUehz575NQ8NQwWazEproNqIKjEYmBWq2N5yzAcW3d8TNZoAz9UAwEut81cbizvNRFJAz9UA0Fpbw+M8/OxPA4LFaY94zCoBn7YjYZj6Y57w6YN/KBMvMhubjqW7sB1gDTwgzLxo3x46NiOgpoDj57/guPMYNLiK75XvzNTAUg2EoH21RUXx8AFSBUX5iLwvfqdmQtA/qyvg/xMHLPlVxanQv6cQwnrUE0kHMlRqL3w4D1gVirQvb0dnogw8Km8rpr8YIJRro92wwedA7H5eb4zYuAiVUsmIRMOD4VevC3yzzBe7V67Tbxg4tqH0no6zQ3wPiByshhuwRjYG3LeA34ojQoxP3Dc8SQs51TRT+nBweX9N63dMYoFaF9MUmtr0C2XXTlCFM4u23xC5u88Ly6DiwkrFotYkkWnQREd0uwM9ozHryeeipbQmxeAMDEs4sEup8/eXEC1Se4P2HJu7irAKQKHA+eE9sRUxL3A63mUIV3PIfAf8eNsoPz6yjkAAAAASUVORK5CYII=">
+    <script type="text/javascript" src="knockout.js"></script>
+    <style type="text/css">
+        html {
+            color: hsl(0, 0%, 60%);
+            background-color: black;
+        }
+
+        .row {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: .05rem;
+        }
+
+        .row div {
+            flex: 1;
+        }
+
+        .row div.score {
+            flex: .1;
+            text-align: center;
+        }
+
+        .row div.nfo {
+            flex: .4;
+        }
+
+        .dim {
+            color: hsl(0, 0%, 40%);
+        }
+
+        .red {
+            background-color: hsla(0, 100%, 25%, 1);
+            color: hsla(0, 100%, 95%, 1);
+        }
+
+        .blue {
+            background-color: hsla(215, 100%, 25%, 1);
+            color: hsla(215, 100%, 95%, 1);
+        }
+
+        .red.win {
+            background-color: hsla(0, 100%, 35%, 1);
+            color: hsla(0, 100%, 95%, 1);
+        }
+
+        .blue.win {
+            background-color: hsla(215, 100%, 40%, 1);
+            color: hsla(215, 100%, 95%, 1);
+        }
+    </style>
+</head>
+
+<body>
+
+    <input type="text" placeholder="source" data-bind="value: source" />
+    <button data-bind="click: refresh, disable: isRefreshing">Refresh</button>
+
+    <div class="row">
+        <div class="nfo">Date</div>
+        <div class="nfo">Time</div>
+        <div class="nfo">Duration</div>
+        <div class="red">Defence</div>
+        <div class="red">Offence</div>
+        <div class="red score"></div>
+        <div class="blue score"></div>
+        <div class="blue">Offence</div>
+        <div class="blue">Defence</div>
+    </div>
+
+    <div data-bind="foreach: games">
+        <div class="row">
+            <div class="nfo" data-bind="text: date"></div>
+            <div class="nfo" data-bind="text: time"></div>
+            <div class="nfo" data-bind="css: {dim:suspectDuration}, text: duration"></div>
+            <div class="red" data-bind="css: {win:redWin}, text: red.defense.firstName + ' ' + red.defense.lastName"></div>
+            <div class="red" data-bind="css: {win:redWin}, text: red.offense.firstName + ' ' + red.offense.lastName"></div>
+            <div class="red score" data-bind="css: {win:redWin}, text: red.score"></div>
+            <div class="blue score" data-bind="css: {win:blueWin}, text: blue.score"></div>
+            <div class="blue" data-bind="css: {win:blueWin}, text: blue.offense.firstName + ' ' + blue.offense.lastName"></div>
+            <div class="blue" data-bind="css: {win:blueWin}, text: blue.defense.firstName + ' ' + blue.defense.lastName"></div>
+        </div>
+    </div>
+
+    <!-- Ajax -->
+    <script type="text/javascript">
+        "use strict";
+        function request(verb, url, data) {
+            return new Promise(function (resolve, reject) {
+                var http = new XMLHttpRequest();
+
+                http.open(verb, url, true);
+                http.setRequestHeader('Content-type', 'application/json; charset=utf-8');
+
+                http.onreadystatechange = function () {
+                    if (http.readyState == 4) {
+                        if (http.status == 200) {
+                            resolve(JSON.parse(http.responseText));
+                        }
+                        else {
+                            reject('POST ' + url + ': ' + http.statusText + '. ' + http.responseText);
+                        }
+                    }
+                }
+
+                if (data)
+                    http.send(JSON.stringify(data));
+                else http.send(null);
+            });
+        }
+
+        function postJson(url, data) {
+            return request('POST', url, data);
+        }
+
+        function getJson(url) {
+            return request('GET', url)
+        }
+    </script>
+
+    <!-- promises -->
+    <script type="text/javascript">
+        // wrap a function for a promise chain
+        function gogo(fn) {
+            var args = [].slice.call(arguments, 1);
+            return function (a) {
+                return fn.apply(null, [a].concat(args));
+            }
+        }
+
+        // chain promises
+        function chain(promise) {
+            for (var prom of arguments) {
+                if (prom == promise) continue;
+                promise = promise.then(prom);
+            }
+
+            return promise;
+        }
+    </script>
+
+    <!-- API -->
+    <script type="text/javascript">
+        function AlmazApi(baseUrl) {
+            var state = { url: baseUrl, players: [] };
+            this.scope = Promise.resolve(state).then(refreshPlayers);
+        }
+
+        AlmazApi.prototype.getPlayers = function () {
+            var self = this;
+
+            return new Promise(function (resolve, reject) {
+                self.scope = self.scope.then(function (ctx) { resolve(ctx.players); return ctx; });
+            });
+        }
+
+        AlmazApi.prototype.getGames = function (source) {
+            var self = this;
+
+            return new Promise(function (resolve, reject) {
+                self.scope = self.scope.then(function (ctx) {
+                    if (!('url' in ctx))
+                        throw 'Invalid context';
+
+                    return getJson(ctx.url + (!!source ? 'games?source=' + encodeURIComponent(source) : 'games'))
+                        .catch(function (e) { console.error(e); return ctx; })
+                        .then(function (data) {
+                            resolve(data);
+                            return ctx;
+                        });
+
+                });
+            });
+        }
+
+        function refreshPlayers(ctx) {
+            return getJson(ctx.url + 'players')
+                .then(function (players) { ctx.players = players; return ctx; })
+                .catch(function (e) {
+                    console.error(e);
+                    return ctx;
+                });
+        }
+    </script>
+
+    <script type="text/javascript">
+        var url = 'https://foosball-results.herokuapp.com/api/';
+        var api = new AlmazApi(url);
+
+        ko.applyBindings(getModel(api), document.getElementById('doc'));
+
+        function getModel() {
+            var m = {};
+
+            m.games = ko.observableArray([]);
+            m.source = ko.observable(localStorage.getItem('source-of-choice') || '');
+            m.isRefreshing = ko.observable(false);
+
+            m.refresh = function () {
+                localStorage.setItem('source-of-choice', m.source());
+                m.isRefreshing(true);
+                api.getGames(m.source()).then(updateGames);
+            }
+
+            function updateGames(games) {
+                m.games(games.sort(byEndDate).map(prepareGame));
+                m.isRefreshing(false);
+            }
+
+            m.refresh();
+
+            return m;
+        }
+
+        function byEndDate(a, b) {
+            return new Date(a.endDate) - new Date(b.endDate);
+        }
+
+        function prepareGame(game) {
+
+            var start = new Date(game.startDate);
+            var end = new Date(game.endDate);
+
+            game.redWin = game.red.score > game.blue.score;
+            game.blueWin = game.red.score < game.blue.score;
+
+            game.date = end.getFullYear() + '-' + zf(end.getMonth(), 2) + '-' + zf(end.getDate(), 2);
+            game.time = zf(end.getHours(), 2) + ':' + zf(end.getMinutes(), 2) + ':' + zf(end.getSeconds(), 2);
+            var span = end.getTime() - start.getTime();
+
+            game.suspectDuration = span < 30000 || span > 36000000;
+            game.duration = span > 15000 && span < 72000000 ? formatTimespan(span) : '';
+
+            return game;
+        };
+
+        function formatTimespan(ts, inclMs) {
+            var s = 1000;
+            var m = 60 * s;
+            var h = 60 * m;
+            var d = 24 * h;
+
+            var days = ts / d | 0;
+            ts -= days * d;
+
+            var hours = ts / h | 0;
+            ts -= hours * h;
+
+            var minutes = ts / m | 0;
+            ts -= minutes * m;
+
+            var seconds = ts / s | 0;
+            ts -= seconds * s;
+
+            var repr = [zf(hours, 2), zf(minutes, 2), zf(seconds, 2)].join(':')
+
+            if (days > 0) repr = days + '.' + repr;
+            if (inclMs) repr = repr + '.' + zf(ts, 3);
+
+            return repr;
+        }
+
+        function zf(val, w) {
+            val = val.toString();
+            if (val.length < w)
+                val = new Array(w - val.length + 1).join('0') + val;
+
+            return val;
+        }
+    </script>
+</body>
+
+</html>
