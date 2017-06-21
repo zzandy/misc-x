@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+
+<html id="doc" lang="en" xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <title>Ratings</title>
+    <meta charset="utf-8" />
+    <link rel="icon" sizes="32x32" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAZdEVYdFNvZnR3YXJlAHBhaW50Lm5ldCA0LjAuMTZEaa/1AAADBUlEQVRYR62XS08aURTH+RikH8adpkm3NG660MR0YeKiq8Y1rRhZmPQTNDFdmiZNY9yYtpoKtJI+wCqFmgAaRREIw3Nm4PSey1y4cznMXIgn+Ykc4P8/9zH3EQCAIR8CgSAjzEgxLAb4EXh6ooPFSDHCjKDsKZuHGIYsroNjMA0GI+QqgAmhOWlA8T0UgruDA/i5skIZ6MKLEN0+Vcv7lsV+C9DrdilhXbAnglgAjjlpNAno93kB+KqITksYC8AJRxpNAluO0et0KNFpSGEBWrNdEFtYgJ5p8gI6NzeU6DRYWABppPJjeRnuj45Ys3vcXETH6sPnU4MS14Myk/m7sQF2u+3YTY7TYps28IMyFfxeXXXk9eLLLD1BGQtahYIjDWDV685/3lGqWbTRJChj5OvcHBfs2zacLC7y3PDxUwLTbXM0N8qGBbFMA55EsrSpjGos+Le9zcVK+/vDXCuf5zkqXr67hHShBT1WjM3+XJS6kMg2aFMZ2VSmuLPDhbEnRC63tcVzVOzGq7SBH7KpTCUehz575NQ8NQwWazEproNqIKjEYmBWq2N5yzAcW3d8TNZoAz9UAwEut81cbizvNRFJAz9UA0Fpbw+M8/OxPA4LFaY94zCoBn7YjYZj6Y57w6YN/KBMvMhubjqW7sB1gDTwgzLxo3x46NiOgpoDj57/guPMYNLiK75XvzNTAUg2EoH21RUXx8AFSBUX5iLwvfqdmQtA/qyvg/xMHLPlVxanQv6cQwnrUE0kHMlRqL3w4D1gVirQvb0dnogw8Km8rpr8YIJRro92wwedA7H5eb4zYuAiVUsmIRMOD4VevC3yzzBe7V67Tbxg4tqH0no6zQ3wPiByshhuwRjYG3LeA34ojQoxP3Dc8SQs51TRT+nBweX9N63dMYoFaF9MUmtr0C2XXTlCFM4u23xC5u88Ly6DiwkrFotYkkWnQREd0uwM9ozHryeeipbQmxeAMDEs4sEup8/eXEC1Se4P2HJu7irAKQKHA+eE9sRUxL3A63mUIV3PIfAf8eNsoPz6yjkAAAAASUVORK5CYII=">
+    <script type="text/javascript" src="knockout.js"></script>
+    <style type="text/css">
+        html {
+            color: grey;
+            background-color: black;
+        }
+
+        .row {
+            display: flex;
+            justify-content: space-around;
+        }
+
+        .row.wrap4 {
+            flex-wrap: wrap;
+        }
+
+        .row.wrap4 div button {
+            min-width: 6em;
+        }
+
+        .row div {
+            flex: 1;
+        }
+
+        .row .red,
+        .row .blue {
+            padding: .4em;
+        }
+
+        .red {
+            background-color: hsla(0, 100%, 35%, 1);
+            color: hsla(0, 100%, 95%, 1);
+        }
+
+        .blue {
+            background-color: hsla(215, 100%, 40%, 1);
+            color: hsla(215, 100%, 95%, 1);
+        }
+
+        .row>.blue {
+            text-align: right;
+        }
+
+        .tools .row div {
+            text-align: center;
+        }
+
+        .scoring .red button, .scoring .red select{
+            height: 2em;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="picker">
+        <div class="row">
+            <div class="red">Red</div>
+            <div class="blue">Blue</div>
+        </div>
+
+        <div class="row">
+            <div class="red">Defence</div>
+            <div class="red">Offence</div>
+            <div class="blue">Offence</div>
+            <div class="blue">Defence</div>
+        </div>
+
+        <div class="row">
+            <div class="red" data-bind="text: picker.redDef().name">---</div>
+            <div class="red" data-bind="text: picker.redOff().name">---</div>
+            <div class="blue" data-bind="text: picker.bluOff().name">---</div>
+            <div class="blue" data-bind="text: picker.bluDef().name">---</div>
+        </div>
+    </div>
+
+    <div class="scoring" data-bind="visible: picker.isReady">
+        <div class="row">
+
+            <div class="red low"><button data-bind="css: {'active': redScore() === 0}, click: function(){redScore(0)}, disable: !picker.isReady()">0</button></div>
+            <div class="red low"><button data-bind="css: {'active': redScore() === 1}, click: function(){redScore(1)}, disable: !picker.isReady()">1</button></div>
+            <div class="red low"><button data-bind="css: {'active': redScore() === 2}, click: function(){redScore(2)}, disable: !picker.isReady()">2</button></div>
+            <div class="red low"><button data-bind="css: {'active': redScore() === 3}, click: function(){redScore(3)}, disable: !picker.isReady()">3</button></div>
+
+            <div class="blue low"><button data-bind="css: {'active': blueScore() === 0}, click: function(){blueScore(0)}, disable: !picker.isReady()">0</button></div>
+            <div class="blue low"><button data-bind="css: {'active': blueScore() === 1}, click: function(){blueScore(1)}, disable: !picker.isReady()">1</button></div>
+            <div class="blue low"><button data-bind="css: {'active': blueScore() === 2}, click: function(){blueScore(2)}, disable: !picker.isReady()">2</button></div>
+            <div class="blue low"><button data-bind="css: {'active': blueScore() === 3}, click: function(){blueScore(3)}, disable: !picker.isReady()">3</button></div>
+        </div>
+        <div class="row">
+            <div class="red"></div>
+            <div class="red"><select data-bind="css: {'active': redScore() === redScoreX()}, options: ['+',4,5,6,7,8,9,10], value: redScoreX, disable: !picker.isReady()"></select></div>
+            <div class="blue"><select data-bind="css: {'active': blueScore() === blueScoreX()}, options: ['+',4,5,6,7,8,9,10], value: blueScoreX, disable: !picker.isReady()"></select></div>
+            <div class="blue"></div>
+        </div>
+    </div>
+
+    <div class="tools">
+        <div class="row">
+            <div><button data-bind="click: reset()">Cancel</button></div>
+            <div><button>Submit</button></div>
+        </div>
+    </div>
+
+    <div class="player-select" data-bind="visible: !picker.isReady()">
+        <div class="wrap4 row" data-bind="foreach: players">
+            <div><button data-bind="text: name, click: click, disable: isPicked"></button></div>
+        </div>
+    </div>
+
+    <!-- Elo -->
+    <script type="text/javascript">
+        function Elo(initScore, x10diff, kFactor) {
+            this.initScore = initScore || 800;
+            this.x10diff = x10diff || 400;
+            this.kFactor = kFactor || 32;
+        }
+
+        Elo.prototype.expectWin = function (a, b) {
+            return 1 / (1 + Math.pow(10, ((b.score || this.initScore) - (a.score || this.initScore)) / this.x10diff));
+        }
+
+        Elo.prototype.update = function (winner, looser, tie) {
+            var expecta = this.expectWin(winner, looser);
+            var expectb = this.expectWin(looser, winner);
+
+            this.updatePlayer(winner, expecta, tie ? .5 : 1);
+            this.updatePlayer(looser, expectb, tie ? .5 : 0);
+        }
+
+        Elo.prototype.updatePlayer = function (a, expected, scoreForA) {
+            var delta = this.kFactor * (scoreForA - expected);
+
+            a.score = Math.max(0, (a.score || this.initScore) + delta);
+            a.numMatches = (a.numMatches || 0) + 1;
+            a.numWins = (a.numWins || 0) + (scoreForA == 1);
+        }
+    </script>
+
+    <!-- Ajax -->
+    <script type="text/javascript">
+        "use strict";
+        function request(verb, url, data) {
+            return new Promise(function (resolve, reject) {
+                var http = new XMLHttpRequest();
+
+                http.open(verb, url, true);
+                http.setRequestHeader('Content-type', 'application/json; charset=utf-8');
+
+                http.onreadystatechange = function () {
+                    if (http.readyState == 4) {
+                        if (http.status == 200) {
+                            resolve(JSON.parse(http.responseText));
+                        }
+                        else {
+                            reject('POST ' + url + ': ' + http.statusText + '. ' + http.responseText);
+                        }
+                    }
+                }
+
+                if (data)
+                    http.send(JSON.stringify(data));
+                else http.send(null);
+            });
+        }
+
+        function postJson(url, data) {
+            return request('POST', url, data);
+        }
+
+        function getJson(url) {
+            return request('GET', url)
+        }
+    </script>
+
+    <!-- promises -->
+    <script type="text/javascript">
+        // wrap a function for a promise chain
+        function gogo(fn) {
+            var args = [].slice.call(arguments, 1);
+            return function (a) {
+                return fn.apply(null, [a].concat(args));
+            }
+        }
+
+        // chain promises
+        function chain(promise) {
+            for (var prom of arguments) {
+                if (prom == promise) continue;
+                promise = promise.then(prom);
+            }
+
+            return promise;
+        }
+    </script>
+
+    <!-- API -->
+    <script type="text/javascript">
+        function AlmazApi(baseUrl, source) {
+            var state = { url: baseUrl, source: source, players: [] };
+            this.scope = Promise.resolve(state).then(refreshPlayers);
+        }
+
+        AlmazApi.prototype.postMatch = function (game) {
+            this.scope = chain(this.scope,
+                gogo(checkPlayers, game),
+                gogo(postMatch)
+            )
+        }
+
+        AlmazApi.prototype.getPlayers = function () {
+            var self = this;
+
+            return new Promise(function (resolve, reject) {
+                self.scope = self.scope.then(function (ctx) { console.log(ctx); resolve(ctx.players); return ctx; });
+            });
+        }
+
+        AlmazApi.prototype.getGames = function () {
+            var self = this;
+
+            return new Promise(function (resolve, reject) {
+                self.scope = self.scope.then(function (ctx) {
+                    if (!('url' in ctx))
+                        throw 'Invalid context';
+
+                    return getJson(ctx.url + 'games?source=' + encodeURIComponent(ctx.source))
+                        .catch(function (e) { return ctx; })
+                        .then(function (data) {
+                            resolve(data);
+                            return ctx;
+                        });
+
+                });
+            });
+        }
+
+        function refreshPlayers(ctx) {
+            return getJson(ctx.url + 'players')
+                .then(function (players) { ctx.players = players; return ctx; })
+                .catch(function (e) {
+                    console.error(e);
+                    return ctx;
+                });
+        }
+
+        function matchPlayer(players, customName) {
+            for (var player of players) {
+                if (customName == player.firstName + ' ' + player.lastName)
+                    return player;
+            }
+        }
+
+        function checkPlayers(ctx, game, secondTry) {
+            var redDefenceId = matchPlayer(ctx.players, game.red.defence);
+            var redOffenceId = matchPlayer(ctx.players, game.red.offence);
+            var blueDefenceId = matchPlayer(ctx.players, game.blue.defence);
+            var blueOffenceId = matchPlayer(ctx.players, game.blue.offence);
+
+            var missing = [];
+            if (redDefenceId == null) missing.push(redDefenceId);
+            if (redOffenceId == null) missing.push(redOffenceId);
+            if (blueDefenceId == null) missing.push(blueDefenceId);
+            if (blueOffenceId == null) missing.push(blueOffenceId);
+
+            if (missing.length != 0) {
+                if (secondTry) {
+                    if (redDefenceId == null) console.log('Player not found ' + game.red.defence);
+                    if (redOffenceId == null) console.log('Player not found ' + game.red.offence);
+                    if (blueDefenceId == null) console.log('Player not found ' + game.blue.defence);
+                    if (blueOffenceId == null) console.log('Player not found ' + game.blue.offence);
+                    return ctx;
+                }
+                return refreshPlayers(ctx).then(function (ctx) { return checkPlayers(ctx, game, true) });
+            }
+            else {
+                ctx.match = {
+                    startDate: game.startDate,
+                    endDate: game.endDate,
+                    source: ctx.source,
+                    red: {
+                        defense: redDefenceId,
+                        offense: redOffenceId,
+                        score: game.red.score || (game.winner == 'red' ? 1 : 0),
+                    },
+                    blue: {
+                        defense: blueDefenceId,
+                        offense: blueOffenceId,
+                        score: game.blue.score || (game.winner == 'blue' ? 1 : 0),
+                    },
+                    metadata: {
+                        ratingChange: {
+                            red: {
+                                from: game.red.ratingBefore,
+                                to: game.red.ratingAfter
+                            },
+                            blue: {
+                                from: game.blue.ratingBefore,
+                                to: game.blue.ratingAfter
+                            }
+                        }
+                    }
+                }
+
+                return ctx;
+            }
+        }
+
+        function postMatch(ctx) {
+            if (!('url' in ctx))
+                throw 'Invalid context';
+
+            if (!('match' in ctx))
+                return ctx;
+
+            var match = ctx.match;
+            delete ctx.match;
+
+            return postJson(ctx.url + 'games', match)
+                .then(function (a) { return ctx })
+                .catch(function (e) { console.error(e); return ctx; })
+        }
+    </script>
+
+    <!-- Picker -->
+    <script type="text/javascript">
+        function picker() {
+            var none = { name: '---' };
+
+            var rd = ko.observable(none);
+            var ro = ko.observable(none);
+            var bd = ko.observable(none);
+            var bo = ko.observable(none);
+
+            var isReady = ko.observable(false);
+
+            var pending = [rd, ro, bo, bd];
+
+            var reset = function () {
+                rd(none);
+                ro(none);
+                bd(none);
+                bo(none);
+
+                pending = [rd, ro, bo, bd];
+                isReady(false);
+            }
+
+            var pick = function (player) {
+                if (pending.length > 0) {
+                    pending.splice(0, 1)[0](player);
+                    isReady(pending.length == 0);
+                }
+            }
+
+            var seed = function (redDef, redOff, bluOff, bluDef) {
+                pending = [];
+                var args = arguments;
+
+                [rd, ro, bo, bd].forEach(function (p, i) {
+                    if (!args[i]) pending.push(p)
+                    else p(args[i]);
+                });
+
+                isReady(pending.length == 0);
+            }
+
+            return {
+                redDef: rd,
+                redOff: ro,
+                bluDef: bd,
+                bluOff: bo,
+                reset: reset,
+                pick: pick,
+                seed: seed,
+                isReady: isReady
+            };
+        }
+    </script>
+
+    <script type="text/javascript">
+        var url = 'https://foosball-results.herokuapp.com/api/';
+        var api = new AlmazApi(url, 'og-source/' + getSource());
+
+        ko.applyBindings(getModel(api), document.getElementById('doc'));
+
+        function getModel(api) {
+            var m = {};
+
+            m.picker = picker();
+
+            m.players = ko.observableArray();
+
+            api.getPlayers().then(function (players) {
+                m.players(players.map(function (player, i, players) {
+                    var name = player.firstName + ' ' + player.lastName;
+
+                    var hasUniqueName = !players.some(function (other, j) {
+                        return i != j && adjustName(other.firstName) == adjustName(player.firstName);
+                    });
+
+                    if (hasUniqueName) {
+                        name = player.firstName;
+                    }
+                    else {
+                        hasUniqueName = !players.some(function (other, j) {
+                            return i != j && other.lastName == player.lastName;
+                        });
+                        if (hasUniqueName)
+                            name = player.lastName;
+                    }
+
+                    var obj = {
+                        name: name,
+                        dto: player,
+                        click: function () { m.picker.pick(obj) },
+                        isPicked: ko.computed(function () {
+                            return m.picker.redDef() == obj
+                                || m.picker.redOff() == obj
+                                || m.picker.bluDef() == obj
+                                || m.picker.bluOff() == obj;
+                        })
+                    };
+
+                    return obj;
+                }));
+            });
+
+            m.redScore = ko.observable(null);
+            m.blueScore = ko.observable(null);
+
+            m.redScoreX = ko.computed({
+                read: function () { return m.redScore() < 4 ? '+' : m.redScore() },
+                write: function (value) { if (value >= 4 && value <= 10) m.redScore(value) }
+            });
+
+            m.blueScoreX = ko.computed({
+                read: function () { return m.blueScore() < 4 ? '+' : m.blueScore() },
+                write: function (value) { if (value >= 4 && value <= 10) m.blueScore(value) }
+            });
+
+            m.reset = function () {
+                m.picker.reset();
+
+                m.redScore(null);
+                m.blueScore(null);
+            }
+
+            return m;
+        }
+
+        function getSource() {
+            var apiSource = localStorage.getItem('kicker-api-source');
+            if (apiSource == null) {
+                apiSource = prompt("Please enter a name for this client.");
+                localStorage.setItem('kicker-api-source', apiSource);
+            }
+
+            return apiSource;
+        }
+
+        function adjustName(name) {
+            name = name.toLowerCase();
+
+            if (name == 'sergii' || name == 'sergey') return 'serhii';
+            if (name == 'andrey' || name == 'andrii') return 'andriy';
+            if (name == 'vova' || name == 'vladimir') return 'volodymyr';
+            if (name == 'olexandr' || name == 'oleksandr') return 'sasha';
+
+            return name;
+        }
+    </script>
+
+</body>
+
+</html>
