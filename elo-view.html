@@ -28,6 +28,11 @@
             text-align: center;
         }
 
+        .row div.triple {
+            flex: .3;
+            text-align: center;
+        }
+
         .row div.nfo {
             flex: .4;
         }
@@ -55,6 +60,12 @@
             background-color: hsla(215, 100%, 40%, 1);
             color: hsla(215, 100%, 95%, 1);
         }
+
+        .maxrate{background-color: hsl(56, 100%, 40%); color: hsl(56, 100%, 90%)}
+        .avgrate{background-color: hsl(30, 100%, 40%); color: hsl(30, 100%, 90%)}
+        .games{background-color: hsl(90, 80%, 40%); color: hsl(90, 100%, 90%)}
+        .wins{background-color: hsl(0, 90%, 40%); color: hsl(0, 95%, 95%)}
+        .ratio{background-color: hsl(290, 100%, 60%); color: hsl(290, 100%, 96%)}
     </style>
 </head>
 
@@ -62,6 +73,8 @@
 
     <input type="text" placeholder="source" data-bind="value: source" />
     <button data-bind="click: refresh, disable: isRefreshing">Refresh</button>
+
+
 
     <div class="row">
         <div class="nfo">Date</div>
@@ -88,6 +101,117 @@
             <div class="blue" data-bind="css: {win:blueWin}, text: blue.defense.firstName + ' ' + blue.defense.lastName"></div>
         </div>
     </div>
+
+    <div class="row">
+        <div>Name</div>
+        <div class="triple maxrate">Max Rating</div>
+        <div class="triple avgrate">Avg Rating</div>
+        <div class="triple games">Games</div>
+        <div class="triple wins">Wins</div>
+        <div class="triple ratio">Win Rate</div>
+    </div>
+
+    <div class="row">
+        <div></div>
+
+        <div class="score maxrate">Tot</div>
+        <div class="score maxrate">Def</div>
+        <div class="score maxrate">Off</div>
+
+        <div class="score avgrate">Tot</div>
+        <div class="score avgrate">Def</div>
+        <div class="score avgrate">Off</div>
+
+        <div class="score games">Tot</div>
+        <div class="score games">Def</div>
+        <div class="score games">Off</div>
+
+        <div class="score wins">Tot</div>
+        <div class="score wins">Def</div>
+        <div class="score wins">Off</div>
+
+        <div class="score ratio">Tot</div>
+        <div class="score ratio">Def</div>
+        <div class="score ratio">Off</div>
+    </div>
+
+
+    <div data-bind="foreach: players">
+        <div class="row">
+            <div data-bind="text: givenName + ' ' + familyName"></div>
+
+            <div class="score maxrate" data-bind="text: ratingBest.toFixed()"></div>
+            <div class="score maxrate" data-bind="text: as.defense.ratingBest.toFixed()"></div>
+            <div class="score maxrate" data-bind="text: as.offense.ratingBest.toFixed()"></div>
+
+            <div class="score avgrate" data-bind="text: ratingAvg.toFixed()"></div>
+            <div class="score avgrate" data-bind="text: as.defense.ratingAvg.toFixed()"></div>
+            <div class="score avgrate" data-bind="text: as.offense.ratingAvg.toFixed()"></div>
+
+            <div class="score games" data-bind="text: numGames"></div>
+            <div class="score games" data-bind="text: as.defense.numGames"></div>
+            <div class="score games" data-bind="text: as.offense.numGames"></div>
+
+            <div class="score wins" data-bind="text: numWins"></div>
+            <div class="score wins" data-bind="text: as.defense.numWins"></div>
+            <div class="score wins" data-bind="text: as.offense.numWins"></div>
+
+            <div class="score ratio" data-bind="text:(100* winRate).toFixed(0)+'%'"></div>
+            <div class="score ratio" data-bind="text: (100*as.defense.winRate).toFixed(0)+'%'"></div>
+            <div class="score ratio" data-bind="text: (100*as.offense.winRate).toFixed(0)+'%'"></div>
+        </div>
+    </div>
+
+    <!-- Elo -->
+    <script type="text/javascript">
+        function Elo(initScore, x10diff, kFactor) {
+            this.initScore = initScore || 800;
+            this.x10diff = x10diff || 400;
+            this.kFactor = kFactor || 32;
+        }
+
+        Elo.prototype.getNew = function (score, numMatches, numWins) {
+            return {
+                score: score || this.initScore,
+                numMatches: numMatches || 0,
+                numWins: numWins || 0
+            }
+        }
+
+        Elo.prototype.expectWin = function (a, b) {
+            return 1 / (1 + Math.pow(10, ((b.score || this.initScore) - (a.score || this.initScore)) / this.x10diff));
+        }
+
+        Elo.prototype.game = function (t1, t2, s1, s2) {
+            // Expected
+            var e1 = this.expectWin(t1, t2);
+            var e2 = this.expectWin(t2, t1);
+
+            // Scores to "Results"
+            var r1 = s1 > s2 ? 1 : s1 < s2 ? 0 : .5;
+            var r2 = s2 > s1 ? 1 : s2 < s1 ? 0 : .5;
+
+            this.updatePlayer(t1, e1, r1);
+            this.updatePlayer(t2, e2, r2);
+        }
+
+        Elo.prototype.update = function (winner, looser, tie) {
+            var expecta = this.expectWin(winner, looser);
+            var expectb = this.expectWin(looser, winner);
+
+            this.updatePlayer(winner, expecta, tie ? .5 : 1);
+            this.updatePlayer(looser, expectb, tie ? .5 : 0);
+        }
+
+        Elo.prototype.updatePlayer = function (a, expected, scoreForA) {
+            var delta = this.kFactor * (scoreForA - expected);
+
+            a.score = Math.max(0, (a.score || this.initScore) + delta);
+            a.numMatches = (a.numMatches || 0) + 1;
+            a.numWins = (a.numWins || 0) + (scoreForA == 1);
+        }
+    </script>
+
 
     <!-- Ajax -->
     <script type="text/javascript">
@@ -196,10 +320,20 @@
 
         ko.applyBindings(getModel(api), document.getElementById('doc'));
 
+        Array.prototype.max = function () {
+            return this.reduce(function (mx, i) { return Math.max(mx, i); });
+        }
+
+        Array.prototype.avg = function () {
+            var sum = this.reduce(function (s, i) { return s + i });
+            return this.length > 0 ? sum / this.length : 0;
+        }
+
         function getModel() {
             var m = {};
 
             m.games = ko.observableArray([]);
+            m.players = ko.observableArray([]);
             m.source = ko.observable(localStorage.getItem('source-of-choice') || '');
             m.isRefreshing = ko.observable(false);
 
@@ -210,7 +344,12 @@
             }
 
             function updateGames(games) {
-                m.games(games.sort(byEndDate).map(prepareGame));
+                var context = { elo: new Elo(), teams: {} };
+                m.games(games.sort(byEndDate)
+                    .filter(removeDuplicates)
+                    .map(prepareGame(context)));
+
+                m.players(preparePlayers(context))
                 m.isRefreshing(false);
             }
 
@@ -223,23 +362,136 @@
             return new Date(a.endDate) - new Date(b.endDate);
         }
 
-        function prepareGame(game) {
+        function removeDuplicates(game, i, games) {
+            return game.red.score != game.blue.score && (i == 0 || !areDuplicate(game, games[i - 1]));
+        }
 
-            var start = new Date(game.startDate);
-            var end = new Date(game.endDate);
+        function areDuplicate(g, f) {
+            var dif = Math.abs((new Date(g.endDate)) - (new Date(f.endDate)));
 
-            game.redWin = game.red.score > game.blue.score;
-            game.blueWin = game.red.score < game.blue.score;
+            return dif < 120000 && teamsEqual(g.red, f.red) && teamsEqual(g.blue, f.blue);
+        }
 
-            game.date = end.getFullYear() + '-' + zf(end.getMonth(), 2) + '-' + zf(end.getDate(), 2);
-            game.time = zf(end.getHours(), 2) + ':' + zf(end.getMinutes(), 2) + ':' + zf(end.getSeconds(), 2);
-            var span = end.getTime() - start.getTime();
+        function teamsEqual(t1, t2) {
+            return t1.defense._id == t2.defense._id && t1.offense._id == t2.offense._id && t1.score == t2.score;
+        }
 
-            game.suspectDuration = span < 30000 || span > 36000000;
-            game.duration = span > 15000 && span < 72000000 ? formatTimespan(span) : '';
+        function preparePlayers(context) {
+            var players = {};
+            var list = [];
 
-            return game;
+            for (var p in context.teams) {
+                var team = context.teams[p];
+
+                log(players, team, 'defense');
+                log(players, team, 'offense');
+            }
+
+            for (var p in players) {
+                var player = players[p];
+
+                player.ratingBest = player.ratings.max();
+                player.ratingAvg = player.ratings.avg();
+
+                player.as.offense.ratingBest = player.as.offense.ratings.max();
+                player.as.offense.ratingAvg = player.as.offense.ratings.avg();
+
+                player.as.defense.ratingBest = player.as.defense.ratings.max();
+                player.as.defense.ratingAvg = player.as.defense.ratings.avg();
+
+                setWinRate(player);
+                setWinRate(player.as.defense);
+                setWinRate(player.as.offense);
+
+                list.push(player);
+            }
+
+            list.sort(function (p1, p2) { return p2.ratingAvg - p1.ratingAvg });
+
+            return list;
+        }
+
+        function setWinRate(stat) {
+            stat.winRate = stat.numGames > 0 ? (stat.numWins / stat.numGames) : 0;
+        }
+
+        function log(players, team, role) {
+            var player = team[role];
+            var stats = {};
+            if (!(player._id in players)) {
+                stats = players[player._id] = emptyPlayerStats();
+                stats.givenName = player.firstName;
+                stats.familyName = player.lastName;
+
+                stats.as = {
+                    offense: emptyPlayerStats(),
+                    defense: emptyPlayerStats()
+                };
+            }
+            else stats = players[player._id];
+
+            stats.numGames += team.numMatches;
+            stats.as[role].numGames += team.numMatches;
+
+            stats.numWins += team.numWins;
+            stats.as[role].numWins += team.numWins;
+
+            stats.ratings.push(team.score);
+            stats.as[role].ratings.push(team.score);
+        }
+
+        function emptyPlayerStats() {
+            return { numGames: 0, numWins: 0, timePlayed: 0, winStreak: 0, longestStreak: 0, ratings: [] }
+        }
+
+        function prepareGame(context) {
+            return function (game) {
+                var eloRed = getEloTeam(context, game.red);
+                var eloBlue = getEloTeam(context, game.blue);
+
+                game.rating = {
+                    blue: { before: eloBlue.score },
+                    red: { before: eloRed.score }
+                };
+
+                context.elo.game(eloRed, eloBlue, game.red.score, game.blue.score);
+
+                game.rating.blue.after = eloBlue.score;
+                game.rating.red.after = eloRed.score;
+
+                var start = new Date(game.startDate);
+                var end = new Date(game.endDate);
+
+                game.redWin = game.red.score > game.blue.score;
+                game.blueWin = game.red.score < game.blue.score;
+
+                game.date = end.getFullYear() + '-' + zf(end.getMonth(), 2) + '-' + zf(end.getDate(), 2);
+                game.time = zf(end.getHours(), 2) + ':' + zf(end.getMinutes(), 2) + ':' + zf(end.getSeconds(), 2);
+                var span = end.getTime() - start.getTime();
+
+                game.suspectDuration = span < 30000 || span > 900000;
+                game.duration = span > 15000 && span < 2400000 ? formatTimespan(span) : '';
+
+                return game;
+            }
         };
+
+        function getTeamId(team) {
+            return team.offense._id + team.defense._id;
+        }
+
+        function getEloTeam(context, team) {
+            var id = getTeamId(team);
+
+            if (!(id in context.teams)) {
+                context.teams[id] = context.elo.getNew();
+
+                context.teams[id].defense = team.defense;
+                context.teams[id].offense = team.offense;
+            }
+
+            return context.teams[id];
+        }
 
         function formatTimespan(ts, inclMs) {
             var s = 1000;
