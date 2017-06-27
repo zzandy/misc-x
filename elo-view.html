@@ -14,7 +14,7 @@
         }
 
         .row {
-            display: flex;
+            display: none;
             justify-content: space-around;
             margin-bottom: .05rem;
         }
@@ -61,20 +61,36 @@
             color: hsla(215, 100%, 95%, 1);
         }
 
-        .maxrate{background-color: hsl(56, 100%, 40%); color: hsl(56, 100%, 90%)}
-        .avgrate{background-color: hsl(30, 100%, 40%); color: hsl(30, 100%, 90%)}
-        .games{background-color: hsl(90, 80%, 40%); color: hsl(90, 100%, 90%)}
-        .wins{background-color: hsl(0, 90%, 40%); color: hsl(0, 95%, 95%)}
-        .ratio{background-color: hsl(290, 100%, 60%); color: hsl(290, 100%, 96%)}
+        .maxrate {
+            background-color: hsl(56, 100%, 40%);
+            color: hsl(56, 100%, 90%)
+        }
+
+        .avgrate {
+            background-color: hsl(30, 100%, 40%);
+            color: hsl(30, 100%, 90%)
+        }
+
+        .games {
+            background-color: hsl(90, 80%, 40%);
+            color: hsl(90, 100%, 90%)
+        }
+
+        .wins {
+            background-color: hsl(0, 90%, 40%);
+            color: hsl(0, 95%, 95%)
+        }
+
+        .ratio {
+            background-color: hsl(290, 100%, 60%);
+            color: hsl(290, 100%, 96%)
+        }
     </style>
 </head>
 
 <body>
-
     <input type="text" placeholder="source" data-bind="value: source" />
     <button data-bind="click: refresh, disable: isRefreshing">Refresh</button>
-
-
 
     <div class="row">
         <div class="nfo">Date</div>
@@ -161,6 +177,99 @@
             <div class="score ratio" data-bind="text: (100*as.offense.winRate).toFixed(0)+'%'"></div>
         </div>
     </div>
+    <!-- color -->
+    <script type="text/javascript">
+        // hue Chroma luma
+        function hcy2rgb(h, c, y, a) {
+            // 601
+            var r = .3;
+            var g = .59;
+            var b = .11;
+
+            var h0 = h;
+            h /= 60;
+
+            var k = (1 - Math.abs((h % 2) - 1));
+
+            var K = h < 1 ? r + k * g
+                : h < 2 ? g + k * r
+                    : h < 3 ? g + k * b
+                        : h < 4 ? b + k * g
+                            : h < 5 ? b + k * r
+                                : r + k * b;
+
+            var cmax = 1;
+
+            if (y <= 0 || y >= 1) cmax = 0;
+            else cmax *= K < y ? (y - 1) / (K - 1) : K > y ? y / K : 1;
+            //c *= cmax;
+            c = Math.min(c, cmax);
+
+            var x = c * k;
+            var rgb = h < 1 ? [c, x, 0]
+                : h < 2 ? [x, c, 0]
+                    : h < 3 ? [0, c, x]
+                        : h < 4 ? [0, x, c]
+                            : h < 5 ? [x, 0, c]
+                                : [c, 0, x];
+
+            var m = y - (r * rgb[0] + g * rgb[1] + b * rgb[2]);
+
+            var rgbdata = [rgb[0] + m, rgb[1] + m, rgb[2] + m];
+            return 'rgba(' + (rgbdata[0] * 255).toFixed(0) + ',' + (rgbdata[1] * 255).toFixed(0) + ',' + (rgbdata[2] * 255).toFixed(0) + ', ' + (a || 1) + ')';
+        }
+    </script>
+
+
+    <!-- canvas -->
+    <script type="text/javascript">
+        "use strict";
+
+        function fullscreenCanvas(relative) {
+
+            var c = document.createElement('canvas');
+            var ctx = c.getContext('2d');
+
+            ctx.canvas.width = window.innerWidth;
+            ctx.canvas.height = window.innerHeight;
+
+            if (!relative) {
+                ctx.canvas.style.position = 'absolute';
+                ctx.canvas.style.top = 0;
+                ctx.canvas.style.left = 0;
+            }
+
+            ctx.clear = function () {
+                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+            };
+
+            ctx.makePath = function (vertices) {
+                this.beginPath();
+                this.moveTo(vertices[0], vertices[1]);
+                for (var i = 2; i < vertices.length; i += 2) {
+                    this.lineTo(vertices[i], vertices[i + 1]);
+                }
+                this.closePath();
+            }
+
+            ctx.strokeCircle = function (x, y, r) {
+                ctx.beginPath();
+                ctx.arc(x, y, r, 0, 2 * Math.PI, true);
+                ctx.closePath();
+                ctx.stroke();
+            }
+
+            ctx.fillCircle = function (x, y, r) {
+                ctx.beginPath();
+                ctx.arc(x, y, r, 0, 2 * Math.PI, true);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            document.body.appendChild(c);
+            return ctx;
+        }
+    </script>
 
     <!-- Elo -->
     <script type="text/javascript">
@@ -317,8 +426,13 @@
     <script type="text/javascript">
         var url = 'https://foosball-results.herokuapp.com/api/';
         var api = new AlmazApi(url);
+        var ctx = null;
 
         ko.applyBindings(getModel(api), document.getElementById('doc'));
+
+        Array.prototype.min = function () {
+            return this.reduce(function (mx, i) { return Math.min(mx, i); });
+        }
 
         Array.prototype.max = function () {
             return this.reduce(function (mx, i) { return Math.max(mx, i); });
@@ -329,11 +443,36 @@
             return this.length > 0 ? sum / this.length : 0;
         }
 
+        var features = 'overall;defense;offense;winrate';
+
+        function timeseries() {
+            var limits = {};
+            features.split(';').forEach(function (name) { limits[name] = { x: [Infinity, -Infinity], y: [Infinity, -Infinity] } });
+            return {
+                limits: limits,
+                series: []
+            }
+        }
+
+        function series(obj) {
+            return { key: obj, head: { ts: 0, values: {}, next: null } };
+        }
+
         function getModel() {
             var m = {};
 
+            m.view = ko.observable('overall');
             m.games = ko.observableArray([]);
             m.players = ko.observableArray([]);
+            m.timeseries = ko.observable();
+            m.timeseries.subscribe(function (value) {
+                render(value, m.view());
+            });
+
+            m.view.subscribe(function (value) {
+                render(m.timeseries(), value);
+            });
+
             m.source = ko.observable(localStorage.getItem('source-of-choice') || '');
             m.isRefreshing = ko.observable(false);
 
@@ -344,12 +483,13 @@
             }
 
             function updateGames(games) {
-                var context = { elo: new Elo(), teams: {} };
+                var context = { elo: new Elo(), teams: {}, timeseries: timeseries() };
                 m.games(games.sort(byEndDate)
                     .filter(removeDuplicates)
                     .map(prepareGame(context)));
 
-                m.players(preparePlayers(context))
+                m.players(preparePlayers(context));
+                m.timeseries(context.timeseries);
                 m.isRefreshing(false);
             }
 
@@ -472,9 +612,106 @@
                 game.suspectDuration = span < 30000 || span > 900000;
                 game.duration = span > 15000 && span < 2400000 ? formatTimespan(span) : '';
 
+                logGame(context.timeseries, eloBlue, game, 'offense', game.blueWin);
+                logGame(context.timeseries, eloBlue, game, 'defense', game.blueWin);
+                logGame(context.timeseries, eloRed, game, 'offense', game.redWin);
+                logGame(context.timeseries, eloRed, game, 'defense', game.redWin);
+
                 return game;
             }
         };
+
+        function logGame(timeseries, team, game, role, won) {
+            var player = team[role];
+            var series = findSeries(timeseries, player);
+            var stats = series.stats;
+
+            ++stats.numGames;
+            ++stats[role].numGames;
+
+            if (won) {
+                ++stats.numWins;
+                ++stats[role].numWins;
+            }
+
+            stats.ratings.push(team.score);
+            stats[role].ratings.push(team.score);
+
+            var values = {
+                'overall': minMaxAvg(stats.ratings),
+                'defense': minMaxAvg(stats.defense.ratings),
+                'offense': minMaxAvg(stats.offense.ratings),
+                'winrate': {
+                    all: winrate(stats),
+                    def: winrate(stats.defense),
+                    off: winrate(stats.offense)
+                }
+            };
+            var ts = (new Date(game.endDate)).getTime();
+
+            expand(timeseries.limits.overall.y, values.overall.max);
+            expand(timeseries.limits.overall.y, values.overall.min);
+
+            expand(timeseries.limits.defense.y, values.defense.max);
+            expand(timeseries.limits.defense.y, values.defense.min);
+
+            expand(timeseries.limits.offense.y, values.offense.max);
+            expand(timeseries.limits.offense.y, values.offense.min);
+
+            expand(timeseries.limits.winrate.y, values.winrate.all);
+            expand(timeseries.limits.winrate.y, values.winrate.def);
+            expand(timeseries.limits.winrate.y, values.winrate.off);
+
+            expand(timeseries.limits.overall.x, ts);
+            expand(timeseries.limits.defense.x, ts);
+            expand(timeseries.limits.offense.x, ts);
+
+            if (values.winrate.all != null || values.winrate.def != null || values.winrate.off != null)
+                expand(timeseries.limits.winrate.x, ts);
+
+            var prev = series.head.ts == 0 ? null : series.head;
+
+            series.head = { ts: ts, values: values, next: prev };
+        }
+
+        function expand(range, value) {
+            if (value != null) {
+                if (range[0] > value) range[0] = value;
+                if (range[1] < value) range[1] = value;
+            }
+        }
+
+        function winrate(stat) {
+            return stat.numGames > 10 ? (stat.numWins / stat.numGames) : null;
+        }
+
+        function findSeries(timeseries, player) {
+            var s = timeseries.series.filter(function (ts) { return ts.key._id == player._id })[0];
+
+            if (s == null) {
+                s = series(player);
+                s.stats = {
+                    ratings: [],
+                    numGames: 0,
+                    numWins: 0,
+
+                    defense: {
+                        ratings: [],
+                        numGames: 0,
+                        numWins: 0
+                    },
+
+                    offense: {
+                        ratings: [],
+                        numGames: 0,
+                        numWins: 0
+                    }
+                };
+                timeseries.series.push(s)
+            }
+
+            return s;
+        }
 
         function getTeamId(team) {
             return team.offense._id + team.defense._id;
@@ -525,6 +762,104 @@
                 val = new Array(w - val.length + 1).join('0') + val;
 
             return val;
+        }
+
+        function minMaxAvg(a) {
+            var any = a.length > 0;
+            return { min: any ? a.min() : 0, max: any ? a.max() : 0, avg: any ? a.avg() : 0 }
+        }
+
+        function render(timeseries, feature) {
+            if (ctx == null)
+                ctx = fullscreenCanvas(true);
+
+            var limits = timeseries.limits[feature];
+            var nice = {
+                x: niceTime(limits.x),
+                y: niceRange(limits.y)
+            };
+
+            var fitInto = { x: [0, ctx.canvas.width], y: [ctx.canvas.height, 0] };
+
+            ctx.save();
+            scale(ctx, nice, fitInto);
+
+            for (var series of timeseries.series) {
+                var t = series.head.ts;
+                var a = series.head.values[feature].max;
+                var b = series.head.values[feature].avg;
+                var c = series.head.values[feature].min;
+
+                var point = series.head.next;
+
+                while (point !== null) {
+
+                    var tn = point.ts;
+                    var an = point.values[feature].max;
+                    var bn = point.values[feature].avg;
+                    var cn = point.values[feature].min;
+
+                    ctx.fillStyle = 'hsla(0, 100%, 40%, .3)';
+                    ctx.strokeStyle = 'hsla(0,100%,80%,1)';
+
+                    poly(ctx, [[t, a], [tn, an], [tn, cn], [t, c]]);
+                    line(ctx, t, a, tn, an);
+                    line(ctx, t, b, tn, bn);
+                    line(ctx, t, c, tn, cn);
+
+                    t = tn;
+                    a = an;
+                    b = bn;
+                    c = cn;
+
+                    point = point.next;
+                }
+
+            }
+
+
+            ctx.fillStyle = 'red';
+            for (var i = 0; i < 36000; ++i) {
+                ctx.rotate(Math.PI / 18000);
+                ctx.fillRect(0, 0, 1000000000, 50000);
+            } ctx.restore();
+
+
+
+        }
+
+        function poly(ctx, vertices) {
+            ctx.beginPath();
+            ctx.moveTo(vertices[0][0], vertices[0][1]);
+            for (var i = 1; i < vertices.length; ++i)
+                ctx.lineTo(vertices[i][0], vertices[i][1]);
+
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        function line(ctx, x1, y1, x2, y2) {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+        }
+
+        function scale(ctx, world, canvas) {
+            var sx = (world.x[1] - world.x[0]) / (canvas.x[1] - canvas.x[0]);
+            var sy = (world.y[1] - world.y[0]) / (canvas.y[1] - canvas.y[0]);
+
+            ctx.scale(sx, sy);
+            ctx.translate(-world.x[0], -world.y[0])
+        }
+
+        function niceRange(r) {
+            var range = r[1] - r[0];
+            return [(Math.round(r[0] / 10) - 1) * 10, (Math.round(r[1] / 10) + 1) * 10];
+        }
+
+        function niceTime(r) {
+            return r;
         }
     </script>
 </body>
