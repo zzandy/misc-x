@@ -14,7 +14,7 @@
         }
 
         .row {
-            display: none;
+            display: flex;
             justify-content: space-around;
             margin-bottom: .05rem;
         }
@@ -444,10 +444,12 @@
         }
 
         var features = 'overall;defense;offense;winrate';
+        var prevts = 0;
+        var tsadj = 0;
 
         function timeseries() {
             var limits = {};
-            features.split(';').forEach(function (name) { limits[name] = { x: [Infinity, -Infinity], y: [Infinity, -Infinity] } });
+            features.split(';').forEach(function (name) { limits[name] = { x: [Infinity, -Infinity], y: [Infinity, -Infinity], adj: { x: [Infinity, -Infinity], y: [Infinity, -Infinity] } } });
             return {
                 limits: limits,
                 series: []
@@ -621,6 +623,8 @@
             }
         };
 
+
+
         function logGame(timeseries, team, game, role, won) {
             var player = team[role];
             var series = findSeries(timeseries, player);
@@ -647,31 +651,41 @@
                     off: winrate(stats.offense)
                 }
             };
+
             var ts = (new Date(game.endDate)).getTime();
 
-            expand(timeseries.limits.overall.y, values.overall.max);
-            expand(timeseries.limits.overall.y, values.overall.min);
+            var prev = series.head.ts == 0 ? null : series.head;
 
-            expand(timeseries.limits.defense.y, values.defense.max);
-            expand(timeseries.limits.defense.y, values.defense.min);
+            var threshold = 1000 * 60 * 60;
+            if (prevts != 0 && ts - prevts > threshold) {
+                tsadj += ts - prevts - threshold;
+            }
+            prevts = ts;
 
-            expand(timeseries.limits.offense.y, values.offense.max);
-            expand(timeseries.limits.offense.y, values.offense.min);
+            expand(timeseries.limits.overall.y, values.overall.avg);
+
+            expand(timeseries.limits.defense.y, values.defense.avg);
+
+            expand(timeseries.limits.offense.y, values.offense.avg);
 
             expand(timeseries.limits.winrate.y, values.winrate.all);
-            expand(timeseries.limits.winrate.y, values.winrate.def);
-            expand(timeseries.limits.winrate.y, values.winrate.off);
+            //expand(timeseries.limits.winrate.y, values.winrate.def);
+            //expand(timeseries.limits.winrate.y, values.winrate.off);
 
             expand(timeseries.limits.overall.x, ts);
             expand(timeseries.limits.defense.x, ts);
             expand(timeseries.limits.offense.x, ts);
 
-            if (values.winrate.all != null || values.winrate.def != null || values.winrate.off != null)
+            if (values.winrate.all != null || values.winrate.def != null || values.winrate.off != null) {
                 expand(timeseries.limits.winrate.x, ts);
+                expand(timeseries.limits.winrate.adj.x, ts - tsadj);
+            }
 
-            var prev = series.head.ts == 0 ? null : series.head;
+            expand(timeseries.limits.overall.adj.x, ts - tsadj);
+            expand(timeseries.limits.defense.adj.x, ts - tsadj);
+            expand(timeseries.limits.offense.adj.x, ts - tsadj);
 
-            series.head = { ts: ts, values: values, next: prev };
+            series.head = { ts: ts, ats: ts - tsadj, values: values, next: prev };
         }
 
         function expand(range, value) {
@@ -774,18 +788,51 @@
                 ctx = fullscreenCanvas(true);
 
             var limits = timeseries.limits[feature];
+
+            var maxWidth = 0;
+
+            ctx.font = '12pt Segoe UI'
+
+            for (var series of timeseries.series) {
+                var name = series.key.firstName + ' ' + series.key.lastName;
+                var w = ctx.measureText(name).width * 2;
+
+                if (maxWidth < w) maxWidth = w;
+            }
+
             var nice = {
-                x: niceTime(limits.x),
+                x: niceTime(limits.adj.x),
                 y: niceRange(limits.y)
             };
 
-            var fitInto = { x: [0, ctx.canvas.width], y: [ctx.canvas.height, 0] };
+            var fitInto = { x: [0, ctx.canvas.width - w * 1.1], y: [ctx.canvas.height, 0] };
 
-            ctx.save();
-            scale(ctx, nice, fitInto);
+            var scale = scaleFn(nice, fitInto);
+
+
+            poly(ctx, [scale([nice.x[0], nice.y[0]]),
+            scale([nice.x[1], nice.y[0]]),
+            scale([nice.x[1], nice.y[1]]),
+            scale([nice.x[0], nice.y[1]])]);
+            ctx.strokeStyle = 'while';
+            ctx.lineWidth = 5
+            ctx.stroke();
+
+            var ci = 0;
+            for (var series of timeseries.series) {
+                var name = series.key.firstName + ' ' + series.key.lastName;
+                series.color = (ci++) * 320 / timeseries.series.length;
+                ctx.fillStyle = hcy2rgb(series.color, 1, .5, 1);
+                ctx.fillText(name, ctx.canvas.width - w * 1.1, scale([0, series.head.values[feature].avg])[1]);
+            }
 
             for (var series of timeseries.series) {
-                var t = series.head.ts;
+                var c = series.color
+                ctx.fillStyle =  hcy2rgb(c, 1, .5, 1);
+                ctx.strokeStyle = hcy2rgb(c, 1, .5, .5);
+                ctx.lineWidth = 2;
+
+                var t = series.head.ats;
                 var a = series.head.values[feature].max;
                 var b = series.head.values[feature].avg;
                 var c = series.head.values[feature].min;
@@ -794,18 +841,15 @@
 
                 while (point !== null) {
 
-                    var tn = point.ts;
+                    var tn = point.ats;
                     var an = point.values[feature].max;
                     var bn = point.values[feature].avg;
                     var cn = point.values[feature].min;
 
-                    ctx.fillStyle = 'hsla(0, 100%, 40%, .3)';
-                    ctx.strokeStyle = 'hsla(0,100%,80%,1)';
+                    line(ctx, scale([t, b]), scale([tn, bn]));
 
-                    poly(ctx, [[t, a], [tn, an], [tn, cn], [t, c]]);
-                    line(ctx, t, a, tn, an);
-                    line(ctx, t, b, tn, bn);
-                    line(ctx, t, c, tn, cn);
+                    var c = scale([tn, bn]);
+                    ctx.fillCircle(c[0], c[1], 3)
 
                     t = tn;
                     a = an;
@@ -814,43 +858,33 @@
 
                     point = point.next;
                 }
-
             }
-
-
-            ctx.fillStyle = 'red';
-            for (var i = 0; i < 36000; ++i) {
-                ctx.rotate(Math.PI / 18000);
-                ctx.fillRect(0, 0, 1000000000, 50000);
-            } ctx.restore();
-
-
-
         }
 
         function poly(ctx, vertices) {
+
             ctx.beginPath();
             ctx.moveTo(vertices[0][0], vertices[0][1]);
             for (var i = 1; i < vertices.length; ++i)
                 ctx.lineTo(vertices[i][0], vertices[i][1]);
 
             ctx.closePath();
-            ctx.fill();
         }
 
-        function line(ctx, x1, y1, x2, y2) {
+        function line(ctx, p1, p2) {
             ctx.beginPath();
-            ctx.moveTo(x1, y1);
-            ctx.lineTo(x2, y2);
+            ctx.moveTo(p1[0], p1[1]);
+            ctx.lineTo(p2[0], p2[1]);
             ctx.stroke();
         }
 
-        function scale(ctx, world, canvas) {
-            var sx = (world.x[1] - world.x[0]) / (canvas.x[1] - canvas.x[0]);
-            var sy = (world.y[1] - world.y[0]) / (canvas.y[1] - canvas.y[0]);
+        function scaleFn(world, canvas) {
+            var sx = (canvas.x[1] - canvas.x[0]) / (world.x[1] - world.x[0]);
+            var sy = (canvas.y[1] - canvas.y[0]) / (world.y[1] - world.y[0]);
 
-            ctx.scale(sx, sy);
-            ctx.translate(-world.x[0], -world.y[0])
+            return function (coords) {
+                return [(coords[0] - world.x[0]) * sx, - (coords[1] - world.y[0]) * sy];
+            }
         }
 
         function niceRange(r) {
