@@ -177,6 +177,12 @@
             <div class="score ratio" data-bind="text: (100*as.offense.winRate).toFixed(0)+'%'"></div>
         </div>
     </div>
+
+    <div style="margin-bottom: -1em; z-index: 10; position: relative">
+        <select data-bind="value: feature, options: features"></select>
+        <select data-bind="value: aspect, options: aspects"></select>
+    </div>
+
     <!-- color -->
     <script type="text/javascript">
         // hue Chroma luma
@@ -219,7 +225,6 @@
             return 'rgba(' + (rgbdata[0] * 255).toFixed(0) + ',' + (rgbdata[1] * 255).toFixed(0) + ',' + (rgbdata[2] * 255).toFixed(0) + ', ' + (a || 1) + ')';
         }
     </script>
-
 
     <!-- canvas -->
     <script type="text/javascript">
@@ -320,7 +325,6 @@
             a.numWins = (a.numWins || 0) + (scoreForA == 1);
         }
     </script>
-
 
     <!-- Ajax -->
     <script type="text/javascript">
@@ -428,6 +432,10 @@
         var api = new AlmazApi(url);
         var ctx = null;
 
+        var features = 'overall;winrate';
+        var prevts = 0;
+        var tsadj = 0;
+
         ko.applyBindings(getModel(api), document.getElementById('doc'));
 
         Array.prototype.min = function () {
@@ -439,19 +447,15 @@
         }
 
         Array.prototype.avg = function () {
-            var sum = this.reduce(function (s, i) { return s + i });
-            return this.length > 0 ? sum / this.length : 0;
+            return this.length > 0 ? this.reduce(function (s, i) { return s + i }) / this.length : NaN;
         }
-
-        var features = 'overall;defense;offense;winrate';
-        var prevts = 0;
-        var tsadj = 0;
 
         function timeseries() {
             var limits = {};
-            features.split(';').forEach(function (name) { limits[name] = { x: [Infinity, -Infinity], y: [Infinity, -Infinity], adj: { x: [Infinity, -Infinity], y: [Infinity, -Infinity] } } });
+            features.split(';').forEach(function (name) { limits[name] = { x: [Infinity, -Infinity], y: [Infinity, -Infinity], adj: { x: [Infinity, -Infinity] } } });
             return {
                 limits: limits,
+                xp: [],
                 series: []
             }
         }
@@ -463,16 +467,26 @@
         function getModel() {
             var m = {};
 
-            m.view = ko.observable('overall');
             m.games = ko.observableArray([]);
             m.players = ko.observableArray([]);
-            m.timeseries = ko.observable();
+            m.timeseries = ko.observable([]);
+
+            m.feature = ko.observable('overall');
+            m.features = features.split(';');
+            m.aspect = ko.observable('any');
+            m.aspects = ['any', 'def', 'off'];
+
             m.timeseries.subscribe(function (value) {
-                render(value, m.view());
+                render(value, m.feature(), m.aspect());
             });
 
-            m.view.subscribe(function (value) {
-                render(m.timeseries(), value);
+            m.feature.subscribe(function (value) {
+                m.aspect(m.aspects[0]);
+                render(m.timeseries(), value, m.aspect());
+            });
+
+            m.aspect.subscribe(function (value) {
+                render(m.timeseries(), m.feature(), value);
             });
 
             m.source = ko.observable(localStorage.getItem('source-of-choice') || '');
@@ -607,7 +621,7 @@
                 game.redWin = game.red.score > game.blue.score;
                 game.blueWin = game.red.score < game.blue.score;
 
-                game.date = end.getFullYear() + '-' + zf(end.getMonth(), 2) + '-' + zf(end.getDate(), 2);
+                game.date = end.getFullYear() + '-' + zf(end.getMonth() + 1, 2) + '-' + zf(end.getDate(), 2);
                 game.time = zf(end.getHours(), 2) + ':' + zf(end.getMinutes(), 2) + ':' + zf(end.getSeconds(), 2);
                 var span = end.getTime() - start.getTime();
 
@@ -623,9 +637,10 @@
             }
         };
 
-
-
         function logGame(timeseries, team, game, role, won) {
+            var ts = (new Date(game.endDate)).getTime();
+            var cutoff = addDays(getMonday(), -2 * 7).getTime();
+
             var player = team[role];
             var series = findSeries(timeseries, player);
             var stats = series.stats;
@@ -642,50 +657,51 @@
             stats[role].ratings.push(team.score);
 
             var values = {
-                'overall': minMaxAvg(stats.ratings),
-                'defense': minMaxAvg(stats.defense.ratings),
-                'offense': minMaxAvg(stats.offense.ratings),
+                'overall': {
+                    any: stats.ratings.avg(),
+                    def: stats.defense.ratings.avg(),
+                    off: stats.offense.ratings.avg()
+                },
                 'winrate': {
-                    all: winrate(stats),
+                    any: winrate(stats),
                     def: winrate(stats.defense),
                     off: winrate(stats.offense)
                 }
             };
 
-            var ts = (new Date(game.endDate)).getTime();
-
             var prev = series.head.ts == 0 ? null : series.head;
 
-            var threshold = 1000 * 60 * 60;
+            var threshold = 1000 * 60 * 30;
             if (prevts != 0 && ts - prevts > threshold) {
                 tsadj += ts - prevts - threshold;
             }
+
+            if (ts >= cutoff && prevts != 0 && new Date(prevts).getDay() != new Date(game.endDate).getDay())
+                timeseries.xp.push([ts - tsadj, ts]);
+
             prevts = ts;
 
-            expand(timeseries.limits.overall.y, values.overall.avg);
+            if (ts < cutoff) return;
 
-            expand(timeseries.limits.defense.y, values.defense.avg);
-
-            expand(timeseries.limits.offense.y, values.offense.avg);
-
-            expand(timeseries.limits.winrate.y, values.winrate.all);
-            //expand(timeseries.limits.winrate.y, values.winrate.def);
-            //expand(timeseries.limits.winrate.y, values.winrate.off);
-
-            expand(timeseries.limits.overall.x, ts);
-            expand(timeseries.limits.defense.x, ts);
-            expand(timeseries.limits.offense.x, ts);
-
-            if (values.winrate.all != null || values.winrate.def != null || values.winrate.off != null) {
-                expand(timeseries.limits.winrate.x, ts);
-                expand(timeseries.limits.winrate.adj.x, ts - tsadj);
+            for (var limit in timeseries.limits) {
+                expand2(timeseries.limits[limit].y, values[limit]);
+                expand3(timeseries.limits[limit], values[limit], ts, tsadj);
             }
 
-            expand(timeseries.limits.overall.adj.x, ts - tsadj);
-            expand(timeseries.limits.defense.adj.x, ts - tsadj);
-            expand(timeseries.limits.offense.adj.x, ts - tsadj);
-
             series.head = { ts: ts, ats: ts - tsadj, values: values, next: prev };
+        }
+
+        function expand2(range, triplet) {
+            expand(range, triplet.any);
+            expand(range, triplet.def);
+            expand(range, triplet.off);
+        }
+
+        function expand3(limit, triplet, ts, tsadj) {
+            if (triplet.all != null || triplet.def != null || triplet.off != null) {
+                expand(limit.x, ts);
+                expand(limit.adj.x, ts - tsadj);
+            }
         }
 
         function expand(range, value) {
@@ -696,7 +712,7 @@
         }
 
         function winrate(stat) {
-            return stat.numGames > 10 ? (stat.numWins / stat.numGames) : null;
+            return stat.numGames > 10 ? 100 * (stat.numWins / stat.numGames) : null;
         }
 
         function findSeries(timeseries, player) {
@@ -770,6 +786,11 @@
             return repr;
         }
 
+        function formatDate(date) {
+            var day = 'Sun,Mon,Tue,Wed,Thu,Fri,Sat'.split(',');
+            return day[date.getDay()] + ', ' + date.getFullYear() + '-' + zf(date.getMonth() + 1, 2) + '-' + zf(date.getDate(), 2)
+        }
+
         function zf(val, w) {
             val = val.toString();
             if (val.length < w)
@@ -778,14 +799,36 @@
             return val;
         }
 
-        function minMaxAvg(a) {
-            var any = a.length > 0;
-            return { min: any ? a.min() : 0, max: any ? a.max() : 0, avg: any ? a.avg() : 0 }
+        function getMonday() {
+            var now = new Date();
+            var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            var monday = addDays(today, -Math.abs(today.getDay() - 1));
+            return monday;
         }
 
-        function render(timeseries, feature) {
-            if (ctx == null)
+        function addDays(date, days) {
+            return new Date(date.getTime() + days * 24 * 60 * 60 * 1000);
+        }
+
+        function getCutoffDate(days) {
+            var now = new Date();
+            var then = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+
+            var thenDate = new Date(then.getFullYear(), then.getMonth(), then.getDate());
+
+            return thenDate;
+        }
+
+        function render(timeseries, feature, aspect) {
+            if (ctx == null) {
                 ctx = fullscreenCanvas(true);
+
+                ctx.canvas.width -= 30;
+                ctx.canvas.height -= 20;
+                ctx.canvas.style.zIndex = -100;
+            }
+
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
             var limits = timeseries.limits[feature];
 
@@ -805,25 +848,94 @@
                 y: niceRange(limits.y)
             };
 
-            var fitInto = { x: [0, ctx.canvas.width - w * 1.1], y: [ctx.canvas.height, 0] };
+            var fitInto = { x: [30, ctx.canvas.width - w * 1.1], y: [ctx.canvas.height - 30, 0] };
 
             var scale = scaleFn(nice, fitInto);
 
+            ctx.strokeStyle = 'hsl(0, 0%, 40%)';
+            ctx.fillStyle = 'hsl(0, 0%, 80%)'
+            ctx.lineWidth = 1;
 
-            poly(ctx, [scale([nice.x[0], nice.y[0]]),
-            scale([nice.x[1], nice.y[0]]),
-            scale([nice.x[1], nice.y[1]]),
-            scale([nice.x[0], nice.y[1]])]);
-            ctx.strokeStyle = 'while';
-            ctx.lineWidth = 5
-            ctx.stroke();
+            ctx.font = '10pt Segoe UI';
 
+            // Draw horizonlal lines
+            for (var i = nice.y[0] + 10; i < nice.y[1]; i += 10) {
+                var p1 = scale([nice.x[0], i]);
+                var p2 = scale([nice.x[1], i]);
+
+                p1[1] = (p1[1] | 0) + .5;
+                p2[1] = (p2[1] | 0) + .5;
+
+                line(ctx, p1, p2);
+                ctx.fillText(i, 5, p1[1] + 6);
+            }
+
+            // Draw vertical lines
             var ci = 0;
+            for (var v of timeseries.xp) {
+                var p1 = scale([v[0], nice.y[0]]);
+                var p2 = scale([v[0], nice.y[1]]);
+
+                p1[0] = (p1[0] | 0) + .5;
+                p2[0] = (p2[0] | 0) + .5;
+
+                line(ctx, p1, p2);
+                ctx.fillText(formatDate(new Date(v[1])), p1[0], p1[1] + ((++ci) % 3) * 10);
+            }
+
+            for (var i = nice.y[0] + 1; i < nice.y[1]; ++i); {
+                var d1 = new Date(i - 1);
+                var d1 = new Date(i - 1);
+            }
+
+            ctx.font = '12pt Segoe UI';
+
+            // Adjust and draw labels
+            var ci = 0;
+            var labels = [];
             for (var series of timeseries.series) {
                 var name = series.key.firstName + ' ' + series.key.lastName;
-                series.color = (ci++) * 360 / timeseries.series.length;
-                ctx.fillStyle = hcy2rgb(series.color, 1, .5, 1);
-                ctx.fillText(name, ctx.canvas.width - w * 1.1, scale([0, series.head.values[feature].avg])[1]);
+                series.color = (ci++) * 360 / (timeseries.series.length + 1);
+
+                labels[scale([0, series.head.values[feature][aspect]])[1] | 0] = { name: name, adj: 0, color: series.color };
+            }
+
+            var overlap = true;
+            var retries = 0;
+            var height = 16;
+
+            while (retries < 10 && overlap) {
+                overlap = false;
+                ++retries;
+
+                var last = null;
+
+                for (var label in labels) {
+                    if (isNaN(parseInt(label))) continue;
+
+                    if (last == null) {
+                        last = label;
+                    }
+                    else {
+                        var p1 = labels[last];
+                        var p2 = labels[label];
+
+                        var gap = (parseInt(label) + p2.adj) - (parseInt(last) + p1.adj);
+
+                        if (gap < height) {
+                            p1.adj -= (height - gap) / 2;
+                            p2.adj += (height - gap) / 2;
+                            overlap = true;
+                        }
+
+                        last = label;
+                    }
+                }
+            }
+
+            for (var label in labels) {
+                ctx.fillStyle = hcy2rgb(labels[label].color, 1, .4, 1);
+                ctx.fillText(labels[label].name, ctx.canvas.width - w, labels[label].adj + parseInt(label));
             }
 
             for (var series of timeseries.series) {
@@ -833,28 +945,21 @@
                 ctx.lineWidth = 2;
 
                 var t = series.head.ats;
-                var a = series.head.values[feature].max;
-                var b = series.head.values[feature].avg;
-                var c = series.head.values[feature].min;
+                var b = series.head.values[feature][aspect];
 
                 var point = series.head.next;
 
                 while (point !== null) {
-
                     var tn = point.ats;
-                    var an = point.values[feature].max;
-                    var bn = point.values[feature].avg;
-                    var cn = point.values[feature].min;
+                    var bn = point.values[feature][aspect];
 
                     line(ctx, scale([t, b]), scale([tn, bn]));
 
                     var c = scale([tn, bn]);
-                    ctx.fillCircle(c[0], c[1], 3)
+                    ctx.fillCircle(c[0], c[1], 2)
 
                     t = tn;
-                    a = an;
                     b = bn;
-                    c = cn;
 
                     point = point.next;
                 }
@@ -898,10 +1003,10 @@
 
         function niceRange(r) {
             var range = r[1] - r[0];
-            return [(Math.round(r[0] / 10) - 1) * 10, (Math.round(r[1] / 10) + 1) * 10];
+            return [(Math.round(r[0] / 10)) * 10, (Math.round(r[1] / 10)) * 10];
         }
 
-        function niceTime(r) {
+        function niceTime(r, cutoff) {
             return r;
         }
     </script>
