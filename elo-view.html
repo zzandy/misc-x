@@ -821,14 +821,14 @@
             var ci = 0;
             for (var series of timeseries.series) {
                 var name = series.key.firstName + ' ' + series.key.lastName;
-                series.color = (ci++) * 320 / timeseries.series.length;
+                series.color = (ci++) * 360 / timeseries.series.length;
                 ctx.fillStyle = hcy2rgb(series.color, 1, .5, 1);
                 ctx.fillText(name, ctx.canvas.width - w * 1.1, scale([0, series.head.values[feature].avg])[1]);
             }
 
             for (var series of timeseries.series) {
                 var c = series.color
-                ctx.fillStyle =  hcy2rgb(c, 1, .5, 1);
+                ctx.fillStyle = hcy2rgb(c, 1, .5, 1);
                 ctx.strokeStyle = hcy2rgb(c, 1, .5, .5);
                 ctx.lineWidth = 2;
 
@@ -879,11 +879,20 @@
         }
 
         function scaleFn(world, canvas) {
-            var sx = (canvas.x[1] - canvas.x[0]) / (world.x[1] - world.x[0]);
-            var sy = (canvas.y[1] - canvas.y[0]) / (world.y[1] - world.y[0]);
+            var ws = canvas.x[1] - canvas.x[0];
+            var ww = world.x[1] - world.x[0];
+
+            var hs = canvas.y[1] - canvas.y[0];
+            var hw = world.y[1] - world.y[0];
+
+            var sx = ws / ww;
+            var sy = hs / hw;
 
             return function (coords) {
-                return [(coords[0] - world.x[0]) * sx, - (coords[1] - world.y[0]) * sy];
+                var wx = coords[0] - world.x[0];
+                var wy = coords[1] - world.y[0];
+
+                return [canvas.x[0] + sx * wx, canvas.y[0] + sy * wy];
             }
         }
 
