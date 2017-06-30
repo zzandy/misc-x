@@ -61,14 +61,9 @@
             color: hsla(215, 100%, 95%, 1);
         }
 
-        .maxrate {
+        .avgrate {
             background-color: hsl(56, 100%, 40%);
             color: hsl(56, 100%, 90%)
-        }
-
-        .avgrate {
-            background-color: hsl(30, 100%, 40%);
-            color: hsl(30, 100%, 90%)
         }
 
         .games {
@@ -91,91 +86,87 @@
 <body>
     <input type="text" placeholder="source" data-bind="value: source" />
     <button data-bind="click: refresh, disable: isRefreshing">Refresh</button>
+    <input type="checkbox" data-bind="checked: showData"/>
 
-    <div class="row">
-        <div class="nfo">Date</div>
-        <div class="nfo">Time</div>
-        <div class="nfo">Duration</div>
-        <div class="red">Defence</div>
-        <div class="red">Offence</div>
-        <div class="red score"></div>
-        <div class="blue score"></div>
-        <div class="blue">Offence</div>
-        <div class="blue">Defence</div>
-    </div>
+    <div data-bind="visible: haveData">
 
-    <div data-bind="foreach: games">
         <div class="row">
-            <div class="nfo" data-bind="text: date"></div>
-            <div class="nfo" data-bind="text: time"></div>
-            <div class="nfo" data-bind="css: {dim:suspectDuration}, text: duration"></div>
-            <div class="red" data-bind="css: {win:redWin}, text: red.defense.firstName + ' ' + red.defense.lastName"></div>
-            <div class="red" data-bind="css: {win:redWin}, text: red.offense.firstName + ' ' + red.offense.lastName"></div>
-            <div class="red score" data-bind="css: {win:redWin}, text: red.score"></div>
-            <div class="blue score" data-bind="css: {win:blueWin}, text: blue.score"></div>
-            <div class="blue" data-bind="css: {win:blueWin}, text: blue.offense.firstName + ' ' + blue.offense.lastName"></div>
-            <div class="blue" data-bind="css: {win:blueWin}, text: blue.defense.firstName + ' ' + blue.defense.lastName"></div>
+            <div class="nfo">Date</div>
+            <div class="nfo">Time</div>
+            <div class="nfo">Duration</div>
+            <div class="red">Defence</div>
+            <div class="red">Offence</div>
+            <div class="red score"></div>
+            <div class="blue score"></div>
+            <div class="blue">Offence</div>
+            <div class="blue">Defence</div>
         </div>
-    </div>
 
-    <div class="row">
-        <div>Name</div>
-        <div class="triple maxrate">Max Rating</div>
-        <div class="triple avgrate">Avg Rating</div>
-        <div class="triple games">Games</div>
-        <div class="triple wins">Wins</div>
-        <div class="triple ratio">Win Rate</div>
-    </div>
+        <div data-bind="foreach: games">
+            <div class="row">
+                <div class="nfo" data-bind="text: date"></div>
+                <div class="nfo" data-bind="text: time"></div>
+                <div class="nfo" data-bind="css: {dim:suspectDuration}, text: duration"></div>
+                <div class="red" data-bind="css: {win:redWin}, text: red.defense.firstName + ' ' + red.defense.lastName"></div>
+                <div class="red" data-bind="css: {win:redWin}, text: red.offense.firstName + ' ' + red.offense.lastName"></div>
+                <div class="red score" data-bind="css: {win:redWin}, text: red.score"></div>
+                <div class="blue score" data-bind="css: {win:blueWin}, text: blue.score"></div>
+                <div class="blue" data-bind="css: {win:blueWin}, text: blue.offense.firstName + ' ' + blue.offense.lastName"></div>
+                <div class="blue" data-bind="css: {win:blueWin}, text: blue.defense.firstName + ' ' + blue.defense.lastName"></div>
+            </div>
+        </div>
 
-    <div class="row">
-        <div></div>
-
-        <div class="score maxrate">Tot</div>
-        <div class="score maxrate">Def</div>
-        <div class="score maxrate">Off</div>
-
-        <div class="score avgrate">Tot</div>
-        <div class="score avgrate">Def</div>
-        <div class="score avgrate">Off</div>
-
-        <div class="score games">Tot</div>
-        <div class="score games">Def</div>
-        <div class="score games">Off</div>
-
-        <div class="score wins">Tot</div>
-        <div class="score wins">Def</div>
-        <div class="score wins">Off</div>
-
-        <div class="score ratio">Tot</div>
-        <div class="score ratio">Def</div>
-        <div class="score ratio">Off</div>
-    </div>
-
-
-    <div data-bind="foreach: players">
         <div class="row">
-            <div data-bind="text: givenName + ' ' + familyName"></div>
-
-            <div class="score maxrate" data-bind="text: ratingBest.toFixed()"></div>
-            <div class="score maxrate" data-bind="text: as.defense.ratingBest.toFixed()"></div>
-            <div class="score maxrate" data-bind="text: as.offense.ratingBest.toFixed()"></div>
-
-            <div class="score avgrate" data-bind="text: ratingAvg.toFixed()"></div>
-            <div class="score avgrate" data-bind="text: as.defense.ratingAvg.toFixed()"></div>
-            <div class="score avgrate" data-bind="text: as.offense.ratingAvg.toFixed()"></div>
-
-            <div class="score games" data-bind="text: numGames"></div>
-            <div class="score games" data-bind="text: as.defense.numGames"></div>
-            <div class="score games" data-bind="text: as.offense.numGames"></div>
-
-            <div class="score wins" data-bind="text: numWins"></div>
-            <div class="score wins" data-bind="text: as.defense.numWins"></div>
-            <div class="score wins" data-bind="text: as.offense.numWins"></div>
-
-            <div class="score ratio" data-bind="text:(100* winRate).toFixed(0)+'%'"></div>
-            <div class="score ratio" data-bind="text: (100*as.defense.winRate).toFixed(0)+'%'"></div>
-            <div class="score ratio" data-bind="text: (100*as.offense.winRate).toFixed(0)+'%'"></div>
+            <div>Name</div>
+            <div class="triple avgrate">Avg Rating</div>
+            <div class="triple games">Games</div>
+            <div class="triple wins">Wins</div>
+            <div class="triple ratio">Win Rate</div>
         </div>
+
+        <div class="row">
+            <div></div>
+
+            <div class="score avgrate">Tot</div>
+            <div class="score avgrate">Def</div>
+            <div class="score avgrate">Off</div>
+
+            <div class="score games">Tot</div>
+            <div class="score games">Def</div>
+            <div class="score games">Off</div>
+
+            <div class="score wins">Tot</div>
+            <div class="score wins">Def</div>
+            <div class="score wins">Off</div>
+
+            <div class="score ratio">Tot</div>
+            <div class="score ratio">Def</div>
+            <div class="score ratio">Off</div>
+        </div>
+
+
+        <div data-bind="foreach: players">
+            <div class="row">
+                <div data-bind="text: givenName + ' ' + familyName"></div>
+
+                <div class="score avgrate" data-bind="text: rating.toFixed()"></div>
+                <div class="score avgrate" data-bind="text: defense.rating.toFixed()"></div>
+                <div class="score avgrate" data-bind="text: offense.rating.toFixed()"></div>
+
+                <div class="score games" data-bind="text: numGames"></div>
+                <div class="score games" data-bind="text: defense.numGames"></div>
+                <div class="score games" data-bind="text: offense.numGames"></div>
+
+                <div class="score wins" data-bind="text: numWins"></div>
+                <div class="score wins" data-bind="text: defense.numWins"></div>
+                <div class="score wins" data-bind="text: offense.numWins"></div>
+
+                <div class="score ratio" data-bind="text:(100* winRate).toFixed(0)+'%'"></div>
+                <div class="score ratio" data-bind="text: (100*defense.winRate).toFixed(0)+'%'"></div>
+                <div class="score ratio" data-bind="text: (100*offense.winRate).toFixed(0)+'%'"></div>
+            </div>
+        </div>
+
     </div>
 
     <div style="margin-bottom: -1em; z-index: 10; position: relative">
@@ -476,6 +467,12 @@
             m.aspect = ko.observable('any');
             m.aspects = ['any', 'def', 'off'];
 
+            m.showData = ko.observable(false);
+
+            m.haveData = ko.computed(function () {
+                return m.showData() && m.games().length > 0;
+            });
+
             m.timeseries.subscribe(function (value) {
                 render(value, m.feature(), m.aspect());
             });
@@ -504,7 +501,7 @@
                     .filter(removeDuplicates)
                     .map(prepareGame(context)));
 
-                m.players(preparePlayers(context));
+                m.players(preparePlayers(context.timeseries.series));
                 m.timeseries(context.timeseries);
                 m.isRefreshing(false);
             }
@@ -512,6 +509,42 @@
             m.refresh();
 
             return m;
+        }
+
+        function preparePlayers(series){
+            var players = series.map(preparePlayer);
+            players.sort(byRating);
+            return players;
+        }
+
+        function preparePlayer(ts) {
+            return {
+                givenName: ts.key.firstName,
+                familyName: ts.key.lastName,
+
+                rating: ts.head.values.overall.any,
+                numGames: ts.stats.numGames,
+                numWins: ts.stats.numWins,
+                winRate: ts.head.values.winrate.any / 100,
+
+                defense: {
+                    rating: ts.head.values.overall.def,
+                    numGames: ts.stats.defense.numGames,
+                    numWins: ts.stats.defense.numWins,
+                    winRate: ts.head.values.winrate.def / 100,
+                },
+
+                offense: {
+                    rating: ts.head.values.overall.off,
+                    numGames: ts.stats.offense.numGames,
+                    numWins: ts.stats.offense.numWins,
+                    winRate: ts.head.values.winrate.off / 100,
+                }
+            }
+        }
+
+        function byRating(a, b){
+            return b.rating - a.rating;
         }
 
         function byEndDate(a, b) {
@@ -530,74 +563,6 @@
 
         function teamsEqual(t1, t2) {
             return t1.defense._id == t2.defense._id && t1.offense._id == t2.offense._id && t1.score == t2.score;
-        }
-
-        function preparePlayers(context) {
-            var players = {};
-            var list = [];
-
-            for (var p in context.teams) {
-                var team = context.teams[p];
-
-                log(players, team, 'defense');
-                log(players, team, 'offense');
-            }
-
-            for (var p in players) {
-                var player = players[p];
-
-                player.ratingBest = player.ratings.max();
-                player.ratingAvg = player.ratings.avg();
-
-                player.as.offense.ratingBest = player.as.offense.ratings.max();
-                player.as.offense.ratingAvg = player.as.offense.ratings.avg();
-
-                player.as.defense.ratingBest = player.as.defense.ratings.max();
-                player.as.defense.ratingAvg = player.as.defense.ratings.avg();
-
-                setWinRate(player);
-                setWinRate(player.as.defense);
-                setWinRate(player.as.offense);
-
-                list.push(player);
-            }
-
-            list.sort(function (p1, p2) { return p2.ratingAvg - p1.ratingAvg });
-
-            return list;
-        }
-
-        function setWinRate(stat) {
-            stat.winRate = stat.numGames > 0 ? (stat.numWins / stat.numGames) : 0;
-        }
-
-        function log(players, team, role) {
-            var player = team[role];
-            var stats = {};
-            if (!(player._id in players)) {
-                stats = players[player._id] = emptyPlayerStats();
-                stats.givenName = player.firstName;
-                stats.familyName = player.lastName;
-
-                stats.as = {
-                    offense: emptyPlayerStats(),
-                    defense: emptyPlayerStats()
-                };
-            }
-            else stats = players[player._id];
-
-            stats.numGames += team.numMatches;
-            stats.as[role].numGames += team.numMatches;
-
-            stats.numWins += team.numWins;
-            stats.as[role].numWins += team.numWins;
-
-            stats.ratings.push(team.score);
-            stats.as[role].ratings.push(team.score);
-        }
-
-        function emptyPlayerStats() {
-            return { numGames: 0, numWins: 0, timePlayed: 0, winStreak: 0, longestStreak: 0, ratings: [] }
         }
 
         function prepareGame(context) {
