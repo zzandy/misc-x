@@ -80,13 +80,24 @@
             background-color: hsl(290, 100%, 60%);
             color: hsl(290, 100%, 96%)
         }
+
+        .progress {
+            position: absolute;
+            width: 100%;
+            top: 0;
+            left: 0;
+            height: .1em;
+            min-height: .1em;
+            background-color: lime;
+            box-shadow: 0 0 .2em lime;
+        }
     </style>
 </head>
 
 <body>
     <input type="text" placeholder="source" data-bind="value: source" />
     <button data-bind="click: refresh, disable: isRefreshing">Refresh</button>
-    <input type="checkbox" data-bind="checked: showData"/>
+    <input type="checkbox" data-bind="checked: showData" />
 
     <div data-bind="visible: haveData">
 
@@ -418,6 +429,81 @@
         }
     </script>
 
+    <!-- Progress -->
+    <script type="text/javascript">
+        (function () {
+            function progress(name, promiseFn) {
+                var start = new Date().getTime();
+
+                var bar = showBar();
+                var expec = getExpectation(name);
+
+                var update = function () {
+                    var now = new Date().getTime();
+                    var elapsed = now - start;
+
+                    updateBar(bar, elapsed / expec);
+
+                    window.requestAnimationFrame(update);
+                }
+                update();
+
+                promiseFn().then(function () {
+                    var end = new Date().getTime();
+
+                    hideBar(bar);
+                    saveExpectation(name, end - start);
+                    update = function () { };
+                });
+            }
+
+            function showBar() {
+                var bar = document.createElement('div');
+                bar.className = 'progress';
+
+
+                document.body.insertBefore(bar, document.body.firstChild);
+
+                return bar;
+            }
+
+            function updateBar(bar, ratio) {
+                var q = 1;
+
+                var r = Math.min(100, ratio * q);
+                bar.style.width = r * 100 + '%';
+            }
+
+            function hideBar(bar) {
+                bar.parentElement.removeChild(bar);
+            }
+
+            function getExpectation(name) {
+                var itemName = 'progress-record-' + name;
+                var previous = JSON.parse(localStorage.getItem(itemName)) || [];
+
+                var res = previous.length > 0 ? previous.reduce(function (i, b) { return i + b }, 0) / previous.length : NaN;
+
+                return res;
+            }
+
+            var maxlen = 5;
+
+            function saveExpectation(name, elapsed) {
+                var itemName = 'progress-record-' + name;
+                var previous = JSON.parse(localStorage.getItem(itemName)) || [];
+                previous.push(elapsed);
+
+                if (previous.length > maxlen)
+                    previous = previous.slice(previous.length - maxlen);
+
+                localStorage.setItem(itemName, JSON.stringify(previous))
+            }
+
+            this.progress = progress;
+        })();
+    </script>
+
     <script type="text/javascript">
         var url = 'https://foosball-results.herokuapp.com/api/';
         var api = new AlmazApi(url);
@@ -492,7 +578,9 @@
             m.refresh = function () {
                 localStorage.setItem('source-of-choice', m.source());
                 m.isRefreshing(true);
-                api.getGames(m.source()).then(updateGames);
+                progress('refresh', function () {
+                    return api.getGames(m.source()).then(updateGames);
+                });
             }
 
             function updateGames(games) {
@@ -511,7 +599,7 @@
             return m;
         }
 
-        function preparePlayers(series){
+        function preparePlayers(series) {
             var players = series.map(preparePlayer);
             players.sort(byRating);
             return players;
@@ -543,7 +631,7 @@
             }
         }
 
-        function byRating(a, b){
+        function byRating(a, b) {
             return b.rating - a.rating;
         }
 
