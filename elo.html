@@ -56,6 +56,16 @@
             border-color: hsla(0, 0%, 50%, .2);
         }
 
+        .tiny {
+            display: inline-table;
+            font-size: 70%;
+            vertical-align: middle;
+        }
+
+        .tiny tr:first-child td {
+            border-bottom: 1px solid;
+        }
+
         .picker td,
         .picker th {
             padding: .1em .5em;
@@ -150,12 +160,28 @@
             <tr>
                 <td class="red"><button data-bind="click: winRed, disable: isPicking">Win</button></td>
                 <td class="red">
-                    <div><sup>Exp.</sup> <span data-bind="text: expectRed"></span></div>
-                    <div><sup>Hist.</sup> <span data-bind="text: historicRed"></span></div>
+                    <div data-bind="visible: !isPicking()"><sup>Exp.</sup> <span data-bind="text: expectRed"></span></div>
+                    <div data-bind="visible: !isPicking()"><sup>Hist.</sup>
+                        <table class="tiny">
+                            <tr>
+                                <td data-bind="text: historicRedWins"></td>
+                            </tr>
+                            <tr>
+                                <td data-bind="text: historicTotal"></td>
+                            </tr>
+                        </table> <span data-bind="text: historicRed"></span></div>
                 </td>
                 <td class="blue">
-                    <div><sup>Exp.</sup> <span data-bind="text: expectBlue"></span></div>
-                    <div><sup>Hist.</sup> <span data-bind="text: historicBlue"></span></div>
+                    <div data-bind="visible: !isPicking()"><sup>Exp.</sup> <span data-bind="text: expectBlue"></span></div>
+                    <div data-bind="visible: !isPicking()"><sup>Hist.</sup>
+                        <table class="tiny">
+                            <tr>
+                                <td data-bind="text: historicBlueWins"></td>
+                            </tr>
+                            <tr>
+                                <td data-bind="text: historicTotal"></td>
+                            </tr>
+                        </table> <span data-bind="text: historicBlue"></span></div>
                 </td>
                 <td class="blue"><button data-bind="click: winBlue, disable: isPicking">Win</button></td>
             </tr>
@@ -745,6 +771,9 @@
             $.expectBlue = ko.observable('');
             $.historicRed = ko.observable('');
             $.historicBlue = ko.observable('');
+            $.historicTotal = ko.observable('');
+            $.historicRedWins = ko.observable('');
+            $.historicBlueWins = ko.observable('');
 
             $.teams = ko.observableArray(teams);
             var elo = new Elo();
@@ -760,6 +789,10 @@
 
                 $.historicRed((historic.redWin * 100).toFixed(0) + '%');
                 $.historicBlue((historic.blueWin * 100).toFixed(0) + '%');
+                $.historicTotal(historic.total)
+                $.historicRedWins(historic.numRedWins);
+                $.historicBlueWins(historic.numBlueWins);
+
 
                 startDate = new Date();
 
@@ -790,7 +823,6 @@
                     var exactMatch = gameRedDef == pendRedDef && gameRedOff == pendRedOff && gameBluDef == pendBluDef && gameBluOff == pendBluOff;
                     var reverseMatch = gameRedDef == pendBluDef && gameRedOff == pendBluOff && gameBluDef == pendRedDef && gameBluOff == pendRedOff;
 
-                    console.log([gameRedDef, gameRedOff], [gameBluDef, gameBluOff], [pendRedDef, pendRedOff], [pendBluDef, pendBluOff], [exactMatch, reverseMatch]);
 
                     if (exactMatch) {
                         if (game.winner == 'red') redWins++;
@@ -802,11 +834,14 @@
                     }
                 }
 
-                console.log('found ' + (redWins + blueWins) + ' in ' + games.length + ' games')
+                var total = redWins + blueWins;
 
                 return {
-                    redWin: redWins > 0 ? redWins / (redWins + blueWins) : 0,
-                    blueWin: blueWins > 0 ? blueWins / (redWins + blueWins) : 0
+                    redWin: redWins > 0 ? redWins / total : 0,
+                    blueWin: blueWins > 0 ? blueWins / total : 0,
+                    numRedWins: redWins,
+                    numBlueWins: blueWins,
+                    total: total
                 };
             }
 
