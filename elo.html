@@ -795,6 +795,8 @@
                         else blueWins++;
                 }
 
+                console.log('found '+redWins+blueWins+ ' in ' + games.length + ' games')
+
                 return {
                     redWin: redWins > 0 ? redWins / (redWins + blueWins) : 0,
                     blueWin: blueWins > 0 ? blueWins / (redWins + blueWins) : 0
