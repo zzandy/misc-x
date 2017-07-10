@@ -514,6 +514,8 @@
         var prevts = 0;
         var tsadj = 0;
 
+        var cutoff = addDays(getMonday(), -3 * 7).getTime();
+
         ko.applyBindings(getModel(api), document.getElementById('doc'));
 
         Array.prototype.min = function () {
@@ -577,6 +579,7 @@
             m.isRefreshing = ko.observable(false);
 
             m.refresh = function () {
+                cutoff = addDays(getMonday(), -3 * 7).getTime();
                 localStorage.setItem('source-of-choice', m.source());
                 m.isRefreshing(true);
                 progress('refresh', function () {
@@ -695,7 +698,6 @@
 
         function logGame(timeseries, team, game, role, won) {
             var ts = (new Date(game.endDate)).getTime();
-            var cutoff = addDays(getMonday(), -3 * 7).getTime();
 
             var player = team[role];
             var series = findSeries(timeseries, player);
@@ -736,7 +738,6 @@
                 timeseries.xp.push([ts - tsadj, ts]);
 
             prevts = ts;
-
             if (ts >= cutoff)
 
                 for (var limit in timeseries.limits) {
@@ -1020,7 +1021,7 @@
 
                 var point = series.head.next;
 
-                while (point !== null) {
+                while (point !== null && point.ts > cutoff) {
                     var tn = point.ats;
                     var bn = point.values[feature][aspect];
 
