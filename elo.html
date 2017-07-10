@@ -776,23 +776,30 @@
                 games = (games && JSON.parse(games)) || [];
 
                 for (var game of games) {
-                    console.log([game.red.defence, game.red.offence], [game.blue.defence, game.blue.offence], [red.team.defence, red.team.offence], [blue.team.defence, blue.team.offence])
 
-                    if (game.blue.defence == blue.team.defence
-                        && game.blue.offence == blue.team.offence
-                        && game.red.defence == red.team.defence
-                        && game.red.offence == red.team.offence)
+                    var gameRedDef = game.red.defence;
+                    var gameRedOff = game.red.offence;
+                    var gameBluDef = game.blue.defence;
+                    var gameBluOff = game.blue.offence;
 
+                    var pendRedDef = red.team.defence;
+                    var pendRedOff = red.team.offence;
+                    var pendBluDef = blue.team.defence;
+                    var pendBluOff = blue.team.offence;
+
+                    var exactMatch = gameRedDef == pendRedDef && gameRedOff == pendRedOff && gameBluDef == pendBluDef && gameBluOff == pendBluOff;
+                    var reverseMatch = gameRedDef == pendBluDef && gameRedOff == pendBluOff && gameBluDef == pendRedDef && gameBluOff == pendRedOff;
+
+                    console.log([gameRedDef, gameRedOff], [gameBluDef, gameBluOff], [pendRedDef, pendRedOff], [pendBluDef, pendBluOff], [exactMatch, reverseMatch]);
+
+                    if (exactMatch) {
                         if (game.winner == 'red') redWins++;
                         else blueWins++;
-
-                    if (game.red.defence == blue.team.defence
-                        && game.red.offence == blue.team.offence
-                        && game.blue.defence == red.team.defence
-                        && game.blue.offence == red.team.offence)
-
+                    }
+                    else if (reverseMatch) {
                         if (game.winner == 'blue') redWins++;
                         else blueWins++;
+                    }
                 }
 
                 console.log('found ' + (redWins + blueWins) + ' in ' + games.length + ' games')
