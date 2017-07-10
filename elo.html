@@ -149,8 +149,14 @@
             </tr>
             <tr>
                 <td class="red"><button data-bind="click: winRed, disable: isPicking">Win</button></td>
-                <td class="red" data-bind="text: expectRed"></td>
-                <td class="blue" data-bind="text: expectBlue"></td>
+                <td class="red">
+                    <div><sup>Exp.</sup> <span data-bind="text: expectRed"></span></div>
+                    <div><sup>Hist.</sup> <span data-bind="text: historicRed"></span></div>
+                </td>
+                <td class="blue">
+                    <div><sup>Exp.</sup> <span data-bind="text: expectBlue"></span></div>
+                    <div><sup>Hist.</sup> <span data-bind="text: historicBlue"></span></div>
+                </td>
                 <td class="blue"><button data-bind="click: winBlue, disable: isPicking">Win</button></td>
             </tr>
             <tr class="scores" data-bind="visible: !isPicking()">
@@ -737,6 +743,8 @@
 
             $.expectRed = ko.observable('');
             $.expectBlue = ko.observable('');
+            $.historicRed = ko.observable('');
+            $.historicBlue = ko.observable('');
 
             $.teams = ko.observableArray(teams);
             var elo = new Elo();
@@ -748,10 +756,49 @@
                 $.expectRed((elo.expectWin(red, blue) * 100).toFixed(0) + '%');
                 $.expectBlue((elo.expectWin(blue, red) * 100).toFixed(0) + '%');
 
+                var historic = getHistoric(red, blue);
+
+                $.historicRed((historic.redWin * 100).toFixed(0) + '%');
+                $.historicBlue((historic.blueWin * 100).toFixed(0) + '%');
+
                 startDate = new Date();
 
                 $.picks.red.team(red);
                 $.picks.blue.team(blue);
+            }
+
+            function getHistoric(red, blue) {
+                var redWins = 0
+                var blueWins = 0;
+
+                var games = localStorage.getItem('kicker-games');
+
+                games = (games && JSON.parse(games)) || [];
+
+                for (var game of games) {
+                    console.log(game.blue.defence, blue)
+
+                    if (game.blue.defence == blue.team.defence
+                        && game.blue.offence == blue.team.offence
+                        && game.red.defence == red.team.defence
+                        && game.red.offence == red.team.offence)
+
+                        if (game.winner == 'red') redWins++;
+                        else blueWins++;
+
+                    if (game.red.defence == blue.team.defence
+                        && game.red.offence == blue.team.offence
+                        && game.blue.defence == red.team.defence
+                        && game.blue.offence == red.team.offence)
+
+                        if (game.winner == 'blue') redWins++;
+                        else blueWins++;
+                }
+
+                return {
+                    redWin: redWins > 0 ? redWins / (redWins + blueWins) : 0,
+                    blueWin: blueWins > 0 ? blueWins / (redWins + blueWins) : 0
+                };
             }
 
             function findTeam(defence, offence) {
