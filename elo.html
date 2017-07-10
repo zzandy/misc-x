@@ -776,7 +776,7 @@
                 games = (games && JSON.parse(games)) || [];
 
                 for (var game of games) {
-                    console.log(game.blue.defence, blue.team.defence)
+                    console.log([game.red.defence, game.red.offence], [game.blue.defence, game.blue.offence], [red.team.defence, red.ream.offence], [blue.team.defence, blue.team.offence])
 
                     if (game.blue.defence == blue.team.defence
                         && game.blue.offence == blue.team.offence
@@ -795,7 +795,7 @@
                         else blueWins++;
                 }
 
-                console.log('found '+redWins+blueWins+ ' in ' + games.length + ' games')
+                console.log('found ' + (redWins + blueWins) + ' in ' + games.length + ' games')
 
                 return {
                     redWin: redWins > 0 ? redWins / (redWins + blueWins) : 0,
