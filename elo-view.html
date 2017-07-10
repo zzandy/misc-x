@@ -448,19 +448,20 @@
                 }
                 update();
 
-                promiseFn().then(function () {
+                var done = function () {
                     var end = new Date().getTime();
 
                     hideBar(bar);
                     saveExpectation(name, end - start);
                     update = function () { };
-                });
+                }
+
+                promiseFn().then(done).catch(done);
             }
 
             function showBar() {
                 var bar = document.createElement('div');
                 bar.className = 'progress';
-
 
                 document.body.insertBefore(bar, document.body.firstChild);
 
@@ -470,7 +471,7 @@
             function updateBar(bar, ratio) {
                 var q = 1;
 
-                var r = Math.min(100, ratio * q);
+                var r = Math.min(1, ratio * q);
                 bar.style.width = r * 100 + '%';
             }
 
@@ -585,11 +586,13 @@
 
             function updateGames(games) {
                 var context = { elo: new Elo(), teams: {}, timeseries: timeseries() };
+
                 m.games(games.sort(byEndDate)
                     .filter(removeDuplicates)
-                    .map(prepareGame(context)));
+                    .forEach(prepareGame(context)));
 
                 m.players(preparePlayers(context.timeseries.series));
+
                 m.timeseries(context.timeseries);
                 m.isRefreshing(false);
             }
@@ -692,7 +695,7 @@
 
         function logGame(timeseries, team, game, role, won) {
             var ts = (new Date(game.endDate)).getTime();
-            var cutoff = addDays(getMonday(), -2 * 7).getTime();
+            var cutoff = addDays(getMonday(), -3 * 7).getTime();
 
             var player = team[role];
             var series = findSeries(timeseries, player);
@@ -734,12 +737,12 @@
 
             prevts = ts;
 
-            if (ts < cutoff) return;
+            if (ts >= cutoff)
 
-            for (var limit in timeseries.limits) {
-                expand2(timeseries.limits[limit].y, values[limit]);
-                expand3(timeseries.limits[limit], values[limit], ts, tsadj);
-            }
+                for (var limit in timeseries.limits) {
+                    expand2(timeseries.limits[limit].y, values[limit]);
+                    expand3(timeseries.limits[limit], values[limit], ts, tsadj);
+                }
 
             series.head = { ts: ts, ats: ts - tsadj, values: values, next: prev };
         }
@@ -946,11 +949,18 @@
             // Adjust and draw labels
             var ci = 0;
             var labels = [];
+            var palette = '#f44336;#3f51b5;#8bc34a;#607d8b;#ff5722;#00bcd4;#e91e63;#00b294;#03a9f4;#ffb900;#107c10'.split(';');
+            timeseries.series.sort(function(a,b){
+                return a.head.values[feature][aspect]-b.head.values[feature][aspect];
+            });
+
             for (var series of timeseries.series) {
                 var name = series.key.firstName + ' ' + series.key.lastName;
-                series.color = (ci++) * 360 / (timeseries.series.length + 1);
+                series.color = adjust((60 + (ci) * 360 / (timeseries.series.length + 1)) % 360);
+                series.color = palette[ci % palette.length];
 
                 labels[scale([0, series.head.values[feature][aspect]])[1] | 0] = { name: name, adj: 0, color: series.color };
+                ci++;
             }
 
             var overlap = true;
@@ -987,15 +997,23 @@
             }
 
             for (var label in labels) {
-                ctx.fillStyle = hcy2rgb(labels[label].color, 1, .4, 1);
+                if (isNaN(parseInt(label))) continue;
+                //ctx.fillStyle = hcy2rgb(labels[label].color, 1, .4, 1);
+                ctx.fillStyle = labels[label].color;
+
                 ctx.fillText(labels[label].name, ctx.canvas.width - w, labels[label].adj + parseInt(label));
             }
 
+            function adjust(x) {
+                return x;
+            }
+
             for (var series of timeseries.series) {
-                var c = series.color
-                ctx.fillStyle = hcy2rgb(c, 1, .5, 1);
-                ctx.strokeStyle = hcy2rgb(c, 1, .5, .5);
-                ctx.lineWidth = 2;
+                var c = series.color;
+                ctx.fillStyle = c;//hcy2rgb(c, 1, .5, 1);
+                ctx.strokeStyle = c;//hcy2rgb(c, 1, .5, .5);
+
+                ctx.lineWidth = 1;
 
                 var t = series.head.ats;
                 var b = series.head.values[feature][aspect];
@@ -1020,7 +1038,6 @@
         }
 
         function poly(ctx, vertices) {
-
             ctx.beginPath();
             ctx.moveTo(vertices[0][0], vertices[0][1]);
             for (var i = 1; i < vertices.length; ++i)
