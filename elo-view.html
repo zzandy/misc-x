@@ -541,7 +541,7 @@
         }
 
         function series(obj) {
-            return { key: obj, head: { ts: 0, values: {}, next: null } };
+            return { key: obj, head: { ts: 0, values: features.split(';').reduce(function(obj, feature){obj[feature]=0;return obj}, {}), next: null } };
         }
 
         function getModel() {
