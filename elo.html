@@ -776,7 +776,7 @@
                 games = (games && JSON.parse(games)) || [];
 
                 for (var game of games) {
-                    console.log(game.blue.defence, blue)
+                    console.log(game.blue.defence, blue.team.defence)
 
                     if (game.blue.defence == blue.team.defence
                         && game.blue.offence == blue.team.offence
