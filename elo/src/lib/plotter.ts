@@ -30,7 +30,7 @@ export function last<T>(array: T[]) {
     return array[array.length - 1];
 }
 
-export class Plotter implements IRender {
+export class Plotter  {
     constructor(private readonly ctx: ICanvasRenderingContext2D, private readonly region: Rect) { }
 
     render(world: Rect, data: PlotData): void {

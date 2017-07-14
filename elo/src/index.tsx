@@ -1,6 +1,6 @@
 import * as React from "react";
 import * as reactdom from "react-dom";
 
-import { Hello } from './components/hello';
+import { Picker } from './components/picker';
 
-reactdom.render(<Hello compiler='typescript' framework='react' />, document.getElementById('content'));
+reactdom.render(<Picker/>, document.getElementById('content'));

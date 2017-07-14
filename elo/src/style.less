@@ -1,0 +1,72 @@
+@red-background: hsla(0, 100%, 35%, 1);
+@red-foreground: hsla(0, 100%, 95%, 1);
+
+@blu-background: hsla(215, 100%, 40%, 1);
+@blu-foreground: hsla(215, 100%, 95%, 1);
+
+body, button{
+    font-size: 1cm;
+}
+
+.red {
+    background-color: @red-background;
+    color: @red-foreground;
+}
+
+.blu{
+    background-color: @blu-background;
+    color: @blu-foreground;
+}
+
+.row {
+    display: flex;
+    justify-content: space-around;
+}
+
+.column.blu {
+    text-align: right;
+}
+
+.row div {
+    vertical-align: middle;
+}
+
+.row div, .column div{
+    flex: 1;
+}
+
+@player-pad: .5em;
+
+.blu .player {
+    text-align: left;
+    padding-left: @player-pad;
+}
+
+.red .player{
+    text-align: right;
+    padding-right: @player-pad;
+}
+
+.column{
+    display: flex;
+    justify-content: space-around;
+    flex-direction: column;
+}
+
+.large{
+    font-size: 200%;
+}
+
+.row .double{
+    flex: 2;
+}
+
+.picker.row {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: flex-start;
+}
+
+.picker.row button{
+    min-width: 6em;
+}

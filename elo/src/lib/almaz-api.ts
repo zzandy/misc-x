@@ -1,6 +1,12 @@
-import { getJson } from 'ajax';
+import { getJson } from './ajax';
 
-type scope = { url: string, players: object[] };
+export class ApiPlayer {
+    readonly _id: string;
+    readonly firstName: string;
+    readonly lastName: string;
+}
+
+type scope = { url: string, players: ApiPlayer[] };
 
 export class AlmazApi {
     private scope: Promise<scope>;
