@@ -1,9 +1,25 @@
 import { getJson } from './ajax';
 
 export class ApiPlayer {
-    readonly _id: string;
-    readonly firstName: string;
-    readonly lastName: string;
+    public readonly _id: string;
+    public readonly firstName: string;
+    public readonly lastName: string;
+}
+
+export class ApiTeam {
+    public readonly defense: ApiPlayer;
+    public readonly offense: ApiPlayer;
+    public readonly score: number;
+}
+
+export class ApiGame {
+    public readonly _id: string;
+    public readonly source: string;
+    public readonly startDate: Date;
+    public readonly endDate: Date;
+    public readonly red: ApiTeam;
+    public readonly blue: ApiTeam;
+    public readonly metadata: any;
 }
 
 type scope = { url: string, players: ApiPlayer[] };
@@ -16,13 +32,13 @@ export class AlmazApi {
         this.scope = Promise.resolve(state).then(this.refreshPlayers);
     }
 
-    public getPlayers() {
+    public getPlayers(): Promise<ApiPlayer[]> {
         return new Promise((resolve) => {
             this.scope = this.scope.then((ctx: scope) => { resolve(ctx.players); return ctx; });
         });
     }
 
-    public getGames(source: string) {
+    public getGames(source: string): Promise<ApiGame[]> {
         var self = this;
 
         return new Promise((resolve) => {

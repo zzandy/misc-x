@@ -4,18 +4,57 @@
 @blu-background: hsla(215, 100%, 40%, 1);
 @blu-foreground: hsla(215, 100%, 95%, 1);
 
-body, button{
+html, body {
+    background-color: #131200;
+    color: grey;
+}
+
+body, button {
     font-size: 1cm;
+}
+
+button {
+    border-radius: .2em;
+    border-color:  hsl(0, 0%, 60%) hsl(0, 0%, 30%) hsl(0, 0%, 30%) hsl(0, 0%, 60%);
+    border-width: .01em;
+    color: hsl(0, 0%, 70%);
+    background-color: hsl(0, 0%, 0%);
+    padding: .3em;
+}
+
+button:disabled {
+    color: hsl(0, 0%, 25%);
+    border-color:  hsl(0, 0%, 40%) hsl(0, 0%, 0%) hsl(0, 0%, 0%) hsl(0, 0%, 40%);
+}
+
+.large-shadow(@color) {
+    text-shadow: @color 0 .01em .03em;
 }
 
 .red {
     background-color: @red-background;
     color: @red-foreground;
+
+    .large{
+        .large-shadow(darken(@red-background, 20%));
+    }
+
+    .smaller{
+        color: lighten(@red-background, 50%);
+    }
 }
 
-.blu{
+.blu {
     background-color: @blu-background;
     color: @blu-foreground;
+
+    .large {
+        .large-shadow(darken(@blu-background, 20%));
+    }
+
+    .smaller{
+        color: lighten(@blu-background, 50%);
+    }
 }
 
 .row {
@@ -57,16 +96,62 @@ body, button{
     font-size: 200%;
 }
 
+.smaller{
+    font-size: 60%;
+    font-weight: 200;
+}
+
 .row .double{
     flex: 2;
 }
 
 .picker.row {
     flex-wrap: wrap;
-    align-items: flex-start;
-    justify-content: flex-start;
+    justify-content: center;
 }
 
-.picker.row button{
+.controls.row {
+    justify-content: center;
+}
+
+.picker.row button, .controls.row button {
     min-width: 6em;
+    margin: .2em;
+}
+
+.cssload-container {
+	position: relative;
+	width: 97px;
+	height: 224px;
+	overflow: hidden;
+	margin:0px auto;
+}
+
+.cssload-container .cssload-item {
+	margin: auto;
+	position: absolute;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	width: 49px;
+	height: 49px;
+	background-color: rgb(255,255,255);
+	box-sizing: border-box;
+	box-shadow: 0 0 8px 1px rgba(0,0,0,0.25);
+}
+
+.cssload-container .cssload-moon {
+	border-bottom: 10px solid rgb(102,102,102);
+	border-radius: 50%;
+	animation: spin 1.15s ease infinite;
+}
+
+@keyframes spin {
+	from {
+		transform: rotate(0deg);
+	}
+	to {
+		transform: rotate(360deg);
+	}
 }

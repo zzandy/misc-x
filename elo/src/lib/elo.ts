@@ -1,14 +1,12 @@
 export class EloPlayer {
     constructor(
-        public readonly value: any,
-        public score: number,
+        public score: number = 800,
         public numGames: number = 0,
         public numWins: number = 0) { }
 }
 
 export class Elo {
     constructor(
-        public readonly initScore: number = 800,
         public readonly x10diff: number = 400,
         public readonly kFactor: number = 32) { }
 
@@ -22,8 +20,8 @@ export class Elo {
         let e2 = this.expectWin(t2, t1);
 
         // Scores to "Results"
-        let r1 = s1 > s2 ? 1 : s1 < s2 ? 0 : .5;
-        let r2 = s2 > s1 ? 1 : s2 < s1 ? 0 : .5;
+        let r1 = (s1 + s2) > 0 ? s1 / (s1 + s2) : 0;
+        let r2 = (s1 + s2) > 0 ? s2 / (s1 + s2) : 0;
 
         this.updatePlayer(t1, e1, r1, s1 > s2);
         this.updatePlayer(t2, e2, r2, s2 > s1);
