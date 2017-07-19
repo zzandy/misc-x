@@ -1,7 +1,8 @@
 /// <reference path="../../node_modules/@types/knockout/index.d.ts" />
 
-import { AlmazApi, ApiPlayer, ApiGame } from '../lib/almaz-api';
+import { AlmazApi, ApiPlayer, ApiTeam, ApiGame } from '../lib/almaz-api';
 import { Elo, EloPlayer } from '../lib/elo';
+import { getScoreModel } from 'score-model';
 
 ko.bindingHandlers['text-as-pct'] = {
     update: (e, value, all) => {
@@ -75,6 +76,20 @@ const getCurrentGameModel = () => {
     }
 }
 
+const getPendingUploads = (): ApiGame[] => {
+    const data = localStorage.getItem('kicker-pending-uploads');
+
+    if (data == null)
+        return [];
+
+    else
+        return JSON.parse(data);
+}
+
+const setPendingUploads = (games: ApiGame[]) => {
+    localStorage.setItem('kicker-pending-uploads', JSON.stringify(games));
+}
+
 export const getSubmitterModel = () => {
     const url = 'https://foosball-results.herokuapp.com/api/';
     const api = new AlmazApi(url);
@@ -85,6 +100,9 @@ export const getSubmitterModel = () => {
     const teams: Team[] = [];
     const games: Game[] = [];
 
+    const pendingUploads = getPendingUploads();
+
+    let startTime: Date;
     let currentGame = getCurrentGameModel();
     m.currentGame = ko.observable(currentGame);
     const players = m.players = ko.observableArray<Player>([]);
@@ -94,7 +112,10 @@ export const getSubmitterModel = () => {
     const gamesReady = m.gamesReady = ko.observable(false);
     const numGames = m.numGames = ko.observable(0);
 
-    const scoresReady = m.scoresReady = ko.observable(false);
+    const scores = m.scores = getScoreModel();
+    const scoresReady = m.scoresReady = ko.computed(() => {
+        return scores.red.score() != null && scores.blu.score() != null && scores.blu.score() != scores.red.score();
+    });
 
     const findWins = (team: Team) => {
         return (game: Game) => {
@@ -124,6 +145,8 @@ export const getSubmitterModel = () => {
 
             currentGame.red.expectedWinProb(elo.expectWin(red.rating, blu.rating));
             currentGame.blu.expectedWinProb(elo.expectWin(blu.rating, red.rating));
+
+            startTime = new Date();
         }
     });
 
@@ -186,13 +209,85 @@ export const getSubmitterModel = () => {
 
         whenAllNotNull(currentGame.red.defence, currentGame.red.offence).then(() => loadTeam('red'));
         whenAllNotNull(currentGame.blu.defence, currentGame.blu.offence).then(() => loadTeam('blu'));
-    }
-
-    m.resetGame = () => {
-        resetPicking();
     };
 
-    m.submitGame = () => { };
+    const consecutiveWins = { red: 0, blu: 0 };
+
+    const updatePicker = (winners: 'red' | 'blu') => {
+
+        const losers = winners == 'red' ? 'blu' : 'red';
+        const winPicker = currentGame[winners];
+        const lstPicker = currentGame[losers];
+
+        lstPicker.defence(lstPicker.offence());
+
+        if (++consecutiveWins[winners] >= 3) {
+            // three consecutive wins, shuffle the winning team
+            lstPicker.offence(winPicker.offence());
+            winPicker.offence(null);
+            picksPending = [winPicker.offence];
+            consecutiveWins.red = 0;
+            consecutiveWins.blu = 0;
+
+            loadTeam(losers);
+            whenAllNotNull(winPicker.offence).then(() => loadTeam(winners));
+        }
+        else {
+            lstPicker.offence(null);
+            picksPending = [lstPicker.offence];
+
+            loadTeam(winners);
+            whenAllNotNull(lstPicker.offence).then(() => loadTeam(losers));
+        }
+
+        gameReady(false);
+    }
+
+    const resetScores = () => {
+        scores.red.score(null);
+        scores.blu.score(null);
+    };
+
+    m.resetGame = () => {
+        consecutiveWins.red = 0;
+        consecutiveWins.blu = 0;
+
+        resetPicking();
+        resetScores();
+    };
+
+    m.submitGame = () => {
+
+        const gamePlayed: ApiGame = {
+            startDate: startTime.toISOString(),
+            endDate: new Date().toISOString(),
+            source: apiSource,
+            red: {
+                defense: currentGame.red.defence().apiPlayer,
+                offense: currentGame.red.offence().apiPlayer,
+                score: scores.red.score() || 0,
+            },
+            blue: {
+                defense: currentGame.blu.defence().apiPlayer,
+                offense: currentGame.blu.offence().apiPlayer,
+                score: scores.blu.score() || 0,
+            }
+        };
+
+        logGame(gamePlayed);
+        m.numGames(games.length);
+        uploadGame(gamePlayed);
+
+        const redScore = scores.red.score();
+        const bluScore = scores.blu.score();
+
+        if (redScore != null && bluScore != null && redScore != bluScore)
+            updatePicker(bluScore > redScore ? 'blu' : 'red');
+        else
+            resetPicking();
+
+        resetScores();
+    };
 
     m.pick = (player: Player) => {
         let next: KnockoutObservable<Player> | undefined;
@@ -229,6 +324,33 @@ export const getSubmitterModel = () => {
         m.playersReady(true);
     });
 
+    const dumpPendingUploads = function () {
+
+        while (pendingUploads.length > 0) {
+            const next = pendingUploads.shift();
+            if (next)
+                uploadGame(next, true);
+        }
+
+        setPendingUploads(pendingUploads);
+    }
+
+    const uploadGame = (game: ApiGame, isDumping: boolean = false) => {
+        api.postGame(game, apiSource)
+            .then(() => {
+                if (!isDumping)
+                    dumpPendingUploads();
+            })
+            .catch((e) => {
+                console.log(e);
+
+                pendingUploads.push(game);
+                setPendingUploads(pendingUploads);
+            });
+    }
+
+    dumpPendingUploads();
+
     const elo = new Elo();
     const logGame = (game: ApiGame) => {
         const red = findTeam(findPlayer(game.red.defense._id), findPlayer(game.red.offense._id));
@@ -247,7 +369,10 @@ export const getSubmitterModel = () => {
     };
 
     api.getGames('').then((apiGames) => {
-        apiGames.forEach(logGame);
+        apiGames.sort(byEndDate)
+            .filter(removeStagingData)
+            .filter(removeDuplicates)
+            .forEach(logGame);
         m.numGames(games.length);
         m.gamesReady(true);
     });
@@ -256,6 +381,27 @@ export const getSubmitterModel = () => {
 
     return m;
 };
+
+const byEndDate = (a: ApiGame, b: ApiGame) => {
+    return new Date(a.endDate).getTime() - new Date(b.endDate).getTime();
+}
+
+const removeDuplicates = (game: ApiGame, i: number, a: ApiGame[]) => {
+    return i == 0 || !areDuplicates(game, a[i - 1]);
+};
+
+const areDuplicates = (a: ApiGame, b: ApiGame) => {
+    const diff = Math.abs(new Date(a.endDate).getTime() - new Date(b.endDate).getTime());
+    return diff < 120000 && ((teamEqual(a.red, b.red) && teamEqual(a.blue, b.blue)) || (teamEqual(a.red, b.blue) && teamEqual(a.blue, b.red)));
+}
+
+const teamEqual = (a: ApiTeam, b: ApiTeam) => {
+    return a.score == b.score && a.defense._id == b.defense._id && a.offense._id == b.offense._id;
+}
+
+const removeStagingData = (game: ApiGame) => {
+    return 'source' in game && game.source.indexOf('staging') == -1;
+}
 
 const uniqueNickName = (player: ApiPlayer, players: ApiPlayer[]) => {
     let nickName = normalizeName(player.firstName);
@@ -287,8 +433,6 @@ const isNullObservable = <T>(o: KnockoutObservable<T>) => {
 };
 
 const whenAllNotNull = <T>(...observables: KnockoutObservable<T>[]) => {
-
-
     return new Promise((resolve, reject) => {
         const test = () => {
             const res = !observables.some(isNullObservable);

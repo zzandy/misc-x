@@ -1,4 +1,4 @@
-import { getJson } from './ajax';
+import { getJson, postJson } from './ajax';
 
 export class ApiPlayer {
     public readonly _id: string;
@@ -13,13 +13,13 @@ export class ApiTeam {
 }
 
 export class ApiGame {
-    public readonly _id: string;
+    public readonly _id?: string;
     public readonly source: string;
-    public readonly startDate: Date;
-    public readonly endDate: Date;
+    public readonly startDate: string;
+    public readonly endDate: string;
     public readonly red: ApiTeam;
     public readonly blue: ApiTeam;
-    public readonly metadata: any;
+    public readonly metadata?: any;
 }
 
 type scope = { url: string, players: ApiPlayer[] };
@@ -39,20 +39,38 @@ export class AlmazApi {
     }
 
     public getGames(source: string): Promise<ApiGame[]> {
-        var self = this;
+        const api = this;
 
         return new Promise((resolve) => {
-            self.scope = self.scope.then((ctx) => {
+            api.scope = api.scope.then((ctx) => {
                 if (!('url' in ctx))
                     throw 'Invalid context';
 
                 return getJson(ctx.url + (!!source ? 'games?source=' + encodeURIComponent(source) : 'games'))
                     .catch(function (e) { console.error(e); return ctx; })
-                    .then(function (data) {
+                    .then(function (data:ApiGame[]) {
                         resolve(data);
                         return ctx;
                     });
 
+            });
+        });
+    }
+
+    public postGame(game: ApiGame, source: string):Promise<string> {
+        const api = this;
+
+        if (game == null)
+            throw new Error('Game cannot be empty.')
+
+        if (source == null || source == '')
+            throw new Error('Source must not be empty.')
+
+        return new Promise((resolve, reject) => {
+            api.scope = api.scope.then((ctx) => {
+                return postJson(ctx.url + 'games', game)
+                    .then((data: ApiGame) => { resolve(data._id); return ctx })
+                    .catch((e) => { reject(e); return ctx });
             });
         });
     }

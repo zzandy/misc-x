@@ -9,22 +9,23 @@ html, body {
     color: grey;
 }
 
-body, button {
+body, button, select {
     font-size: 1cm;
 }
 
-button {
+button, select {
     border-radius: .2em;
-    border-color:  hsl(0, 0%, 60%) hsl(0, 0%, 30%) hsl(0, 0%, 30%) hsl(0, 0%, 60%);
+    border-color:  hsl(0, 0%, 50%);
     border-width: .01em;
-    color: hsl(0, 0%, 70%);
+    color: hsl(0, 0%, 60%);
     background-color: hsl(0, 0%, 0%);
     padding: .3em;
+    margin: .2em;
 }
 
 button:disabled {
     color: hsl(0, 0%, 25%);
-    border-color:  hsl(0, 0%, 40%) hsl(0, 0%, 0%) hsl(0, 0%, 0%) hsl(0, 0%, 40%);
+    border-color:  hsl(0, 0%, 20%);
 }
 
 .large-shadow(@color) {
@@ -42,6 +43,10 @@ button:disabled {
     .smaller{
         color: lighten(@red-background, 50%);
     }
+
+    button, select {
+        color: @red-foreground;
+    }
 }
 
 .blu {
@@ -54,6 +59,10 @@ button:disabled {
 
     .smaller{
         color: lighten(@blu-background, 50%);
+    }
+
+    button, select {
+        color: @blu-foreground;
     }
 }
 
@@ -116,7 +125,38 @@ button:disabled {
 
 .picker.row button, .controls.row button {
     min-width: 6em;
-    margin: .2em;
+
+}
+
+.score.row {
+    button, select {
+        min-width: 4cm;
+        max-width: 4cm !important;
+    }
+
+    .column {
+        align-items: center;
+    }
+
+    .red{
+        button, select {
+            background-color: darken(@red-background, 10%);
+        }
+
+        button.current, select.current {
+            background-color: lighten(@red-background, 10%);
+        }
+    }
+
+    .blu{
+        button, select {
+            background-color: darken(@blu-background, 10%);
+        }
+
+        button.current, select.current {
+            background-color: lighten(@blu-background, 10%);
+        }
+    }
 }
 
 .cssload-container {
