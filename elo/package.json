@@ -1,0 +1,22 @@
+{
+  "name": "elo",
+  "version": "1.0.0",
+  "main": "src/index.tsx",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "npm run less && npm run watch",
+    "less": "lessc src/style.less dist/style.css",
+    "watch": "tsc -w & node node_modules/less-watch-compile/ -f src/style.less -o dist/ &"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {},
+  "devDependencies": {
+    "@types/knockout": "^3.4.41",
+    "less": "^2.7.2",
+    "less-watch-compile": "^1.1.8",
+    "systemjs": "^0.20.15",
+    "typescript": "^2.4.1"
+  }
+}

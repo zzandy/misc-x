@@ -1,0 +1,195 @@
+@red-background: hsla(0, 100%, 35%, 1);
+@red-foreground: hsla(0, 100%, 95%, 1);
+
+@blu-background: hsla(215, 100%, 40%, 1);
+@blu-foreground: hsla(215, 100%, 95%, 1);
+
+html, body {
+    background-color: #131200;
+    color: grey;
+}
+
+body, button, select {
+    font-size: 1.5cm;
+}
+
+button, select {
+    border-radius: .2em;
+    border-color:  hsl(0, 0%, 60%);
+    border-width: .01em;
+    color: hsl(0, 0%, 80%);
+    background-color: hsl(0, 0%, 0%);
+    padding: .3em;
+    margin: .2em;
+}
+
+button:disabled {
+    color: hsl(0, 0%, 25%);
+    border-color:  hsl(0, 0%, 20%);
+}
+
+.large-shadow(@color) {
+    text-shadow: @color 0 .01em .03em;
+}
+
+.red {
+    background-color: @red-background;
+    color: @red-foreground;
+
+    .large{
+        .large-shadow(darken(@red-background, 20%));
+    }
+
+    .smaller{
+        color: lighten(@red-background, 50%);
+    }
+
+    button, select {
+        color: @red-foreground;
+    }
+}
+
+.blu {
+    background-color: @blu-background;
+    color: @blu-foreground;
+
+    .large {
+        .large-shadow(darken(@blu-background, 20%));
+    }
+
+    .smaller{
+        color: lighten(@blu-background, 50%);
+    }
+
+    button, select {
+        color: @blu-foreground;
+    }
+}
+
+.row {
+    display: flex;
+    justify-content: space-around;
+}
+
+.column.blu {
+    text-align: right;
+}
+
+.row div {
+    vertical-align: middle;
+}
+
+.row div, .column div{
+    flex: 1;
+}
+
+@player-pad: .5em;
+
+.blu .player {
+    text-align: left;
+    padding-left: @player-pad;
+}
+
+.red .player{
+    text-align: right;
+    padding-right: @player-pad;
+}
+
+.column{
+    display: flex;
+    justify-content: space-around;
+    flex-direction: column;
+}
+
+.large{
+    font-size: 200%;
+}
+
+.smaller{
+    font-size: 60%;
+    font-weight: 200;
+}
+
+.row .double{
+    flex: 2;
+}
+
+.picker.row {
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.controls.row {
+    justify-content: center;
+}
+
+.picker.row button, .controls.row button {
+    min-width: 6em;
+
+}
+
+.score.row {
+    button { min-width: 4cm; }
+    select { min-width: 6cm; }
+
+    .column {
+        align-items: center;
+    }
+
+    .red{
+        button, select {
+            background-color: darken(@red-background, 10%);
+        }
+
+        button.current, select.current {
+            background-color: lighten(@red-background, 10%);
+        }
+    }
+
+    .blu{
+        button, select {
+            background-color: darken(@blu-background, 10%);
+        }
+
+        button.current, select.current {
+            background-color: lighten(@blu-background, 10%);
+        }
+    }
+}
+
+.cssload-container {
+	position: relative;
+	width: 97px;
+	height: 224px;
+	overflow: hidden;
+	margin:0px auto;
+}
+
+.cssload-container .cssload-item {
+	margin: auto;
+	position: absolute;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	width: 49px;
+	height: 49px;
+	background-color: rgb(255,255,255);
+	box-sizing: border-box;
+	box-shadow: 0 0 8px 1px rgba(0,0,0,0.25);
+}
+
+.cssload-container .cssload-moon {
+	border-bottom: 10px solid rgb(102,102,102);
+	border-radius: 50%;
+	animation: spin 1.15s ease infinite;
+}
+
+@keyframes spin {
+	from {
+		transform: rotate(0deg);
+	}
+	to {
+		transform: rotate(360deg);
+	}
+}
