@@ -541,7 +541,7 @@
         }
 
         function series(obj) {
-            return { key: obj, head: { ts: 0, values: features.split(';').reduce(function(obj, feature){obj[feature]=0;return obj}, {}), next: null } };
+            return { key: obj, head: { ts: 0, values: features.split(';').reduce(function (obj, feature) { obj[feature] = 0; return obj }, {}), next: null } };
         }
 
         function getModel() {
@@ -592,7 +592,7 @@
 
                 m.games(games.sort(byEndDate)
                     .filter(removeDuplicates)
-                    .forEach(prepareGame(context)));
+                    .map(prepareGame(context)));
 
                 m.players(preparePlayers(context.timeseries.series));
 
@@ -951,8 +951,8 @@
             var ci = 0;
             var labels = [];
             var palette = '#f44336;#3f51b5;#8bc34a;#607d8b;#ff5722;#00bcd4;#e91e63;#00b294;#03a9f4;#ffb900;#107c10'.split(';');
-            timeseries.series.sort(function(a,b){
-                return a.head.values[feature][aspect]-b.head.values[feature][aspect];
+            timeseries.series.sort(function (a, b) {
+                return a.head.values[feature][aspect] - b.head.values[feature][aspect];
             });
 
             for (var series of timeseries.series) {
