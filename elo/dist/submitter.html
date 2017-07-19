@@ -67,25 +67,17 @@
 
     <div class="score row" data-bind="visible: gameReady">
         <div class="red column">
-            <div class="row">
-                <button data-bind="css:{current:scores.red.score() == 0}, click:function(){scores.red.setScore(0)}">0</button>
-                <button data-bind="css:{current:scores.red.score() == 1}, click:function(){scores.red.setScore(1)}">1</button>
-            </div>
-            <div class="row">
-                <button data-bind="css:{current:scores.red.score() == 2}, click:function(){scores.red.setScore(2)}">2</button>
-                <button data-bind="css:{current:scores.red.score() == 3}, click:function(){scores.red.setScore(3)}">3</button>
-            </div>
+            <button data-bind="css:{current:scores.red.score() == 0}, click:function(){scores.red.setScore(0)}">0</button>
+            <button data-bind="css:{current:scores.red.score() == 1}, click:function(){scores.red.setScore(1)}">1</button>
+            <button data-bind="css:{current:scores.red.score() == 2}, click:function(){scores.red.setScore(2)}">2</button>
+            <button data-bind="css:{current:scores.red.score() == 3}, click:function(){scores.red.setScore(3)}">3</button>
             <select data-bind="css:{current:scores.red.score() == scores.red.extendedScore()}, options: ['more', 4, 5, 6, 7, 8, 9, 10], value: scores.red.extendedScore"></select>
         </div>
         <div class="blu column">
-            <div class="row">
-                <button data-bind="css:{current:scores.blu.score() == 0}, click:function(){scores.blu.setScore(0)}">0</button>
-                <button data-bind="css:{current:scores.blu.score() == 1}, click:function(){scores.blu.setScore(1)}">1</button>
-            </div>
-            <div class="row">
-                <button data-bind="css:{current:scores.blu.score() == 2}, click:function(){scores.blu.setScore(2)}">2</button>
-                <button data-bind="css:{current:scores.blu.score() == 3}, click:function(){scores.blu.setScore(3)}">3</button>
-            </div>
+            <button data-bind="css:{current:scores.blu.score() == 0}, click:function(){scores.blu.setScore(0)}">0</button>
+            <button data-bind="css:{current:scores.blu.score() == 1}, click:function(){scores.blu.setScore(1)}">1</button>
+            <button data-bind="css:{current:scores.blu.score() == 2}, click:function(){scores.blu.setScore(2)}">2</button>
+            <button data-bind="css:{current:scores.blu.score() == 3}, click:function(){scores.blu.setScore(3)}">3</button>
             <select data-bind="css:{current:scores.blu.score() == scores.blu.extendedScore()}, options: ['more', 4, 5, 6, 7, 8, 9, 10], value: scores.blu.extendedScore"></select>
         </div>
     </div>

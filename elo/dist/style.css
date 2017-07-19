@@ -99,11 +99,9 @@ button:disabled {
 .controls.row button {
   min-width: 6em;
 }
-.score.row button {
-  min-width: 4cm;
-}
+.score.row button,
 .score.row select {
-  min-width: 6cm;
+  min-width: 4em;
 }
 .score.row .column {
   align-items: center;
