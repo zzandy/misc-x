@@ -1,0 +1,157 @@
+html,
+body {
+  background-color: #131200;
+  color: grey;
+}
+body,
+button,
+select {
+  font-size: 1cm;
+}
+button,
+select {
+  border-radius: .2em;
+  border-color: #808080;
+  border-width: .01em;
+  color: #999999;
+  background-color: #000000;
+  padding: .3em;
+  margin: .2em;
+}
+button:disabled {
+  color: #404040;
+  border-color: #333333;
+}
+.red {
+  background-color: #b30000;
+  color: #ffe5e5;
+}
+.red .large {
+  text-shadow: #4c0000 0 0.01em 0.03em;
+}
+.red .smaller {
+  color: #ffb3b3;
+}
+.red button,
+.red select {
+  color: #ffe5e5;
+}
+.blu {
+  background-color: #0055cc;
+  color: #e5f0ff;
+}
+.blu .large {
+  text-shadow: #002a66 0 0.01em 0.03em;
+}
+.blu .smaller {
+  color: #cce1ff;
+}
+.blu button,
+.blu select {
+  color: #e5f0ff;
+}
+.row {
+  display: flex;
+  justify-content: space-around;
+}
+.column.blu {
+  text-align: right;
+}
+.row div {
+  vertical-align: middle;
+}
+.row div,
+.column div {
+  flex: 1;
+}
+.blu .player {
+  text-align: left;
+  padding-left: 0.5em;
+}
+.red .player {
+  text-align: right;
+  padding-right: 0.5em;
+}
+.column {
+  display: flex;
+  justify-content: space-around;
+  flex-direction: column;
+}
+.large {
+  font-size: 200%;
+}
+.smaller {
+  font-size: 60%;
+  font-weight: 200;
+}
+.row .double {
+  flex: 2;
+}
+.picker.row {
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.controls.row {
+  justify-content: center;
+}
+.picker.row button,
+.controls.row button {
+  min-width: 6em;
+}
+.score.row button,
+.score.row select {
+  min-width: 4cm;
+  max-width: 4cm !important;
+}
+.score.row .column {
+  align-items: center;
+}
+.score.row .red button,
+.score.row .red select {
+  background-color: #7f0000;
+}
+.score.row .red button.current,
+.score.row .red select.current {
+  background-color: #e50000;
+}
+.score.row .blu button,
+.score.row .blu select {
+  background-color: #004099;
+}
+.score.row .blu button.current,
+.score.row .blu select.current {
+  background-color: #006aff;
+}
+.cssload-container {
+  position: relative;
+  width: 97px;
+  height: 224px;
+  overflow: hidden;
+  margin: 0px auto;
+}
+.cssload-container .cssload-item {
+  margin: auto;
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 49px;
+  height: 49px;
+  background-color: #ffffff;
+  box-sizing: border-box;
+  box-shadow: 0 0 8px 1px rgba(0, 0, 0, 0.25);
+}
+.cssload-container .cssload-moon {
+  border-bottom: 10px solid #666666;
+  border-radius: 50%;
+  animation: spin 1.15s ease infinite;
+}
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

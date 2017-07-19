@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+
+<html id="doc" lang="en" xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <title>Ratings</title>
+    <meta charset="utf-8" />
+    <link rel="icon" sizes="32x32" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAZdEVYdFNvZnR3YXJlAHBhaW50Lm5ldCA0LjAuMTZEaa/1AAADBUlEQVRYR62XS08aURTH+RikH8adpkm3NG660MR0YeKiq8Y1rRhZmPQTNDFdmiZNY9yYtpoKtJI+wCqFmgAaRREIw3Nm4PSey1y4cznMXIgn+Ykc4P8/9zH3EQCAIR8CgSAjzEgxLAb4EXh6ooPFSDHCjKDsKZuHGIYsroNjMA0GI+QqgAmhOWlA8T0UgruDA/i5skIZ6MKLEN0+Vcv7lsV+C9DrdilhXbAnglgAjjlpNAno93kB+KqITksYC8AJRxpNAluO0et0KNFpSGEBWrNdEFtYgJ5p8gI6NzeU6DRYWABppPJjeRnuj45Ys3vcXETH6sPnU4MS14Myk/m7sQF2u+3YTY7TYps28IMyFfxeXXXk9eLLLD1BGQtahYIjDWDV685/3lGqWbTRJChj5OvcHBfs2zacLC7y3PDxUwLTbXM0N8qGBbFMA55EsrSpjGos+Le9zcVK+/vDXCuf5zkqXr67hHShBT1WjM3+XJS6kMg2aFMZ2VSmuLPDhbEnRC63tcVzVOzGq7SBH7KpTCUehz575NQ8NQwWazEproNqIKjEYmBWq2N5yzAcW3d8TNZoAz9UAwEut81cbizvNRFJAz9UA0Fpbw+M8/OxPA4LFaY94zCoBn7YjYZj6Y57w6YN/KBMvMhubjqW7sB1gDTwgzLxo3x46NiOgpoDj57/guPMYNLiK75XvzNTAUg2EoH21RUXx8AFSBUX5iLwvfqdmQtA/qyvg/xMHLPlVxanQv6cQwnrUE0kHMlRqL3w4D1gVirQvb0dnogw8Km8rpr8YIJRro92wwedA7H5eb4zYuAiVUsmIRMOD4VevC3yzzBe7V67Tbxg4tqH0no6zQ3wPiByshhuwRjYG3LeA34ojQoxP3Dc8SQs51TRT+nBweX9N63dMYoFaF9MUmtr0C2XXTlCFM4u23xC5u88Ly6DiwkrFotYkkWnQREd0uwM9ozHryeeipbQmxeAMDEs4sEup8/eXEC1Se4P2HJu7irAKQKHA+eE9sRUxL3A63mUIV3PIfAf8eNsoPz6yjkAAAAASUVORK5CYII=">
+    <script type="text/javascript" src="knockout.js"></script>
+    <script type="text/javascript" src="system.js"></script>
+    <script type="text/javascript" src="bundle.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="cssload-container" data-bind="visible: !playersReady()">
+        <div class="cssload-item cssload-moon"></div>
+    </div>
+
+    <div class="game-display row" data-bind="visible: playersReady">
+        <div class="red column">
+            <div class="smaller" data-bind="visible: currentGame().red.numTotalGames() != null">
+                Total games recorded: <span data-bind="text: currentGame().red.numTotalGames"></span>
+            </div>
+            <div class="smaller" data-bind="visible: currentGame().red.numTotalGames() == null">&nbsp;</div>
+
+            <div class="player" data-bind="text: currentGame().red.defenceNickName() || '&nbsp;'"></div>
+            <div class="player" data-bind="text: currentGame().red.offenceNickName() || '&nbsp;'"></div>
+
+            <div class="double row">
+                <div class="column" data-bind="visible: currentGame().historicGames() > 0">
+                    <div><span data-bind="text: currentGame().red.historicWins"></span>/<span data-bind="text: currentGame().historicGames"></span></div>
+                    <div data-bind="text-as-pct: currentGame().red.historicWinRate"></div>
+                </div>
+                <div class="large" data-bind="text-as-pct: currentGame().red.expectedWinProb">
+                </div>
+            </div>
+        </div>
+
+        <div class="blu column">
+            <div class="double row">
+                <div class="large" data-bind="text-as-pct: currentGame().blu.expectedWinProb"></div>
+                <div class="column" data-bind="visible: currentGame().historicGames() > 0">
+                    <div><span data-bind="text: currentGame().blu.historicWins"></span>/<span data-bind="text: currentGame().historicGames"></span></div>
+                    <div data-bind="text-as-pct: currentGame().blu.historicWinRate"></div>
+                </div>
+            </div>
+
+            <div class="player" data-bind="text: currentGame().blu.offenceNickName() || '&nbsp;'"></div>
+            <div class="player" data-bind="text: currentGame().blu.defenceNickName() || '&nbsp;'"></div>
+
+            <div class="smaller" data-bind="visible: currentGame().blu.numTotalGames() != null">
+                <span data-bind="text: currentGame().blu.numTotalGames"></span> - Total games recorded
+            </div>
+            <div class="smaller" data-bind="visible: currentGame().blu.numTotalGames() == null">&nbsp;</div>
+        </div>
+    </div>
+
+    <div class="controls row" data-bind="visible: playersReady">
+        <button data-bind="enable: anyPicked, click: resetGame">Reset</button>
+        <button data-bind="enable: scoresReady, click: submitGame">Submit</button>
+    </div>
+
+    <div class="picker row" data-bind="foreach: players, visible: !gameReady()">
+        <button data-bind="text: nickName, click: () => $parent.pick($data), enable: $parent.isNotPicked($data)"></button>
+    </div>
+
+    <div class="score row" data-bind="visible: gameReady">
+        <div class="red column">
+            <div class="row">
+                <button data-bind="css:{current:scores.red.score() == 0}, click:function(){scores.red.setScore(0)}">0</button>
+                <button data-bind="css:{current:scores.red.score() == 1}, click:function(){scores.red.setScore(1)}">1</button>
+            </div>
+            <div class="row">
+                <button data-bind="css:{current:scores.red.score() == 2}, click:function(){scores.red.setScore(2)}">2</button>
+                <button data-bind="css:{current:scores.red.score() == 3}, click:function(){scores.red.setScore(3)}">3</button>
+            </div>
+            <select data-bind="css:{current:scores.red.score() == scores.red.extendedScore()}, options: ['more', 4, 5, 6, 7, 8, 9, 10], value: scores.red.extendedScore"></select>
+        </div>
+        <div class="blu column">
+            <div class="row">
+                <button data-bind="css:{current:scores.blu.score() == 0}, click:function(){scores.blu.setScore(0)}">0</button>
+                <button data-bind="css:{current:scores.blu.score() == 1}, click:function(){scores.blu.setScore(1)}">1</button>
+            </div>
+            <div class="row">
+                <button data-bind="css:{current:scores.blu.score() == 2}, click:function(){scores.blu.setScore(2)}">2</button>
+                <button data-bind="css:{current:scores.blu.score() == 3}, click:function(){scores.blu.setScore(3)}">3</button>
+            </div>
+            <select data-bind="css:{current:scores.blu.score() == scores.blu.extendedScore()}, options: ['more', 4, 5, 6, 7, 8, 9, 10], value: scores.blu.extendedScore"></select>
+        </div>
+    </div>
+
+    <div class="smaller footnote" data-bind="visible: gamesReady, text: numGames() + ' games'"></div>
+
+    <script type="text/javascript">
+        System.import('components/submitter-model').then(function (model) {
+            ko.applyBindings(model.getSubmitterModel(), document.getElementById('doc'));
+        }).catch(function (e) { console.log(e) });
+    </script>
+</body>
+
+</html>
