@@ -10,14 +10,14 @@ html, body {
 }
 
 body, button, select {
-    font-size: 1cm;
+    font-size: 1.5cm;
 }
 
 button, select {
     border-radius: .2em;
-    border-color:  hsl(0, 0%, 50%);
+    border-color:  hsl(0, 0%, 60%);
     border-width: .01em;
-    color: hsl(0, 0%, 60%);
+    color: hsl(0, 0%, 80%);
     background-color: hsl(0, 0%, 0%);
     padding: .3em;
     margin: .2em;
@@ -129,10 +129,8 @@ button:disabled {
 }
 
 .score.row {
-    button, select {
-        min-width: 4cm;
-        max-width: 4cm !important;
-    }
+    button { min-width: 4cm; }
+    select { min-width: 6cm; }
 
     .column {
         align-items: center;

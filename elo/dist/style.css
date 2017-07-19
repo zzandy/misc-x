@@ -6,14 +6,14 @@ body {
 body,
 button,
 select {
-  font-size: 1cm;
+  font-size: 1.5cm;
 }
 button,
 select {
   border-radius: .2em;
-  border-color: #808080;
+  border-color: #999999;
   border-width: .01em;
-  color: #999999;
+  color: #cccccc;
   background-color: #000000;
   padding: .3em;
   margin: .2em;
@@ -98,10 +98,11 @@ button:disabled {
 .controls.row button {
   min-width: 6em;
 }
-.score.row button,
-.score.row select {
+.score.row button {
   min-width: 4cm;
-  max-width: 4cm !important;
+}
+.score.row select {
+  min-width: 6cm;
 }
 .score.row .column {
   align-items: center;
