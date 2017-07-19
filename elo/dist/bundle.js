@@ -402,6 +402,7 @@ System.register("components/submitter-model", ["lib/almaz-api", "lib/elo", "comp
                     else {
                         lstPicker.offence(null);
                         picksPending = [lstPicker.offence];
+                        consecutiveWins[losers] = 0;
                         loadTeam(winners);
                         whenAllNotNull(lstPicker.offence).then(function () { return loadTeam(losers); });
                     }

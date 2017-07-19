@@ -235,6 +235,7 @@ export const getSubmitterModel = () => {
         else {
             lstPicker.offence(null);
             picksPending = [lstPicker.offence];
+            consecutiveWins[losers] = 0;
 
             loadTeam(winners);
             whenAllNotNull(lstPicker.offence).then(() => loadTeam(losers));

@@ -17,7 +17,7 @@
         <div class="cssload-item cssload-moon"></div>
     </div>
 
-    <div class="game-display row" data-bind="visible: playersReady">
+    <div class="game-display row" style="display: none" data-bind="visible: playersReady">
         <div class="red column">
             <div class="smaller" data-bind="visible: currentGame().red.numTotalGames() != null">
                 Total games recorded: <span data-bind="text: currentGame().red.numTotalGames"></span>

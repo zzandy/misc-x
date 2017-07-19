@@ -93,6 +93,7 @@ button:disabled {
 }
 .controls.row {
   justify-content: center;
+  margin: .5em 0;
 }
 .picker.row button,
 .controls.row button {
