@@ -888,7 +888,6 @@
                 var dz = 2 * a / s6;
                 var oyz = a / 2 / s3;
 
-
                 for (var i = 0; i < rows; ++i)
                     for (var j = 0; j < cols; ++j)
                         for (var k = 0; k < layers; ++k)
@@ -919,6 +918,8 @@
 
                 var pr = makePerspective(fov, aspect, 1, 100000);
                 var view = inverse(lookAt(cam.pos, cam.lookat, cam.up));
+
+                console.log(lookAt([5,5,10], [0,0,0], [0,0,1]));
 
                 gl.enable(gl.CULL_FACE);
                 gl.enable(gl.DEPTH_TEST);

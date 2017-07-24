@@ -6,22 +6,38 @@ export interface ICanvasRenderingContext2D extends CanvasRenderingContext2D {
     strokeCircle(x: number, y: number, r: number): ICanvasRenderingContext2D;
 }
 
-export function fullscreenCanvas(relative: boolean): ICanvasRenderingContext2D {
+export const getCanvas = (isRelative: boolean = false): HTMLCanvasElement => {
+    const can = document.createElement('canvas');
 
-    let c = document.createElement('canvas');
-    let ctx = <ICanvasRenderingContext2D>c.getContext('2d');
+    can.width = window.innerWidth;
+    can.height = window.innerHeight;
+
+    if (!isRelative) {
+        can.style.position = 'absolute';
+        can.style.top = '0';
+        can.style.left = '0';
+    }
+
+    return can;
+}
+
+export const fullscreenCanvas3d = (): WebGLRenderingContext => {
+    const can = getCanvas();
+    const gl = can.getContext('webgl');
+
+    if (gl == null) throw new Error('failed to get \'webgl\' context');
+
+    document.body.appendChild(can);
+    return gl;
+}
+
+export function fullscreenCanvas(relative: boolean = false): ICanvasRenderingContext2D {
+
+    const can = getCanvas(relative);
+    const ctx = <ICanvasRenderingContext2D>can.getContext('2d');
 
     if (ctx == null)
         throw new Error('failed to get \'2d\' context');
-
-    ctx.canvas.width = window.innerWidth;
-    ctx.canvas.height = window.innerHeight;
-
-    if (!relative) {
-        ctx.canvas.style.position = 'absolute';
-        ctx.canvas.style.top = '0';
-        ctx.canvas.style.left = '0';
-    }
 
     ctx.clear = function () {
         ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
@@ -55,6 +71,6 @@ export function fullscreenCanvas(relative: boolean): ICanvasRenderingContext2D {
         return ctx;
     }
 
-    document.body.appendChild(c);
+    document.body.appendChild(can);
     return ctx;
 }
