@@ -3,9 +3,10 @@ import { mul44, mul44v } from 'matrix';
 
 export class Camera {
     constructor(
-        public readonly pos: Vec3,
-        public readonly lookat: Vec3,
-        public readonly up: Vec3 = [0, 0, 1]
+        public pos: Vec3,
+        public lookat: Vec3,
+        public up: Vec3 = [0, 0, 1],
+        public fov: number
     ) { }
 }
 

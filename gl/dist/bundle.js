@@ -266,11 +266,12 @@ System.register("gl/src/transform", ["gl/src/matrix"], function (exports_5, cont
         ],
         execute: function () {
             Camera = (function () {
-                function Camera(pos, lookat, up) {
+                function Camera(pos, lookat, up, fov) {
                     if (up === void 0) { up = [0, 0, 1]; }
                     this.pos = pos;
                     this.lookat = lookat;
                     this.up = up;
+                    this.fov = fov;
                 }
                 return Camera;
             }());
@@ -432,7 +433,7 @@ System.register("gl/src/shader", [], function (exports_6, context_6) {
         }
     };
 });
-System.register("gl/src/Mesh", ["gl/src/transform", "gl/src/shader"], function (exports_7, context_7) {
+System.register("gl/src/mesh", ["gl/src/transform", "gl/src/shader"], function (exports_7, context_7) {
     "use strict";
     var __moduleName = context_7 && context_7.id;
     var transform_1, shader_1, SimpleProgram, Mesh;
@@ -554,10 +555,16 @@ System.register("elo/src/lib/color", [], function (exports_8, context_8) {
         }
     };
 });
-System.register("gl/src/scene-helpers", ["gl/src/Mesh", "elo/src/lib/color"], function (exports_9, context_9) {
+System.register("gl/src/scene-helpers", ["gl/src/mesh", "elo/src/lib/color"], function (exports_9, context_9) {
     "use strict";
     var __moduleName = context_9 && context_9.id;
-    var mesh_1, color_1, makeCube, makeCubeMesh, makeQuadColors;
+    function tri(a, b, c) {
+        return a.concat(b, c);
+    }
+    function quad(a, b, c, d) {
+        return tri(a, b, c).concat(tri(c, d, a));
+    }
+    var mesh_1, color_1, s3, s6, rnd, makeCube, repeat, makeGrid, makeDodecahedronMesh, makeDodecahedrons, makeCubeMesh, makeQuadColors;
     return {
         setters: [
             function (mesh_1_1) {
@@ -568,12 +575,82 @@ System.register("gl/src/scene-helpers", ["gl/src/Mesh", "elo/src/lib/color"], fu
             }
         ],
         execute: function () {
+            s3 = Math.sqrt(3);
+            s6 = Math.sqrt(6);
+            rnd = function (x) {
+                return Math.random() * x;
+            };
             exports_9("makeCube", makeCube = function (gl, pos) {
                 if (pos === void 0) { pos = [0, 0, 0]; }
                 var p = new mesh_1.SimpleProgram(gl, 'vertex', 'fragment');
                 var geometry = makeCubeMesh(0, 0, 0, 5, 5, 5);
                 var colors = makeQuadColors(geometry, Math.random() * 360);
                 return new mesh_1.Mesh(gl, p, geometry, colors, pos);
+            });
+            repeat = function (a, n) {
+                var res = [];
+                var m = a.length;
+                for (var i = 0; i < n; ++i)
+                    for (var j = 0; j < m; ++j)
+                        res.push(a[j]);
+                return res;
+            };
+            exports_9("makeGrid", makeGrid = function (gl, n, m, d, color) {
+                var mesh = makeCubeMesh(0, 0, 0, .1, .1, .1);
+                var p = new mesh_1.SimpleProgram(gl, 'vertex', 'fragment');
+                var colors = new Float32Array(repeat(color, mesh.length));
+                var res = [];
+                for (var i = 0; i < n; ++i)
+                    for (var j = 0; j < m; ++j) {
+                        res.push(new mesh_1.Mesh(gl, p, mesh, colors, [i * d - n * d / 2, j * d - m * d / 2, 0]));
+                    }
+                return res;
+            });
+            exports_9("makeDodecahedronMesh", makeDodecahedronMesh = function (a) {
+                var z = a * 3 / 2 / s6;
+                var x = a / 2;
+                var y = a / s3;
+                var y2 = a / 2 / s3;
+                var z2 = a / s6;
+                var z3 = a / 2 / s6;
+                var v = [
+                    [0, 0, -z],
+                    [-x, -y2, -z2],
+                    [0, -y, -z3],
+                    [x, -y2, -z2],
+                    [x, y2, -z3],
+                    [0, y, -z2],
+                    [-x, y2, -z3],
+                    [-x, -y2, z3],
+                    [0, -y, z2],
+                    [x, -y2, z3],
+                    [x, y2, z2],
+                    [0, y, z3],
+                    [-x, y2, z2],
+                    [0, 0, z]
+                ];
+                var iquad = function (i, j, k, l) {
+                    return quad(v[i], v[j], v[k], v[l]);
+                };
+                return new Float32Array(iquad(0, 3, 2, 1).concat(iquad(0, 5, 4, 3), iquad(0, 1, 6, 5), iquad(2, 8, 7, 1), iquad(2, 3, 9, 8), iquad(4, 10, 9, 3), iquad(4, 5, 11, 10), iquad(6, 12, 11, 5), iquad(6, 1, 7, 12), iquad(7, 8, 13, 12), iquad(9, 10, 13, 8), iquad(11, 12, 13, 10)));
+            });
+            exports_9("makeDodecahedrons", makeDodecahedrons = function (gl, a, cols, rows, layers, o) {
+                if (o === void 0) { o = [0, 0, 0]; }
+                var mesh = makeDodecahedronMesh(a);
+                var p = new mesh_1.SimpleProgram(gl, 'vertex', 'fragment');
+                var dy = s3 / 2;
+                var dz = 2 * a / s6;
+                var oyz = a / 2 / s3;
+                var res = [];
+                for (var i = 0; i < rows; ++i)
+                    for (var j = 0; j < cols; ++j)
+                        for (var k = 0; k < layers; ++k)
+                            res.push(new mesh_1.Mesh(gl, p, mesh, makeQuadColors(mesh, rnd(360)), [
+                                -cols / 2 + o[0] + ((i + (k % 3)) % 2) * a / 2 + a * j,
+                                -rows / 2 + o[1] + a * i * dy - oyz * (k % 3),
+                                -layers / 2 + o[2] + dz * k
+                            ]));
+                return res;
             });
             makeCubeMesh = function (x, y, z, w, hy, dz) {
                 var a = [x, y, z];
@@ -584,12 +661,6 @@ System.register("gl/src/scene-helpers", ["gl/src/Mesh", "elo/src/lib/color"], fu
                 var f = [x + w, y + hy, z];
                 var g = [x + w, y + hy, z + dz];
                 var h = [x, y + hy, z + dz];
-                function tri(a, b, c) {
-                    return a.concat(b, c);
-                }
-                function quad(a, b, c, d) {
-                    return tri(a, b, c).concat(tri(c, d, a));
-                }
                 return new Float32Array([].concat(quad(b, c, d, a), quad(e, a, d, h), quad(f, b, a, e), quad(g, c, b, f), quad(h, d, c, g), quad(g, f, e, h)));
             };
             makeQuadColors = function (geometry, baseHue) {
@@ -612,10 +683,79 @@ System.register("gl/src/scene-helpers", ["gl/src/Mesh", "elo/src/lib/color"], fu
         }
     };
 });
-System.register("gl/src/main", ["elo/src/lib/canvas", "gl/src/scene-helpers", "gl/src/matrix", "gl/src/transform", "gl/src/loop"], function (exports_10, context_10) {
+System.register("gl/src/mouse", ["gl/src/transform"], function (exports_10, context_10) {
     "use strict";
     var __moduleName = context_10 && context_10.id;
-    var canvas_1, scene_helpers_1, matrix_2, transform_2, loop_1, run, init, fixed, render;
+    var transform_2, clamp, ViewController, MouseAdapter;
+    return {
+        setters: [
+            function (transform_2_1) {
+                transform_2 = transform_2_1;
+            }
+        ],
+        execute: function () {
+            clamp = function (v, min, max) {
+                return v > max ? max : v < min ? min : v;
+            };
+            ViewController = (function () {
+                function ViewController(cam) {
+                    this.cam = cam;
+                    this.minfov = 3 * transform_2.deg;
+                    this.maxfov = 140 * transform_2.deg;
+                    this.qpanh = 1 / 4 * transform_2.deg;
+                    this.qpanv = 1 / 32 * transform_2.deg;
+                    this.qorbh = 1 / 4 * transform_2.deg;
+                    this.qorbv = 1 / 24 * transform_2.deg;
+                }
+                ViewController.prototype.zoom = function (delta) {
+                    var k = 1.2;
+                    var targetfov = delta > 0 ? this.cam.fov * k : this.cam.fov / k;
+                    this.cam.fov = clamp(targetfov, this.minfov, this.maxfov);
+                };
+                ViewController.prototype.turn = function (dx, dy) {
+                    var cam = this.cam;
+                    cam.lookat = transform_2.rotateAArroundB(cam.lookat, cam.pos, dx * this.qpanh, cam.up);
+                    cam.lookat = transform_2.rotateAArroundB(cam.lookat, cam.pos, dy * this.qpanv, transform_2.cross(cam.up, transform_2.diff(cam.pos, cam.lookat)));
+                };
+                ViewController.prototype.orbit = function (dx, dy) {
+                    var cam = this.cam;
+                    cam.pos = transform_2.rotateAArroundB(cam.pos, cam.lookat, dx * this.qorbh, cam.up);
+                    cam.pos = transform_2.rotateAArroundB(cam.pos, cam.lookat, -dy * this.qorbv, transform_2.cross(cam.up, transform_2.diff(cam.pos, cam.lookat)));
+                };
+                return ViewController;
+            }());
+            exports_10("ViewController", ViewController);
+            MouseAdapter = (function () {
+                function MouseAdapter(controller) {
+                    var _this = this;
+                    this.controller = controller;
+                    addEventListener('wheel', function (e) { return _this.handleWheel(e); });
+                    addEventListener('contextmenu', function (e) { return _this.handleContextMenu(e); }, true);
+                    addEventListener('mousemove', function (e) { return _this.handleMouseMove(e); });
+                }
+                MouseAdapter.prototype.handleWheel = function (e) {
+                    this.controller.zoom(e.deltaY);
+                    e.preventDefault();
+                };
+                MouseAdapter.prototype.handleContextMenu = function (e) {
+                    e.preventDefault();
+                };
+                MouseAdapter.prototype.handleMouseMove = function (e) {
+                    if (!!(e.buttons & 1))
+                        this.controller.turn(e.movementX, e.movementY);
+                    else if (!!(e.buttons & 2))
+                        this.controller.orbit(e.movementX, e.movementY);
+                };
+                return MouseAdapter;
+            }());
+            exports_10("MouseAdapter", MouseAdapter);
+        }
+    };
+});
+System.register("gl/src/main", ["elo/src/lib/canvas", "gl/src/scene-helpers", "gl/src/matrix", "gl/src/transform", "gl/src/loop", "gl/src/mouse"], function (exports_11, context_11) {
+    "use strict";
+    var __moduleName = context_11 && context_11.id;
+    var canvas_1, scene_helpers_1, matrix_2, transform_3, loop_1, mouse_1, run, init, fixed, render;
     return {
         setters: [
             function (canvas_1_1) {
@@ -627,15 +767,18 @@ System.register("gl/src/main", ["elo/src/lib/canvas", "gl/src/scene-helpers", "g
             function (matrix_2_1) {
                 matrix_2 = matrix_2_1;
             },
-            function (transform_2_1) {
-                transform_2 = transform_2_1;
+            function (transform_3_1) {
+                transform_3 = transform_3_1;
             },
             function (loop_1_1) {
                 loop_1 = loop_1_1;
+            },
+            function (mouse_1_1) {
+                mouse_1 = mouse_1_1;
             }
         ],
         execute: function () {
-            exports_10("run", run = function () {
+            exports_11("run", run = function () {
                 var loop = new loop_1.Loop(60, init, fixed, render);
                 loop.start();
             });
@@ -643,13 +786,14 @@ System.register("gl/src/main", ["elo/src/lib/canvas", "gl/src/scene-helpers", "g
             init = function () {
                 var gl = canvas_1.fullscreenCanvas3d();
                 gl.clearColor(0, 0, 0, 1);
-                return {
+                var state = {
                     gl: gl,
-                    fov: 80 * transform_2.deg,
                     aspect: gl.canvas.width / gl.canvas.height,
-                    cam: new transform_2.Camera([20, 20, 10], [0, 0, 0]),
-                    meshes: [scene_helpers_1.makeCube(gl)]
+                    cam: new transform_3.Camera([20, 20, 10], [0, 0, 0], [0, 0, 1], 80 * transform_3.deg),
+                    meshes: [scene_helpers_1.makeCube(gl)].concat(scene_helpers_1.makeGrid(gl, 20, 20, 5, [1, 1, 1]), scene_helpers_1.makeDodecahedrons(gl, 3, 7, 7, 5))
                 };
+                var mouse = new mouse_1.MouseAdapter(new mouse_1.ViewController(state.cam));
+                return state;
             };
             fixed = function (delta, state) {
                 return state;
@@ -657,8 +801,8 @@ System.register("gl/src/main", ["elo/src/lib/canvas", "gl/src/scene-helpers", "g
             render = function (delta, state) {
                 var cam = state.cam;
                 var gl = state.gl;
-                var pr = transform_2.makePerspective(state.fov, state.aspect, 1, 100000);
-                var view = matrix_2.inverse(transform_2.lookAt(cam.pos, cam.lookat, cam.up));
+                var pr = transform_3.makePerspective(cam.fov, state.aspect, 1, 100000);
+                var view = matrix_2.inverse(transform_3.lookAt(cam.pos, cam.lookat, cam.up));
                 var proj = matrix_2.mul44(view, pr);
                 gl.enable(gl.CULL_FACE);
                 gl.enable(gl.DEPTH_TEST);
