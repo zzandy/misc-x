@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+
+<html id="doc" lang="en" xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <title>Stats</title>
+    <meta charset="utf-8" />
+    <link rel="icon" sizes="32x32" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAZdEVYdFNvZnR3YXJlAHBhaW50Lm5ldCA0LjAuMTZEaa/1AAADBUlEQVRYR62XS08aURTH+RikH8adpkm3NG660MR0YeKiq8Y1rRhZmPQTNDFdmiZNY9yYtpoKtJI+wCqFmgAaRREIw3Nm4PSey1y4cznMXIgn+Ykc4P8/9zH3EQCAIR8CgSAjzEgxLAb4EXh6ooPFSDHCjKDsKZuHGIYsroNjMA0GI+QqgAmhOWlA8T0UgruDA/i5skIZ6MKLEN0+Vcv7lsV+C9DrdilhXbAnglgAjjlpNAno93kB+KqITksYC8AJRxpNAluO0et0KNFpSGEBWrNdEFtYgJ5p8gI6NzeU6DRYWABppPJjeRnuj45Ys3vcXETH6sPnU4MS14Myk/m7sQF2u+3YTY7TYps28IMyFfxeXXXk9eLLLD1BGQtahYIjDWDV685/3lGqWbTRJChj5OvcHBfs2zacLC7y3PDxUwLTbXM0N8qGBbFMA55EsrSpjGos+Le9zcVK+/vDXCuf5zkqXr67hHShBT1WjM3+XJS6kMg2aFMZ2VSmuLPDhbEnRC63tcVzVOzGq7SBH7KpTCUehz575NQ8NQwWazEproNqIKjEYmBWq2N5yzAcW3d8TNZoAz9UAwEut81cbizvNRFJAz9UA0Fpbw+M8/OxPA4LFaY94zCoBn7YjYZj6Y57w6YN/KBMvMhubjqW7sB1gDTwgzLxo3x46NiOgpoDj57/guPMYNLiK75XvzNTAUg2EoH21RUXx8AFSBUX5iLwvfqdmQtA/qyvg/xMHLPlVxanQv6cQwnrUE0kHMlRqL3w4D1gVirQvb0dnogw8Km8rpr8YIJRro92wwedA7H5eb4zYuAiVUsmIRMOD4VevC3yzzBe7V67Tbxg4tqH0no6zQ3wPiByshhuwRjYG3LeA34ojQoxP3Dc8SQs51TRT+nBweX9N63dMYoFaF9MUmtr0C2XXTlCFM4u23xC5u88Ly6DiwkrFotYkkWnQREd0uwM9ozHryeeipbQmxeAMDEs4sEup8/eXEC1Se4P2HJu7irAKQKHA+eE9sRUxL3A63mUIV3PIfAf8eNsoPz6yjkAAAAASUVORK5CYII=">
+    <script type="text/javascript" src="knockout.js"></script>
+    <script type="text/javascript" src="system.js"></script>
+    <script type="text/javascript" src="bundle.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="data">
+    <div class="cssload-container" data-bind="visible: loading">
+        <div class="cssload-item cssload-moon"></div>
+    </div>
+
+    <div data-bind="visible: showData">Game records total: <span data-bind="text: numGamesTotal"></span>, Good game records: <span data-bind="text: numGames"></span></div>
+
+    <table data-bind="visible: showData">
+        <thead></thead>
+        <tbody data-bind="foreach: games">
+            <tr>
+                <td class="red" data-bind="css: {winner: redScore > bluScore, sour: redDeltas.scorewise < bluDeltas.scorewise}">
+                    <span data-bind="text: red.defence.apiPlayer.firstName"></span>&nbsp;<span data-bind="text: red.defence.apiPlayer.lastName"></span>
+                </td>
+                <td class="red" data-bind="css: {winner: redScore > bluScore, sour: redDeltas.scorewise < bluDeltas.scorewise}">
+                    <span data-bind="text: red.offence.apiPlayer.firstName"></span>&nbsp;<span data-bind="text: red.offence.apiPlayer.lastName"></span>
+                </td>
+
+                <td class="red score" data-bind="text: redScore, css: {winner: redScore > bluScore}"></td>
+
+                <td class="blu score" data-bind="text: bluScore, css: {winner: redScore < bluScore}"></td>
+
+                <td class="blu" data-bind="css: {winner: redScore < bluScore, sour: redDeltas.scorewise > bluDeltas.scorewise}">
+                    <span data-bind="text: blu.offence.apiPlayer.firstName"></span>&nbsp;<span data-bind="text: blu.offence.apiPlayer.lastName"></span>
+                </td>
+                <td class="blu" data-bind="css: {winner: redScore < bluScore, sour: redDeltas.scorewise > bluDeltas.scorewise}">
+                    <span data-bind="text: blu.defence.apiPlayer.firstName"></span>&nbsp;<span data-bind="text: blu.defence.apiPlayer.lastName"></span>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <script type="text/javascript">
+        System.import('components/viewer-model').then(function (model) {
+            ko.applyBindings(model.getViewerModel(), document.getElementById('doc'));
+        }).catch(function (e) { console.log(e) });
+    </script>
+</body>
+
+</html>

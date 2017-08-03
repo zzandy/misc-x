@@ -8,47 +8,9 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-System.register("components/score-model", [], function (exports_1, context_1) {
+System.register("lib/ajax", [], function (exports_1, context_1) {
     "use strict";
     var __moduleName = context_1 && context_1.id;
-    var getScoreSideModel, getScoreModel;
-    return {
-        setters: [],
-        execute: function () {
-            getScoreSideModel = function () {
-                var score = ko.observable(null);
-                var extendedScore = ko.computed({
-                    read: function () {
-                        var v = score();
-                        return v != null && v > 3 ? v : 'more';
-                    },
-                    write: function (value) {
-                        if (typeof (value) === 'number')
-                            score(value);
-                        else
-                            score(null);
-                    }
-                });
-                var isActive = function (n) {
-                    return score() == n;
-                };
-                var setScore = function (n) {
-                    score(n);
-                };
-                return { score: score, extendedScore: extendedScore, isActive: isActive, setScore: setScore };
-            };
-            exports_1("getScoreModel", getScoreModel = function () {
-                return {
-                    red: getScoreSideModel(),
-                    blu: getScoreSideModel()
-                };
-            });
-        }
-    };
-});
-System.register("lib/ajax", [], function (exports_2, context_2) {
-    "use strict";
-    var __moduleName = context_2 && context_2.id;
     function request(verb, url, data) {
         if (data === void 0) { data = null; }
         return new Promise(function (resolve, reject) {
@@ -71,24 +33,24 @@ System.register("lib/ajax", [], function (exports_2, context_2) {
                 http.send(null);
         });
     }
-    exports_2("request", request);
+    exports_1("request", request);
     function postJson(url, data) {
         return request('POST', url, data);
     }
-    exports_2("postJson", postJson);
+    exports_1("postJson", postJson);
     function getJson(url) {
         return request('GET', url);
     }
-    exports_2("getJson", getJson);
+    exports_1("getJson", getJson);
     return {
         setters: [],
         execute: function () {
         }
     };
 });
-System.register("lib/almaz-api", ["lib/ajax"], function (exports_3, context_3) {
+System.register("lib/almaz-api", ["lib/ajax"], function (exports_2, context_2) {
     "use strict";
-    var __moduleName = context_3 && context_3.id;
+    var __moduleName = context_2 && context_2.id;
     var ajax_1, ApiPlayer, ApiTeam, ApiGame, AlmazApi;
     return {
         setters: [
@@ -102,19 +64,19 @@ System.register("lib/almaz-api", ["lib/ajax"], function (exports_3, context_3) {
                 }
                 return ApiPlayer;
             }());
-            exports_3("ApiPlayer", ApiPlayer);
+            exports_2("ApiPlayer", ApiPlayer);
             ApiTeam = (function () {
                 function ApiTeam() {
                 }
                 return ApiTeam;
             }());
-            exports_3("ApiTeam", ApiTeam);
+            exports_2("ApiTeam", ApiTeam);
             ApiGame = (function () {
                 function ApiGame() {
                 }
                 return ApiGame;
             }());
-            exports_3("ApiGame", ApiGame);
+            exports_2("ApiGame", ApiGame);
             AlmazApi = (function () {
                 function AlmazApi(baseUrl) {
                     var state = { url: baseUrl, players: [] };
@@ -165,13 +127,13 @@ System.register("lib/almaz-api", ["lib/ajax"], function (exports_3, context_3) {
                 };
                 return AlmazApi;
             }());
-            exports_3("AlmazApi", AlmazApi);
+            exports_2("AlmazApi", AlmazApi);
         }
     };
 });
-System.register("lib/elo", [], function (exports_4, context_4) {
+System.register("lib/elo", [], function (exports_3, context_3) {
     "use strict";
-    var __moduleName = context_4 && context_4.id;
+    var __moduleName = context_3 && context_3.id;
     var EloPlayer, Elo;
     return {
         setters: [],
@@ -187,7 +149,7 @@ System.register("lib/elo", [], function (exports_4, context_4) {
                 }
                 return EloPlayer;
             }());
-            exports_4("EloPlayer", EloPlayer);
+            exports_3("EloPlayer", EloPlayer);
             Elo = (function () {
                 function Elo(x10diff, kFactor) {
                     if (x10diff === void 0) { x10diff = 400; }
@@ -215,14 +177,145 @@ System.register("lib/elo", [], function (exports_4, context_4) {
                 };
                 return Elo;
             }());
-            exports_4("Elo", Elo);
+            exports_3("Elo", Elo);
         }
     };
 });
-System.register("components/submitter-model", ["lib/almaz-api", "lib/elo", "components/score-model"], function (exports_5, context_5) {
+System.register("components/game-processor", [], function (exports_4, context_4) {
+    "use strict";
+    var __moduleName = context_4 && context_4.id;
+    var GameProcessor, byEndDate, removeDuplicates, areDuplicates, teamEqual, removeStagingData;
+    return {
+        setters: [],
+        execute: function () {
+            GameProcessor = (function () {
+                function GameProcessor(playerAdapter, teamAdapter, gameAdapter) {
+                    this.playerAdapter = playerAdapter;
+                    this.teamAdapter = teamAdapter;
+                    this.gameAdapter = gameAdapter;
+                    this.games = [];
+                    this.teams = [];
+                    this.players = [];
+                }
+                Object.defineProperty(GameProcessor.prototype, "numGames", {
+                    get: function () { return this.games.length; },
+                    enumerable: true,
+                    configurable: true
+                });
+                ;
+                GameProcessor.prototype.findPlayer = function (player) {
+                    var p = this.players.filter(function (p) { return p.apiPlayer._id == player._id; })[0];
+                    if (p === undefined) {
+                        p = this.playerAdapter({ apiPlayer: player });
+                        this.players.push(p);
+                    }
+                    return p;
+                };
+                GameProcessor.prototype.findTeam = function (defence, offence) {
+                    var matches = this.teams.filter(function (t) { return t.defence == defence && t.offence == offence; });
+                    if (matches.length == 0) {
+                        var team = {
+                            defence: defence,
+                            offence: offence,
+                        };
+                        var record = this.teamAdapter(team);
+                        this.teams.push(record);
+                        return record;
+                    }
+                    else {
+                        return matches[0];
+                    }
+                };
+                GameProcessor.prototype.findGames = function (team) {
+                    return this.games.filter(function (g) { return g.blu == team || g.red == team; });
+                };
+                ;
+                GameProcessor.prototype.findMutualGames = function (a, b) {
+                    return this.games.filter(function (g) { return (g.blu == a && g.red == b) || (g.blu == b && g.red == a); });
+                };
+                ;
+                GameProcessor.prototype.processGames = function (games) {
+                    games.sort(byEndDate)
+                        .filter(removeStagingData)
+                        .filter(removeDuplicates)
+                        .forEach(this.logGame.bind(this));
+                };
+                GameProcessor.prototype.logGame = function (game) {
+                    var red = this.findTeam(this.findPlayer(game.red.defense), this.findPlayer(game.red.offense));
+                    var blu = this.findTeam(this.findPlayer(game.blue.defense), this.findPlayer(game.blue.offense));
+                    var gameRecord = {
+                        red: red,
+                        blu: blu,
+                        redScore: game.red.score || 0,
+                        bluScore: game.blue.score || 0,
+                    };
+                    this.games.push(this.gameAdapter(gameRecord));
+                };
+                ;
+                return GameProcessor;
+            }());
+            exports_4("GameProcessor", GameProcessor);
+            byEndDate = function (a, b) {
+                return new Date(a.endDate).getTime() - new Date(b.endDate).getTime();
+            };
+            removeDuplicates = function (game, i, a) {
+                return i == 0 || !areDuplicates(game, a[i - 1]);
+            };
+            areDuplicates = function (a, b) {
+                var diff = Math.abs(new Date(a.endDate).getTime() - new Date(b.endDate).getTime());
+                return diff < 120000 && ((teamEqual(a.red, b.red) && teamEqual(a.blue, b.blue)) || (teamEqual(a.red, b.blue) && teamEqual(a.blue, b.red)));
+            };
+            teamEqual = function (a, b) {
+                return a.score == b.score && a.defense._id == b.defense._id && a.offense._id == b.offense._id;
+            };
+            removeStagingData = function (game) {
+                return 'source' in game && game.source.indexOf('staging') == -1;
+            };
+        }
+    };
+});
+System.register("components/score-model", [], function (exports_5, context_5) {
     "use strict";
     var __moduleName = context_5 && context_5.id;
-    var almaz_api_1, elo_1, score_model_1, getSource, getCurrentTeamModel, getCurrentGameModel, getPendingUploads, setPendingUploads, getSubmitterModel, byEndDate, removeDuplicates, areDuplicates, teamEqual, removeStagingData, uniqueNickName, normalizeName, isNullObservable, whenAllNotNull;
+    var getScoreSideModel, getScoreModel;
+    return {
+        setters: [],
+        execute: function () {
+            getScoreSideModel = function () {
+                var score = ko.observable(null);
+                var extendedScore = ko.computed({
+                    read: function () {
+                        var v = score();
+                        return v != null && v > 3 ? v : 'more';
+                    },
+                    write: function (value) {
+                        if (typeof (value) === 'number')
+                            score(value);
+                        else
+                            score(null);
+                    }
+                });
+                var isActive = function (n) {
+                    return score() == n;
+                };
+                var setScore = function (n) {
+                    score(n);
+                };
+                return { score: score, extendedScore: extendedScore, isActive: isActive, setScore: setScore };
+            };
+            exports_5("getScoreModel", getScoreModel = function () {
+                return {
+                    red: getScoreSideModel(),
+                    blu: getScoreSideModel()
+                };
+            });
+        }
+    };
+});
+System.register("components/submitter-model", ["lib/almaz-api", "lib/elo", "components/score-model", "components/game-processor"], function (exports_6, context_6) {
+    "use strict";
+    var __moduleName = context_6 && context_6.id;
+    var almaz_api_1, elo_1, score_model_1, game_processor_1, getSource, getCurrentTeamModel, getCurrentGameModel, getPendingUploads, setPendingUploads, getSubmitterModel, uniqueNickName, normalizeName, isNullObservable, whenAllNotNull;
     return {
         setters: [
             function (almaz_api_1_1) {
@@ -233,6 +326,9 @@ System.register("components/submitter-model", ["lib/almaz-api", "lib/elo", "comp
             },
             function (score_model_1_1) {
                 score_model_1 = score_model_1_1;
+            },
+            function (game_processor_1_1) {
+                game_processor_1 = game_processor_1_1;
             }
         ],
         execute: function () {
@@ -292,18 +388,39 @@ System.register("components/submitter-model", ["lib/almaz-api", "lib/elo", "comp
             setPendingUploads = function (games) {
                 localStorage.setItem('kicker-pending-uploads', JSON.stringify(games));
             };
-            exports_5("getSubmitterModel", getSubmitterModel = function () {
+            exports_6("getSubmitterModel", getSubmitterModel = function () {
                 var url = 'https://foosball-results.herokuapp.com/api/';
                 var api = new almaz_api_1.AlmazApi(url);
                 var apiSource = 'og-source/' + getSource();
                 var m = {};
-                var teams = [];
-                var games = [];
+                var elo = new elo_1.Elo();
+                var players = m.players = ko.observableArray([]);
+                var newPlayer = function (player) {
+                    var p = players().filter(function (p) { return p.apiPlayer._id == player.apiPlayer._id; })[0];
+                    console.log(players().length, player, p);
+                    return p;
+                };
+                var newTeam = function (team) {
+                    return {
+                        defence: team.defence,
+                        offence: team.offence,
+                        rating: new elo_1.EloPlayer()
+                    };
+                };
+                var newGame = function (game) {
+                    elo.game(game.red.rating, game.blu.rating, game.redScore, game.bluScore);
+                    return {
+                        red: game.red,
+                        blu: game.blu,
+                        redScore: game.redScore,
+                        bluScore: game.bluScore,
+                    };
+                };
+                var gp = new game_processor_1.GameProcessor(newPlayer, newTeam, newGame);
                 var pendingUploads = getPendingUploads();
                 var startTime;
                 var currentGame = getCurrentGameModel();
                 m.currentGame = ko.observable(currentGame);
-                var players = m.players = ko.observableArray([]);
                 var gameReady = m.gameReady = ko.observable(false);
                 var playersReady = m.playersReady = ko.observable(false);
                 var gamesReady = m.gamesReady = ko.observable(false);
@@ -320,9 +437,9 @@ System.register("components/submitter-model", ["lib/almaz-api", "lib/elo", "comp
                 };
                 gameReady.subscribe(function (v) {
                     if (v) {
-                        var red = findTeam(currentGame.red.defence(), currentGame.red.offence());
-                        var blu = findTeam(currentGame.blu.defence(), currentGame.blu.offence());
-                        var commonGames = findMutualGames(red, blu);
+                        var red = gp.findTeam(currentGame.red.defence(), currentGame.red.offence());
+                        var blu = gp.findTeam(currentGame.blu.defence(), currentGame.blu.offence());
+                        var commonGames = gp.findMutualGames(red, blu);
                         var n = commonGames.length;
                         currentGame.historicGames(n);
                         var redWins = commonGames.filter(findWins(red));
@@ -337,37 +454,13 @@ System.register("components/submitter-model", ["lib/almaz-api", "lib/elo", "comp
                     }
                 });
                 var picksPending = [];
-                var findPlayer = function (id) {
-                    return players().filter(function (p) { return p.apiPlayer._id == id; })[0];
-                };
-                var findTeam = function (defence, offence) {
-                    var matches = teams.filter(function (t) { return t.defence == defence && t.offence == offence; });
-                    if (matches.length == 0) {
-                        var team = {
-                            defence: defence,
-                            offence: offence,
-                            rating: new elo_1.EloPlayer()
-                        };
-                        teams.push(team);
-                        return team;
-                    }
-                    else {
-                        return matches[0];
-                    }
-                };
-                var findGames = function (team) {
-                    return games.filter(function (g) { return g.blu == team || g.red == team; });
-                };
-                var findMutualGames = function (a, b) {
-                    return games.filter(function (g) { return (g.blu == a && g.red == b) || (g.blu == b && g.red == a); });
-                };
                 var loadTeam = function (side) {
                     whenAllNotNull(gamesReady).then(function () {
                         var pickTeam = currentGame[side];
                         var def = pickTeam.defence();
                         var off = pickTeam.offence();
-                        var team = findTeam(def, off);
-                        var gamesx = findGames(team);
+                        var team = gp.findTeam(def, off);
+                        var gamesx = gp.findGames(team);
                         pickTeam.numTotalGames(gamesx.length);
                     });
                 };
@@ -434,8 +527,8 @@ System.register("components/submitter-model", ["lib/almaz-api", "lib/elo", "comp
                             score: scores.blu.score() || 0,
                         }
                     };
-                    logGame(gamePlayed);
-                    m.numGames(games.length);
+                    gp.logGame(gamePlayed);
+                    m.numGames(gp.numGames);
                     uploadGame(gamePlayed);
                     var redScore = scores.red.score();
                     var bluScore = scores.blu.score();
@@ -497,46 +590,14 @@ System.register("components/submitter-model", ["lib/almaz-api", "lib/elo", "comp
                     });
                 };
                 dumpPendingUploads();
-                var elo = new elo_1.Elo();
-                var logGame = function (game) {
-                    var red = findTeam(findPlayer(game.red.defense._id), findPlayer(game.red.offense._id));
-                    var blu = findTeam(findPlayer(game.blue.defense._id), findPlayer(game.blue.offense._id));
-                    var gameRecord = {
-                        red: red,
-                        blu: blu,
-                        redScore: game.red.score || 0,
-                        bluScore: game.blue.score || 0,
-                    };
-                    elo.game(red.rating, blu.rating, gameRecord.redScore, gameRecord.bluScore);
-                    games.push(gameRecord);
-                };
                 api.getGames('').then(function (apiGames) {
-                    apiGames.sort(byEndDate)
-                        .filter(removeStagingData)
-                        .filter(removeDuplicates)
-                        .forEach(logGame);
-                    m.numGames(games.length);
+                    gp.processGames(apiGames);
+                    m.numGames(gp.numGames);
                     m.gamesReady(true);
                 });
                 resetPicking();
                 return m;
             });
-            byEndDate = function (a, b) {
-                return new Date(a.endDate).getTime() - new Date(b.endDate).getTime();
-            };
-            removeDuplicates = function (game, i, a) {
-                return i == 0 || !areDuplicates(game, a[i - 1]);
-            };
-            areDuplicates = function (a, b) {
-                var diff = Math.abs(new Date(a.endDate).getTime() - new Date(b.endDate).getTime());
-                return diff < 120000 && ((teamEqual(a.red, b.red) && teamEqual(a.blue, b.blue)) || (teamEqual(a.red, b.blue) && teamEqual(a.blue, b.red)));
-            };
-            teamEqual = function (a, b) {
-                return a.score == b.score && a.defense._id == b.defense._id && a.offense._id == b.offense._id;
-            };
-            removeStagingData = function (game) {
-                return 'source' in game && game.source.indexOf('staging') == -1;
-            };
             uniqueNickName = function (player, players) {
                 var nickName = normalizeName(player.firstName);
                 if (!players.some(function (p) { return p._id != player._id && normalizeName(p.firstName) == nickName; }))
@@ -583,9 +644,109 @@ System.register("components/submitter-model", ["lib/almaz-api", "lib/elo", "comp
         }
     };
 });
-System.register("lib/canvas", [], function (exports_6, context_6) {
+System.register("components/viewer-model", ["lib/almaz-api", "lib/elo", "components/game-processor"], function (exports_7, context_7) {
     "use strict";
-    var __moduleName = context_6 && context_6.id;
+    var __moduleName = context_7 && context_7.id;
+    var almaz_api_2, elo_2, game_processor_2, getViewerModel;
+    return {
+        setters: [
+            function (almaz_api_2_1) {
+                almaz_api_2 = almaz_api_2_1;
+            },
+            function (elo_2_1) {
+                elo_2 = elo_2_1;
+            },
+            function (game_processor_2_1) {
+                game_processor_2 = game_processor_2_1;
+            }
+        ],
+        execute: function () {
+            exports_7("getViewerModel", getViewerModel = function () {
+                var loading = ko.observable(true);
+                var games = ko.observableArray([]);
+                var haveData = ko.computed(function () { return games().length > 0; });
+                var shouldShowData = ko.observable(true);
+                var showData = ko.computed(function () { return !loading() && haveData() && shouldShowData(); });
+                var showCanvas = ko.computed(function () { return !loading() && haveData(); });
+                var numGames = ko.observable('...');
+                var numGamesTotal = ko.observable('...');
+                var url = 'https://foosball-results.herokuapp.com/api/';
+                var api = new almaz_api_2.AlmazApi(url);
+                var newPlayer = function (player) {
+                    return {
+                        apiPlayer: player.apiPlayer,
+                    };
+                };
+                var elo = new elo_2.Elo();
+                var elos = {
+                    binary: function (p1, p2, s1, s2) {
+                        var b1 = p1.score;
+                        var b2 = p2.score;
+                        elo.game(p1, p2, s1 > s2 ? 1 : 0, s1 < s2 ? 1 : 0);
+                        return [p1.score - b1, p2.score - b2];
+                    },
+                    scorewise: function (p1, p2, s1, s2) {
+                        var b1 = p1.score;
+                        var b2 = p2.score;
+                        elo.game(p1, p2, s1, s2);
+                        return [p1.score - b1, p2.score - b2];
+                    }
+                };
+                var newTeam = function (team) {
+                    var ratings = {};
+                    for (var name_1 in elos) {
+                        ratings[name_1] = new elo_2.EloPlayer();
+                    }
+                    return {
+                        defence: team.defence,
+                        offence: team.offence,
+                        ratings: ratings
+                    };
+                };
+                var newGame = function (game) {
+                    var redDeltas = {};
+                    var bluDeltas = {};
+                    for (var name_2 in elos) {
+                        var fn = elos[name_2];
+                        var deltas = fn(game.red.ratings[name_2], game.blu.ratings[name_2], game.redScore, game.bluScore);
+                        redDeltas[name_2] = deltas[0];
+                        bluDeltas[name_2] = deltas[1];
+                    }
+                    return {
+                        red: game.red,
+                        blu: game.blu,
+                        redScore: game.redScore,
+                        bluScore: game.bluScore,
+                        redDeltas: redDeltas,
+                        bluDeltas: bluDeltas
+                    };
+                };
+                var gp = new game_processor_2.GameProcessor(newPlayer, newTeam, newGame);
+                api.getGames("").then(loadGames);
+                function loadGames(data) {
+                    numGamesTotal(data.length);
+                    gp.processGames(data);
+                    numGames(gp.numGames);
+                    games(gp.games);
+                    loading(false);
+                }
+                return {
+                    loading: loading,
+                    haveData: haveData,
+                    shouldShowData: shouldShowData,
+                    showData: showData,
+                    showCanvas: showCanvas,
+                    games: games,
+                    numGames: numGames,
+                    numGamesTotal: numGamesTotal
+                };
+            });
+        }
+    };
+});
+System.register("lib/canvas", [], function (exports_8, context_8) {
+    "use strict";
+    var __moduleName = context_8 && context_8.id;
     function fullscreenCanvas(relative) {
         var c = document.createElement('canvas');
         var ctx = c.getContext('2d');
@@ -628,16 +789,16 @@ System.register("lib/canvas", [], function (exports_6, context_6) {
         document.body.appendChild(c);
         return ctx;
     }
-    exports_6("fullscreenCanvas", fullscreenCanvas);
+    exports_8("fullscreenCanvas", fullscreenCanvas);
     return {
         setters: [],
         execute: function () {
         }
     };
 });
-System.register("lib/color", [], function (exports_7, context_7) {
+System.register("lib/color", [], function (exports_9, context_9) {
     "use strict";
-    var __moduleName = context_7 && context_7.id;
+    var __moduleName = context_9 && context_9.id;
     function hcy2rgb(h, c, y, a) {
         var r = .3;
         var g = .59;
@@ -667,16 +828,16 @@ System.register("lib/color", [], function (exports_7, context_7) {
         var rgbdata = [rgb[0] + m, rgb[1] + m, rgb[2] + m];
         return 'rgba(' + (rgbdata[0] * 255).toFixed(0) + ',' + (rgbdata[1] * 255).toFixed(0) + ',' + (rgbdata[2] * 255).toFixed(0) + ', ' + (a || 1) + ')';
     }
-    exports_7("hcy2rgb", hcy2rgb);
+    exports_9("hcy2rgb", hcy2rgb);
     return {
         setters: [],
         execute: function () {
         }
     };
 });
-System.register("lib/geometry", [], function (exports_8, context_8) {
+System.register("lib/geometry", [], function (exports_10, context_10) {
     "use strict";
-    var __moduleName = context_8 && context_8.id;
+    var __moduleName = context_10 && context_10.id;
     var Point, Rect, Range;
     return {
         setters: [],
@@ -688,7 +849,7 @@ System.register("lib/geometry", [], function (exports_8, context_8) {
                 }
                 return Point;
             }());
-            exports_8("Point", Point);
+            exports_10("Point", Point);
             Rect = (function (_super) {
                 __extends(Rect, _super);
                 function Rect(x, y, w, h) {
@@ -713,7 +874,7 @@ System.register("lib/geometry", [], function (exports_8, context_8) {
                 });
                 return Rect;
             }(Point));
-            exports_8("Rect", Rect);
+            exports_10("Rect", Rect);
             Range = (function () {
                 function Range(start, length) {
                     this.start = start;
@@ -728,13 +889,13 @@ System.register("lib/geometry", [], function (exports_8, context_8) {
                 });
                 return Range;
             }());
-            exports_8("Range", Range);
+            exports_10("Range", Range);
         }
     };
 });
-System.register("lib/plot-data", [], function (exports_9, context_9) {
+System.register("lib/plot-data", [], function (exports_11, context_11) {
     "use strict";
-    var __moduleName = context_9 && context_9.id;
+    var __moduleName = context_11 && context_11.id;
     var Break, DataWindow, PlotData, Series;
     return {
         setters: [],
@@ -746,7 +907,7 @@ System.register("lib/plot-data", [], function (exports_9, context_9) {
                 }
                 return Break;
             }());
-            exports_9("Break", Break);
+            exports_11("Break", Break);
             DataWindow = (function () {
                 function DataWindow(name, window, xBreaks, yBreaks, views) {
                     this.name = name;
@@ -757,7 +918,7 @@ System.register("lib/plot-data", [], function (exports_9, context_9) {
                 }
                 return DataWindow;
             }());
-            exports_9("DataWindow", DataWindow);
+            exports_11("DataWindow", DataWindow);
             PlotData = (function () {
                 function PlotData(name, data) {
                     this.name = name;
@@ -765,7 +926,7 @@ System.register("lib/plot-data", [], function (exports_9, context_9) {
                 }
                 return PlotData;
             }());
-            exports_9("PlotData", PlotData);
+            exports_11("PlotData", PlotData);
             Series = (function () {
                 function Series(name, data) {
                     this.name = name;
@@ -773,17 +934,17 @@ System.register("lib/plot-data", [], function (exports_9, context_9) {
                 }
                 return Series;
             }());
-            exports_9("Series", Series);
+            exports_11("Series", Series);
         }
     };
 });
-System.register("lib/plotter", ["lib/geometry"], function (exports_10, context_10) {
+System.register("lib/plotter", ["lib/geometry"], function (exports_12, context_12) {
     "use strict";
-    var __moduleName = context_10 && context_10.id;
+    var __moduleName = context_12 && context_12.id;
     function last(array) {
         return array[array.length - 1];
     }
-    exports_10("last", last);
+    exports_12("last", last);
     var geometry_1, Plotter;
     return {
         setters: [
@@ -859,13 +1020,13 @@ System.register("lib/plotter", ["lib/geometry"], function (exports_10, context_1
                 };
                 return Plotter;
             }());
-            exports_10("Plotter", Plotter);
+            exports_12("Plotter", Plotter);
         }
     };
 });
-System.register("lib/view-selector", [], function (exports_11, context_11) {
+System.register("lib/view-selector", [], function (exports_13, context_13) {
     "use strict";
-    var __moduleName = context_11 && context_11.id;
+    var __moduleName = context_13 && context_13.id;
     return {
         setters: [],
         execute: function () {
