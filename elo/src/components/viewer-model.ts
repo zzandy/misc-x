@@ -3,7 +3,7 @@
 import { AlmazApi, ApiPlayer, ApiTeam, ApiGame } from '../lib/almaz-api';
 import { Elo, EloPlayer } from '../lib/elo';
 import { GameProcessor, Player, Team, Game } from './game-processor';
-import { IAggregator, ScorewiseAggregator, BinaryAggregator, WinrateAggregator } from './aggregators';
+import { IAggregator, ScorewiseAggregator, BinaryAggregator, WinrateAggregator, RecentWinrateAggregator } from './aggregators';
 import { Rect } from '../lib/geometry';
 import { Plotter } from '../lib/plotter';
 import { fullscreenCanvas } from '../lib/canvas';
@@ -46,7 +46,8 @@ export const getViewerModel = () => {
     const aggregators: IAggregator[] = [
         new ScorewiseAggregator(),
         new BinaryAggregator(),
-        new WinrateAggregator()
+        new WinrateAggregator(),
+        new RecentWinrateAggregator(50)
     ];
 
     const activeView = ko.observable('');
@@ -57,7 +58,6 @@ export const getViewerModel = () => {
     activeSubviews.subscribe(v => { activeSubview(v[0]); render(); });
     activeViews.subscribe(v => { activeView(v[0]) })
     activeView.subscribe(v => {
-        console.log('update main to ' + v);
         const activeAggregator = aggregators.filter(a => a.window.name == v)[0]
         if (activeAggregator !== undefined) {
             activeSubviews(activeAggregator.window.views.map(v => v.name))
@@ -65,7 +65,7 @@ export const getViewerModel = () => {
         }
     });
 
-    activeSubview.subscribe(v => { console.log('update sub to ' + v); render() });
+    activeSubview.subscribe(v => render());
 
     activeViews(aggregators.map(a => a.window.name));
 

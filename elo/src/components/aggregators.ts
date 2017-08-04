@@ -182,7 +182,8 @@ export class BinaryAggregator extends RatingAggregator {
 }
 
 type record = { numGames: number, numWon: number };
-type recordMap = { [id: string]: record }
+type recordMap = { [id: string]: record };
+type arrayMap = { [id: string]: number[] };
 
 export class WinrateAggregator extends Aggregator {
     private readonly all: recordMap = {};
@@ -215,9 +216,45 @@ export class WinrateAggregator extends Aggregator {
             this.postRating(name, this.n, 100 * r.numWon / r.numGames, record.series);
         }
     }
+}
 
+export class RecentWinrateAggregator extends Aggregator {
+    private readonly all: arrayMap = {};
+    private readonly off: arrayMap = {};
+    private readonly def: arrayMap = {};
+
+    constructor(private readonly nGames: number) {
+        super(`Winrate (${nGames})`);
+    }
+
+    protected logGameImpl(g: StatGame): void {
+        this.log(g.endDate, g.red.defence, g.redScore > g.bluScore, [{ records: this.all, series: this.plot }, { records: this.def, series: this.plotd }]);
+        this.log(g.endDate, g.red.offence, g.redScore > g.bluScore, [{ records: this.all, series: this.plot }, { records: this.off, series: this.ploto }]);
+        this.log(g.endDate, g.blu.defence, g.redScore < g.bluScore, [{ records: this.all, series: this.plot }, { records: this.def, series: this.plotd }]);
+        this.log(g.endDate, g.blu.offence, g.redScore < g.bluScore, [{ records: this.all, series: this.plot }, { records: this.off, series: this.ploto }]);
+    }
+
+    private log(data: Date, p: StatPlayer, won: boolean, recordTo: { records: arrayMap, series: IPlotData }[]) {
+        for (const record of recordTo) {
+            const id = p.apiPlayer._id;
+            if (!(id in record.records))
+                record.records[id] = [];
+
+            const r: number[] = record.records[id];
+            if (r.push(won ? 1 : 0) > this.nGames)
+                r.shift();
+
+            const name = p.apiPlayer.firstName + ' ' + p.apiPlayer.lastName;
+
+            this.postRating(name, this.n, 100 * sum(r) / r.length, record.series);
+        }
+    }
+}
+
+const sum = (a: number[]): number => {
+    return a.reduce((a, b) => a + b, 0);
 }
 
 const avg = (a: number[]): number => {
-    return a.length == 0 ? NaN : a.reduce((a, b) => a + b) / a.length;
+    return a.length == 0 ? NaN : sum(a) / a.length;
 }

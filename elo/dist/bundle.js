@@ -587,7 +587,8 @@ System.register("components/viewer-model", ["lib/almaz-api", "lib/elo", "compone
                 var aggregators = [
                     new aggregators_1.ScorewiseAggregator(),
                     new aggregators_1.BinaryAggregator(),
-                    new aggregators_1.WinrateAggregator()
+                    new aggregators_1.WinrateAggregator(),
+                    new aggregators_1.RecentWinrateAggregator(50)
                 ];
                 var activeView = ko.observable('');
                 var activeSubview = ko.observable('');
@@ -596,14 +597,13 @@ System.register("components/viewer-model", ["lib/almaz-api", "lib/elo", "compone
                 activeSubviews.subscribe(function (v) { activeSubview(v[0]); render(); });
                 activeViews.subscribe(function (v) { activeView(v[0]); });
                 activeView.subscribe(function (v) {
-                    console.log('update main to ' + v);
                     var activeAggregator = aggregators.filter(function (a) { return a.window.name == v; })[0];
                     if (activeAggregator !== undefined) {
                         activeSubviews(activeAggregator.window.views.map(function (v) { return v.name; }));
                         render();
                     }
                 });
-                activeSubview.subscribe(function (v) { console.log('update sub to ' + v); render(); });
+                activeSubview.subscribe(function (v) { return render(); });
                 activeViews(aggregators.map(function (a) { return a.window.name; }));
                 var numGames = ko.observable('...');
                 var numGamesTotal = ko.observable('...');
@@ -708,7 +708,7 @@ System.register("components/viewer-model", ["lib/almaz-api", "lib/elo", "compone
 System.register("components/aggregators", ["lib/geometry", "lib/plot-data"], function (exports_10, context_10) {
     "use strict";
     var __moduleName = context_10 && context_10.id;
-    var geometry_3, plot_data_1, Aggregator, RatingAggregator, ScorewiseAggregator, BinaryAggregator, WinrateAggregator, avg;
+    var geometry_3, plot_data_1, Aggregator, RatingAggregator, ScorewiseAggregator, BinaryAggregator, WinrateAggregator, RecentWinrateAggregator, sum, avg;
     return {
         setters: [
             function (geometry_3_1) {
@@ -887,8 +887,43 @@ System.register("components/aggregators", ["lib/geometry", "lib/plot-data"], fun
                 return WinrateAggregator;
             }(Aggregator));
             exports_10("WinrateAggregator", WinrateAggregator);
+            RecentWinrateAggregator = (function (_super) {
+                __extends(RecentWinrateAggregator, _super);
+                function RecentWinrateAggregator(nGames) {
+                    var _this = _super.call(this, "Winrate (" + nGames + ")") || this;
+                    _this.nGames = nGames;
+                    _this.all = {};
+                    _this.off = {};
+                    _this.def = {};
+                    return _this;
+                }
+                RecentWinrateAggregator.prototype.logGameImpl = function (g) {
+                    this.log(g.endDate, g.red.defence, g.redScore > g.bluScore, [{ records: this.all, series: this.plot }, { records: this.def, series: this.plotd }]);
+                    this.log(g.endDate, g.red.offence, g.redScore > g.bluScore, [{ records: this.all, series: this.plot }, { records: this.off, series: this.ploto }]);
+                    this.log(g.endDate, g.blu.defence, g.redScore < g.bluScore, [{ records: this.all, series: this.plot }, { records: this.def, series: this.plotd }]);
+                    this.log(g.endDate, g.blu.offence, g.redScore < g.bluScore, [{ records: this.all, series: this.plot }, { records: this.off, series: this.ploto }]);
+                };
+                RecentWinrateAggregator.prototype.log = function (data, p, won, recordTo) {
+                    for (var _i = 0, recordTo_2 = recordTo; _i < recordTo_2.length; _i++) {
+                        var record = recordTo_2[_i];
+                        var id = p.apiPlayer._id;
+                        if (!(id in record.records))
+                            record.records[id] = [];
+                        var r = record.records[id];
+                        if (r.push(won ? 1 : 0) > this.nGames)
+                            r.shift();
+                        var name_4 = p.apiPlayer.firstName + ' ' + p.apiPlayer.lastName;
+                        this.postRating(name_4, this.n, 100 * sum(r) / r.length, record.series);
+                    }
+                };
+                return RecentWinrateAggregator;
+            }(Aggregator));
+            exports_10("RecentWinrateAggregator", RecentWinrateAggregator);
+            sum = function (a) {
+                return a.reduce(function (a, b) { return a + b; }, 0);
+            };
             avg = function (a) {
-                return a.length == 0 ? NaN : a.reduce(function (a, b) { return a + b; }) / a.length;
+                return a.length == 0 ? NaN : sum(a) / a.length;
             };
         }
     };
