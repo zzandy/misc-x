@@ -7,6 +7,7 @@ import { IAggregator, ScorewiseAggregator, BinaryAggregator, WinrateAggregator, 
 import { Rect } from '../lib/geometry';
 import { Plotter } from '../lib/plotter';
 import { fullscreenCanvas } from '../lib/canvas';
+import { addDays } from './date';
 
 export interface StatPlayer extends Player {
     games: StatGame[]
@@ -43,11 +44,13 @@ export const getViewerModel = () => {
     const showData = ko.computed(() => !loading() && haveData() && shouldShowData());
     const showCanvas = ko.computed(() => !loading() && haveData());
 
+    const cutoff = addDays(new Date(), -14.5);
+
     const aggregators: IAggregator[] = [
-        new ScorewiseAggregator(),
-        new BinaryAggregator(),
-        new WinrateAggregator(),
-        new RecentWinrateAggregator(50)
+        new ScorewiseAggregator(cutoff),
+        new BinaryAggregator(cutoff),
+        new WinrateAggregator(cutoff),
+        new RecentWinrateAggregator(cutoff, 50)
     ];
 
     const activeView = ko.observable('');
@@ -175,7 +178,6 @@ export const getViewerModel = () => {
         const p = new Plotter(ctx, r);
 
         const activeAggregator = aggregators.filter(a => a.window.name == activeView())[0]
-        console.log(activeAggregator, activeView(), activeSubview())
         if (activeAggregator !== undefined)
             p.render(activeAggregator.window, activeSubview());
     }

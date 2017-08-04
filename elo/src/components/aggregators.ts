@@ -11,7 +11,7 @@ export interface IAggregator {
 abstract class Aggregator implements IAggregator {
     public readonly window: IDataWindow;
 
-    private region: Rect = new Rect(0, NaN, 0, 0);
+    private region: Rect = new Rect(NaN, NaN, 0, 0);
 
     protected readonly plot: IPlotData = { name: 'all', data: [] }
     protected readonly plotd: IPlotData = { name: 'def', data: [] }
@@ -24,7 +24,7 @@ abstract class Aggregator implements IAggregator {
     protected n: number = 0;
     private prev: Date | null = null;
 
-    protected constructor(windowName: string) {
+    protected constructor(private readonly cutoff: Date, windowName: string) {
         const that = this;
         this.window = {
             name: windowName,
@@ -67,7 +67,7 @@ abstract class Aggregator implements IAggregator {
     protected accomodate(p: Point) {
         const r = this.region;
 
-        let x = r.x;
+        let x = isNaN(r.x) ? p.x : r.x;
         let y = isNaN(r.y) ? p.y : r.y;
         let w = r.w;
         let h = r.h;
@@ -91,7 +91,11 @@ abstract class Aggregator implements IAggregator {
         this.region = new Rect(x, y, w, h);
     }
 
-    protected postRating(name: string, x: number, y: number, stream: IPlotData) {
+    protected postRating(name: string, date: Date, x: number, y: number, stream: IPlotData) {
+
+        if (date.getTime() < this.cutoff.getTime())
+            return;
+
         let series = stream.data.filter(s => s.name == name)[0];
 
         if (series == undefined) {
@@ -118,25 +122,22 @@ abstract class RatingAggregator extends Aggregator {
     private readonly ratingso: { [id: string]: number[] } = {};
     private readonly ratingsd: { [id: string]: number[] } = {};
 
-
-
-
-    constructor(windowName: string) {
-        super(windowName);
+    constructor(cutoff: Date, windowName: string) {
+        super(cutoff, windowName);
     }
 
     protected logGameImpl(g: StatGame): void {
-        this.logTeam(g.red);
-        this.logTeam(g.blu);
+        this.logTeam(g.red, g.endDate);
+        this.logTeam(g.blu, g.endDate);
     }
 
-    private logTeam(t: StatTeam): void {
+    private logTeam(t: StatTeam, date: Date): void {
         const r = this.getRating(t);
-        this.logPlayer(r, t.defence, true);
-        this.logPlayer(r, t.offence, false);
+        this.logPlayer(r, date, t.defence, true);
+        this.logPlayer(r, date, t.offence, false);
     }
 
-    private logPlayer(r: number, p: StatPlayer, isDef: boolean) {
+    private logPlayer(r: number, date: Date, p: StatPlayer, isDef: boolean) {
         const key = p.apiPlayer._id;
         const name = p.apiPlayer.firstName + ' ' + p.apiPlayer.lastName;
 
@@ -145,8 +146,8 @@ abstract class RatingAggregator extends Aggregator {
         const rall = avg(this.logRating(key, r, this.ratings));
         const rsub = avg(this.logRating(key, r, subratings));
 
-        this.postRating(name, this.n, rall, this.plot);
-        this.postRating(name, this.n, rsub, isDef ? this.plotd : this.ploto);
+        this.postRating(name, date, this.n, rall, this.plot);
+        this.postRating(name, date, this.n, rsub, isDef ? this.plotd : this.ploto);
     }
 
     private logRating(id: string, r: number, ratings: { [id: string]: number[] }) {
@@ -162,8 +163,8 @@ abstract class RatingAggregator extends Aggregator {
 }
 
 export class ScorewiseAggregator extends RatingAggregator {
-    constructor() {
-        super("Scorewise rating");
+    constructor(cutoff: Date) {
+        super(cutoff, "Scorewise rating");
     }
 
     protected getRating(t: StatTeam): number {
@@ -172,8 +173,8 @@ export class ScorewiseAggregator extends RatingAggregator {
 }
 
 export class BinaryAggregator extends RatingAggregator {
-    constructor() {
-        super("Binary rating");
+    constructor(cutoff: Date) {
+        super(cutoff, "Binary rating");
     }
 
     protected getRating(t: StatTeam): number {
@@ -190,8 +191,8 @@ export class WinrateAggregator extends Aggregator {
     private readonly off: recordMap = {};
     private readonly def: recordMap = {};
 
-    constructor() {
-        super('Winrate');
+    constructor(cutoff: Date) {
+        super(cutoff, 'Winrate');
     }
 
     protected logGameImpl(g: StatGame): void {
@@ -201,7 +202,7 @@ export class WinrateAggregator extends Aggregator {
         this.log(g.endDate, g.blu.offence, g.redScore < g.bluScore, [{ records: this.all, series: this.plot }, { records: this.off, series: this.ploto }]);
     }
 
-    private log(data: Date, p: StatPlayer, won: boolean, recordTo: { records: recordMap, series: IPlotData }[]) {
+    private log(date: Date, p: StatPlayer, won: boolean, recordTo: { records: recordMap, series: IPlotData }[]) {
         for (const record of recordTo) {
             const id = p.apiPlayer._id;
             if (!(id in record.records))
@@ -213,7 +214,7 @@ export class WinrateAggregator extends Aggregator {
                 r.numWon++;
             const name = p.apiPlayer.firstName + ' ' + p.apiPlayer.lastName;
 
-            this.postRating(name, this.n, 100 * r.numWon / r.numGames, record.series);
+            this.postRating(name, date, this.n, 100 * r.numWon / r.numGames, record.series);
         }
     }
 }
@@ -223,8 +224,8 @@ export class RecentWinrateAggregator extends Aggregator {
     private readonly off: arrayMap = {};
     private readonly def: arrayMap = {};
 
-    constructor(private readonly nGames: number) {
-        super(`Winrate (${nGames})`);
+    constructor(cutoff: Date, private readonly nGames: number) {
+        super(cutoff, `Winrate (${nGames})`);
     }
 
     protected logGameImpl(g: StatGame): void {
@@ -234,7 +235,7 @@ export class RecentWinrateAggregator extends Aggregator {
         this.log(g.endDate, g.blu.offence, g.redScore < g.bluScore, [{ records: this.all, series: this.plot }, { records: this.off, series: this.ploto }]);
     }
 
-    private log(data: Date, p: StatPlayer, won: boolean, recordTo: { records: arrayMap, series: IPlotData }[]) {
+    private log(date: Date, p: StatPlayer, won: boolean, recordTo: { records: arrayMap, series: IPlotData }[]) {
         for (const record of recordTo) {
             const id = p.apiPlayer._id;
             if (!(id in record.records))
@@ -246,7 +247,7 @@ export class RecentWinrateAggregator extends Aggregator {
 
             const name = p.apiPlayer.firstName + ' ' + p.apiPlayer.lastName;
 
-            this.postRating(name, this.n, 100 * sum(r) / r.length, record.series);
+            this.postRating(name, date, this.n, 100 * sum(r) / r.length, record.series);
         }
     }
 }

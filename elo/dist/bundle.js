@@ -504,7 +504,7 @@ System.register("lib/plotter", ["lib/geometry"], function (exports_8, context_8)
                     for (var _i = 0, _a = breaks.x; _i < _a.length; _i++) {
                         var $break = _a[_i];
                         var x = scale(new geometry_1.Point($break.coord, 0)).x;
-                        this.ctx.fillStyle = $break.label == '' ? '#333' : '#555';
+                        this.ctx.fillStyle = $break.label == '' ? '#222' : '#333';
                         this.ctx.fillRect(x | 0 + .5, region.y, 1, region.h);
                     }
                     for (var _b = 0, _c = breaks.y; _b < _c.length; _b++) {
@@ -541,10 +541,59 @@ System.register("lib/plotter", ["lib/geometry"], function (exports_8, context_8)
         }
     };
 });
-System.register("components/viewer-model", ["lib/almaz-api", "lib/elo", "components/game-processor", "components/aggregators", "lib/geometry", "lib/plotter", "lib/canvas"], function (exports_9, context_9) {
+System.register("components/date", [], function (exports_9, context_9) {
     "use strict";
     var __moduleName = context_9 && context_9.id;
-    var almaz_api_1, elo_1, game_processor_1, aggregators_1, geometry_2, plotter_1, canvas_1, getViewerModel;
+    var formatTimespan, formatDate, zf, getMonday, addDays;
+    return {
+        setters: [],
+        execute: function () {
+            formatTimespan = function (ts, inclMs) {
+                var s = 1000;
+                var m = 60 * s;
+                var h = 60 * m;
+                var d = 24 * h;
+                var days = ts / d | 0;
+                ts -= days * d;
+                var hours = ts / h | 0;
+                ts -= hours * h;
+                var minutes = ts / m | 0;
+                ts -= minutes * m;
+                var seconds = ts / s | 0;
+                ts -= seconds * s;
+                var repr = [zf(hours, 2), zf(minutes, 2), zf(seconds, 2)].join(':');
+                if (days > 0)
+                    repr = days + '.' + repr;
+                if (inclMs)
+                    repr = repr + '.' + zf(ts, 3);
+                return repr;
+            };
+            formatDate = function (date) {
+                var day = 'Sun,Mon,Tue,Wed,Thu,Fri,Sat'.split(',');
+                return day[date.getDay()] + ', ' + date.getFullYear() + '-' + zf(date.getMonth() + 1, 2) + '-' + zf(date.getDate(), 2);
+            };
+            zf = function (v, w) {
+                var val = v.toString();
+                if (val.length < w)
+                    val = new Array(w - val.length + 1).join('0') + val;
+                return val;
+            };
+            getMonday = function (date) {
+                if (date === void 0) { date = new Date(); }
+                var today = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                var monday = addDays(today, -Math.abs(today.getDay() - 1));
+                return monday;
+            };
+            exports_9("addDays", addDays = function (date, days) {
+                return new Date(date.getTime() + days * 24 * 60 * 60 * 1000);
+            });
+        }
+    };
+});
+System.register("components/viewer-model", ["lib/almaz-api", "lib/elo", "components/game-processor", "components/aggregators", "lib/geometry", "lib/plotter", "lib/canvas", "components/date"], function (exports_10, context_10) {
+    "use strict";
+    var __moduleName = context_10 && context_10.id;
+    var almaz_api_1, elo_1, game_processor_1, aggregators_1, geometry_2, plotter_1, canvas_1, date_1, getViewerModel;
     return {
         setters: [
             function (almaz_api_1_1) {
@@ -567,10 +616,13 @@ System.register("components/viewer-model", ["lib/almaz-api", "lib/elo", "compone
             },
             function (canvas_1_1) {
                 canvas_1 = canvas_1_1;
+            },
+            function (date_1_1) {
+                date_1 = date_1_1;
             }
         ],
         execute: function () {
-            exports_9("getViewerModel", getViewerModel = function () {
+            exports_10("getViewerModel", getViewerModel = function () {
                 var loading = ko.observable(true);
                 var ctx = canvas_1.fullscreenCanvas(true);
                 ctx.canvas.width -= 10;
@@ -584,11 +636,12 @@ System.register("components/viewer-model", ["lib/almaz-api", "lib/elo", "compone
                 shouldShowData.subscribe(function (v) { return localStorage.setItem('show-games-table', v.toString()); });
                 var showData = ko.computed(function () { return !loading() && haveData() && shouldShowData(); });
                 var showCanvas = ko.computed(function () { return !loading() && haveData(); });
+                var cutoff = date_1.addDays(new Date(), -14.5);
                 var aggregators = [
-                    new aggregators_1.ScorewiseAggregator(),
-                    new aggregators_1.BinaryAggregator(),
-                    new aggregators_1.WinrateAggregator(),
-                    new aggregators_1.RecentWinrateAggregator(50)
+                    new aggregators_1.ScorewiseAggregator(cutoff),
+                    new aggregators_1.BinaryAggregator(cutoff),
+                    new aggregators_1.WinrateAggregator(cutoff),
+                    new aggregators_1.RecentWinrateAggregator(cutoff, 50)
                 ];
                 var activeView = ko.observable('');
                 var activeSubview = ko.observable('');
@@ -683,7 +736,6 @@ System.register("components/viewer-model", ["lib/almaz-api", "lib/elo", "compone
                     var r = new geometry_2.Rect(5, ctx.canvas.height - 5, ctx.canvas.width - 10, -ctx.canvas.height + 10);
                     var p = new plotter_1.Plotter(ctx, r);
                     var activeAggregator = aggregators.filter(function (a) { return a.window.name == activeView(); })[0];
-                    console.log(activeAggregator, activeView(), activeSubview());
                     if (activeAggregator !== undefined)
                         p.render(activeAggregator.window, activeSubview());
                 }
@@ -705,9 +757,9 @@ System.register("components/viewer-model", ["lib/almaz-api", "lib/elo", "compone
         }
     };
 });
-System.register("components/aggregators", ["lib/geometry", "lib/plot-data"], function (exports_10, context_10) {
+System.register("components/aggregators", ["lib/geometry", "lib/plot-data"], function (exports_11, context_11) {
     "use strict";
-    var __moduleName = context_10 && context_10.id;
+    var __moduleName = context_11 && context_11.id;
     var geometry_3, plot_data_1, Aggregator, RatingAggregator, ScorewiseAggregator, BinaryAggregator, WinrateAggregator, RecentWinrateAggregator, sum, avg;
     return {
         setters: [
@@ -720,8 +772,9 @@ System.register("components/aggregators", ["lib/geometry", "lib/plot-data"], fun
         ],
         execute: function () {
             Aggregator = (function () {
-                function Aggregator(windowName) {
-                    this.region = new geometry_3.Rect(0, NaN, 0, 0);
+                function Aggregator(cutoff, windowName) {
+                    this.cutoff = cutoff;
+                    this.region = new geometry_3.Rect(NaN, NaN, 0, 0);
                     this.plot = { name: 'all', data: [] };
                     this.plotd = { name: 'def', data: [] };
                     this.ploto = { name: 'off', data: [] };
@@ -761,7 +814,7 @@ System.register("components/aggregators", ["lib/geometry", "lib/plot-data"], fun
                 };
                 Aggregator.prototype.accomodate = function (p) {
                     var r = this.region;
-                    var x = r.x;
+                    var x = isNaN(r.x) ? p.x : r.x;
                     var y = isNaN(r.y) ? p.y : r.y;
                     var w = r.w;
                     var h = r.h;
@@ -781,7 +834,9 @@ System.register("components/aggregators", ["lib/geometry", "lib/plot-data"], fun
                     }
                     this.region = new geometry_3.Rect(x, y, w, h);
                 };
-                Aggregator.prototype.postRating = function (name, x, y, stream) {
+                Aggregator.prototype.postRating = function (name, date, x, y, stream) {
+                    if (date.getTime() < this.cutoff.getTime())
+                        return;
                     var series = stream.data.filter(function (s) { return s.name == name; })[0];
                     if (series == undefined) {
                         series = { name: name, data: [], color: this.getColor(name) };
@@ -800,30 +855,30 @@ System.register("components/aggregators", ["lib/geometry", "lib/plot-data"], fun
             }());
             RatingAggregator = (function (_super) {
                 __extends(RatingAggregator, _super);
-                function RatingAggregator(windowName) {
-                    var _this = _super.call(this, windowName) || this;
+                function RatingAggregator(cutoff, windowName) {
+                    var _this = _super.call(this, cutoff, windowName) || this;
                     _this.ratings = {};
                     _this.ratingso = {};
                     _this.ratingsd = {};
                     return _this;
                 }
                 RatingAggregator.prototype.logGameImpl = function (g) {
-                    this.logTeam(g.red);
-                    this.logTeam(g.blu);
+                    this.logTeam(g.red, g.endDate);
+                    this.logTeam(g.blu, g.endDate);
                 };
-                RatingAggregator.prototype.logTeam = function (t) {
+                RatingAggregator.prototype.logTeam = function (t, date) {
                     var r = this.getRating(t);
-                    this.logPlayer(r, t.defence, true);
-                    this.logPlayer(r, t.offence, false);
+                    this.logPlayer(r, date, t.defence, true);
+                    this.logPlayer(r, date, t.offence, false);
                 };
-                RatingAggregator.prototype.logPlayer = function (r, p, isDef) {
+                RatingAggregator.prototype.logPlayer = function (r, date, p, isDef) {
                     var key = p.apiPlayer._id;
                     var name = p.apiPlayer.firstName + ' ' + p.apiPlayer.lastName;
                     var subratings = isDef ? this.ratingsd : this.ratingso;
                     var rall = avg(this.logRating(key, r, this.ratings));
                     var rsub = avg(this.logRating(key, r, subratings));
-                    this.postRating(name, this.n, rall, this.plot);
-                    this.postRating(name, this.n, rsub, isDef ? this.plotd : this.ploto);
+                    this.postRating(name, date, this.n, rall, this.plot);
+                    this.postRating(name, date, this.n, rsub, isDef ? this.plotd : this.ploto);
                 };
                 RatingAggregator.prototype.logRating = function (id, r, ratings) {
                     if (!(id in ratings))
@@ -835,30 +890,30 @@ System.register("components/aggregators", ["lib/geometry", "lib/plot-data"], fun
             }(Aggregator));
             ScorewiseAggregator = (function (_super) {
                 __extends(ScorewiseAggregator, _super);
-                function ScorewiseAggregator() {
-                    return _super.call(this, "Scorewise rating") || this;
+                function ScorewiseAggregator(cutoff) {
+                    return _super.call(this, cutoff, "Scorewise rating") || this;
                 }
                 ScorewiseAggregator.prototype.getRating = function (t) {
                     return t.ratings.scorewise.score;
                 };
                 return ScorewiseAggregator;
             }(RatingAggregator));
-            exports_10("ScorewiseAggregator", ScorewiseAggregator);
+            exports_11("ScorewiseAggregator", ScorewiseAggregator);
             BinaryAggregator = (function (_super) {
                 __extends(BinaryAggregator, _super);
-                function BinaryAggregator() {
-                    return _super.call(this, "Binary rating") || this;
+                function BinaryAggregator(cutoff) {
+                    return _super.call(this, cutoff, "Binary rating") || this;
                 }
                 BinaryAggregator.prototype.getRating = function (t) {
                     return t.ratings.binary.score;
                 };
                 return BinaryAggregator;
             }(RatingAggregator));
-            exports_10("BinaryAggregator", BinaryAggregator);
+            exports_11("BinaryAggregator", BinaryAggregator);
             WinrateAggregator = (function (_super) {
                 __extends(WinrateAggregator, _super);
-                function WinrateAggregator() {
-                    var _this = _super.call(this, 'Winrate') || this;
+                function WinrateAggregator(cutoff) {
+                    var _this = _super.call(this, cutoff, 'Winrate') || this;
                     _this.all = {};
                     _this.off = {};
                     _this.def = {};
@@ -870,7 +925,7 @@ System.register("components/aggregators", ["lib/geometry", "lib/plot-data"], fun
                     this.log(g.endDate, g.blu.defence, g.redScore < g.bluScore, [{ records: this.all, series: this.plot }, { records: this.def, series: this.plotd }]);
                     this.log(g.endDate, g.blu.offence, g.redScore < g.bluScore, [{ records: this.all, series: this.plot }, { records: this.off, series: this.ploto }]);
                 };
-                WinrateAggregator.prototype.log = function (data, p, won, recordTo) {
+                WinrateAggregator.prototype.log = function (date, p, won, recordTo) {
                     for (var _i = 0, recordTo_1 = recordTo; _i < recordTo_1.length; _i++) {
                         var record = recordTo_1[_i];
                         var id = p.apiPlayer._id;
@@ -881,16 +936,16 @@ System.register("components/aggregators", ["lib/geometry", "lib/plot-data"], fun
                         if (won)
                             r.numWon++;
                         var name_3 = p.apiPlayer.firstName + ' ' + p.apiPlayer.lastName;
-                        this.postRating(name_3, this.n, 100 * r.numWon / r.numGames, record.series);
+                        this.postRating(name_3, date, this.n, 100 * r.numWon / r.numGames, record.series);
                     }
                 };
                 return WinrateAggregator;
             }(Aggregator));
-            exports_10("WinrateAggregator", WinrateAggregator);
+            exports_11("WinrateAggregator", WinrateAggregator);
             RecentWinrateAggregator = (function (_super) {
                 __extends(RecentWinrateAggregator, _super);
-                function RecentWinrateAggregator(nGames) {
-                    var _this = _super.call(this, "Winrate (" + nGames + ")") || this;
+                function RecentWinrateAggregator(cutoff, nGames) {
+                    var _this = _super.call(this, cutoff, "Winrate (" + nGames + ")") || this;
                     _this.nGames = nGames;
                     _this.all = {};
                     _this.off = {};
@@ -903,7 +958,7 @@ System.register("components/aggregators", ["lib/geometry", "lib/plot-data"], fun
                     this.log(g.endDate, g.blu.defence, g.redScore < g.bluScore, [{ records: this.all, series: this.plot }, { records: this.def, series: this.plotd }]);
                     this.log(g.endDate, g.blu.offence, g.redScore < g.bluScore, [{ records: this.all, series: this.plot }, { records: this.off, series: this.ploto }]);
                 };
-                RecentWinrateAggregator.prototype.log = function (data, p, won, recordTo) {
+                RecentWinrateAggregator.prototype.log = function (date, p, won, recordTo) {
                     for (var _i = 0, recordTo_2 = recordTo; _i < recordTo_2.length; _i++) {
                         var record = recordTo_2[_i];
                         var id = p.apiPlayer._id;
@@ -913,12 +968,12 @@ System.register("components/aggregators", ["lib/geometry", "lib/plot-data"], fun
                         if (r.push(won ? 1 : 0) > this.nGames)
                             r.shift();
                         var name_4 = p.apiPlayer.firstName + ' ' + p.apiPlayer.lastName;
-                        this.postRating(name_4, this.n, 100 * sum(r) / r.length, record.series);
+                        this.postRating(name_4, date, this.n, 100 * sum(r) / r.length, record.series);
                     }
                 };
                 return RecentWinrateAggregator;
             }(Aggregator));
-            exports_10("RecentWinrateAggregator", RecentWinrateAggregator);
+            exports_11("RecentWinrateAggregator", RecentWinrateAggregator);
             sum = function (a) {
                 return a.reduce(function (a, b) { return a + b; }, 0);
             };
@@ -928,9 +983,9 @@ System.register("components/aggregators", ["lib/geometry", "lib/plot-data"], fun
         }
     };
 });
-System.register("components/score-model", [], function (exports_11, context_11) {
+System.register("components/score-model", [], function (exports_12, context_12) {
     "use strict";
-    var __moduleName = context_11 && context_11.id;
+    var __moduleName = context_12 && context_12.id;
     var getScoreSideModel, getScoreModel;
     return {
         setters: [],
@@ -957,7 +1012,7 @@ System.register("components/score-model", [], function (exports_11, context_11) 
                 };
                 return { score: score, extendedScore: extendedScore, isActive: isActive, setScore: setScore };
             };
-            exports_11("getScoreModel", getScoreModel = function () {
+            exports_12("getScoreModel", getScoreModel = function () {
                 return {
                     red: getScoreSideModel(),
                     blu: getScoreSideModel()
@@ -966,9 +1021,9 @@ System.register("components/score-model", [], function (exports_11, context_11) 
         }
     };
 });
-System.register("components/submitter-model", ["lib/almaz-api", "lib/elo", "components/score-model", "components/game-processor"], function (exports_12, context_12) {
+System.register("components/submitter-model", ["lib/almaz-api", "lib/elo", "components/score-model", "components/game-processor"], function (exports_13, context_13) {
     "use strict";
-    var __moduleName = context_12 && context_12.id;
+    var __moduleName = context_13 && context_13.id;
     var almaz_api_2, elo_2, score_model_1, game_processor_2, getSource, getCurrentTeamModel, getCurrentGameModel, getPendingUploads, setPendingUploads, getSubmitterModel, uniqueNickName, normalizeName, isNullObservable, whenAllNotNull;
     return {
         setters: [
@@ -1042,7 +1097,7 @@ System.register("components/submitter-model", ["lib/almaz-api", "lib/elo", "comp
             setPendingUploads = function (games) {
                 localStorage.setItem('kicker-pending-uploads', JSON.stringify(games));
             };
-            exports_12("getSubmitterModel", getSubmitterModel = function () {
+            exports_13("getSubmitterModel", getSubmitterModel = function () {
                 var url = 'https://foosball-results.herokuapp.com/api/';
                 var api = new almaz_api_2.AlmazApi(url);
                 var apiSource = 'og-source/' + getSource();
@@ -1300,9 +1355,9 @@ System.register("components/submitter-model", ["lib/almaz-api", "lib/elo", "comp
         }
     };
 });
-System.register("lib/color", [], function (exports_13, context_13) {
+System.register("lib/color", [], function (exports_14, context_14) {
     "use strict";
-    var __moduleName = context_13 && context_13.id;
+    var __moduleName = context_14 && context_14.id;
     function hcy2rgb(h, c, y, a) {
         var r = .3;
         var g = .59;
@@ -1332,16 +1387,16 @@ System.register("lib/color", [], function (exports_13, context_13) {
         var rgbdata = [rgb[0] + m, rgb[1] + m, rgb[2] + m];
         return 'rgba(' + (rgbdata[0] * 255).toFixed(0) + ',' + (rgbdata[1] * 255).toFixed(0) + ',' + (rgbdata[2] * 255).toFixed(0) + ', ' + (a || 1) + ')';
     }
-    exports_13("hcy2rgb", hcy2rgb);
+    exports_14("hcy2rgb", hcy2rgb);
     return {
         setters: [],
         execute: function () {
         }
     };
 });
-System.register("lib/view-selector", [], function (exports_14, context_14) {
+System.register("lib/view-selector", [], function (exports_15, context_15) {
     "use strict";
-    var __moduleName = context_14 && context_14.id;
+    var __moduleName = context_15 && context_15.id;
     return {
         setters: [],
         execute: function () {

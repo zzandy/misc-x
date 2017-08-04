@@ -109,7 +109,7 @@ export class Plotter implements IPlotter {
         for (const $break of breaks.x) {
             const x = scale(new Point($break.coord, 0)).x;
 
-            this.ctx.fillStyle = $break.label == '' ? '#333' : '#555';
+            this.ctx.fillStyle = $break.label == '' ? '#222' : '#333';
             this.ctx.fillRect(x | 0 + .5, region.y, 1, region.h);
         }
 
