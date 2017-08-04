@@ -17,7 +17,11 @@
         <div class="cssload-item cssload-moon"></div>
     </div>
 
-    <div data-bind="visible: showData">Game records total: <span data-bind="text: numGamesTotal"></span>, Good game records: <span data-bind="text: numGames"></span></div>
+    <div data-bind="visible: !loading()">Game records total: <span data-bind="text: numGamesTotal"></span>, Good game records: <span data-bind="text: numGames"></span> 
+        <label><input type="checkbox" data-bind="checked: shouldShowData"/>Show Data</label>
+        <select data-bind="value: activeView, options: activeViews"></select>
+        <select data-bind="value: activeSubview, options: activeSubviews"></select>
+    </div>
 
     <table data-bind="visible: showData">
         <thead></thead>

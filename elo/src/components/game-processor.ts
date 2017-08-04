@@ -14,7 +14,9 @@ export interface Game<TPlayer, TTeam extends Team<TPlayer>> {
     red: TTeam;
     blu: TTeam;
     redScore: number;
-    bluScore: number
+    bluScore: number;
+    startDate: Date;
+    endDate: Date;
 }
 
 export class GameProcessor<TPlayer extends Player, TTeam extends Team<TPlayer>, TGame extends Game<TPlayer, TTeam>> {
@@ -78,6 +80,8 @@ export class GameProcessor<TPlayer extends Player, TTeam extends Team<TPlayer>, 
             blu: blu,
             redScore: game.red.score || 0,
             bluScore: game.blue.score || 0,
+            startDate: new Date(game.startDate),
+            endDate: new Date(game.endDate)
         };
 
         this.games.push(this.gameAdapter(gameRecord));
