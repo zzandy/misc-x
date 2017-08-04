@@ -44,13 +44,13 @@ export const getViewerModel = () => {
     const showData = ko.computed(() => !loading() && haveData() && shouldShowData());
     const showCanvas = ko.computed(() => !loading() && haveData());
 
-    const cutoff = addDays(new Date(), -14.5);
+    const cutoff = addDays(new Date(), -21.5);
 
     const aggregators: IAggregator[] = [
         new ScorewiseAggregator(cutoff),
         new BinaryAggregator(cutoff),
         new WinrateAggregator(cutoff),
-        new RecentWinrateAggregator(cutoff, 50)
+        new RecentWinrateAggregator(cutoff, 100)
     ];
 
     const activeView = ko.observable('');

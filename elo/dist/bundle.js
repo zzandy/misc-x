@@ -636,12 +636,12 @@ System.register("components/viewer-model", ["lib/almaz-api", "lib/elo", "compone
                 shouldShowData.subscribe(function (v) { return localStorage.setItem('show-games-table', v.toString()); });
                 var showData = ko.computed(function () { return !loading() && haveData() && shouldShowData(); });
                 var showCanvas = ko.computed(function () { return !loading() && haveData(); });
-                var cutoff = date_1.addDays(new Date(), -14.5);
+                var cutoff = date_1.addDays(new Date(), -21.5);
                 var aggregators = [
                     new aggregators_1.ScorewiseAggregator(cutoff),
                     new aggregators_1.BinaryAggregator(cutoff),
                     new aggregators_1.WinrateAggregator(cutoff),
-                    new aggregators_1.RecentWinrateAggregator(cutoff, 50)
+                    new aggregators_1.RecentWinrateAggregator(cutoff, 100)
                 ];
                 var activeView = ko.observable('');
                 var activeSubview = ko.observable('');
