@@ -586,7 +586,8 @@ System.register("components/viewer-model", ["lib/almaz-api", "lib/elo", "compone
                 var showCanvas = ko.computed(function () { return !loading() && haveData(); });
                 var aggregators = [
                     new aggregators_1.ScorewiseAggregator(),
-                    new aggregators_1.BinaryAggregator()
+                    new aggregators_1.BinaryAggregator(),
+                    new aggregators_1.WinrateAggregator()
                 ];
                 var activeView = ko.observable('');
                 var activeSubview = ko.observable('');
@@ -707,7 +708,7 @@ System.register("components/viewer-model", ["lib/almaz-api", "lib/elo", "compone
 System.register("components/aggregators", ["lib/geometry", "lib/plot-data"], function (exports_10, context_10) {
     "use strict";
     var __moduleName = context_10 && context_10.id;
-    var geometry_3, plot_data_1, RatingAggregator, ScorewiseAggregator, BinaryAggregator, avg;
+    var geometry_3, plot_data_1, Aggregator, RatingAggregator, ScorewiseAggregator, BinaryAggregator, WinrateAggregator, avg;
     return {
         setters: [
             function (geometry_3_1) {
@@ -718,20 +719,17 @@ System.register("components/aggregators", ["lib/geometry", "lib/plot-data"], fun
             }
         ],
         execute: function () {
-            RatingAggregator = (function () {
-                function RatingAggregator(windowName) {
-                    this.ratings = {};
-                    this.ratingso = {};
-                    this.ratingsd = {};
+            Aggregator = (function () {
+                function Aggregator(windowName) {
+                    this.region = new geometry_3.Rect(0, NaN, 0, 0);
                     this.plot = { name: 'all', data: [] };
                     this.plotd = { name: 'def', data: [] };
                     this.ploto = { name: 'off', data: [] };
-                    this.region = new geometry_3.Rect(0, NaN, 0, 0);
-                    this.n = 0;
-                    this.prev = null;
                     this.cc = -1;
                     this.colors = '#f44336;#3f51b5;#8bc34a;#607d8b;#ff5722;#00bcd4;#e91e63;#00b294;#03a9f4;#ffb900;#107c10'.split(';');
                     this.colormap = {};
+                    this.n = 0;
+                    this.prev = null;
                     var that = this;
                     this.window = {
                         name: windowName,
@@ -740,7 +738,28 @@ System.register("components/aggregators", ["lib/geometry", "lib/plot-data"], fun
                         views: [this.plot, this.plotd, this.ploto]
                     };
                 }
-                RatingAggregator.prototype.accomodate = function (p) {
+                Aggregator.prototype.logGame = function (g) {
+                    if (this.prev == null || g.endDate.getDate() != this.prev.getDate()) {
+                        this.window.breaks.x.push(new plot_data_1.Break(g.endDate.toString(), this.n + 1));
+                        this.n += 3;
+                    }
+                    else if (this.prev != null && g.endDate.getTime() - this.prev.getTime() > 30 * 60 * 1000) {
+                        this.window.breaks.x.push(new plot_data_1.Break("", this.n + 1));
+                        this.n += 3;
+                    }
+                    this.prev = g.endDate;
+                    this.logGameImpl(g);
+                    ++this.n;
+                };
+                Aggregator.prototype.autobreak = function () {
+                    var h = (((this.region.h + 15) / 10) | 0) * 10;
+                    var miny = ((this.region.y / 10) | 0) * 10;
+                    for (var i = 0; i <= h; i += 10) {
+                        this.window.breaks.y.push(new plot_data_1.Break((miny + i).toString(), miny + i));
+                    }
+                    this.region = new geometry_3.Rect(this.region.x, miny, this.region.w, h);
+                };
+                Aggregator.prototype.accomodate = function (p) {
                     var r = this.region;
                     var x = r.x;
                     var y = isNaN(r.y) ? p.y : r.y;
@@ -762,27 +781,35 @@ System.register("components/aggregators", ["lib/geometry", "lib/plot-data"], fun
                     }
                     this.region = new geometry_3.Rect(x, y, w, h);
                 };
-                RatingAggregator.prototype.autobreak = function () {
-                    var h = (((this.region.h + 15) / 10) | 0) * 10;
-                    var miny = ((this.region.y / 10) | 0) * 10;
-                    for (var i = 0; i <= h; i += 10) {
-                        this.window.breaks.y.push(new plot_data_1.Break((miny + i).toString(), miny + i));
+                Aggregator.prototype.postRating = function (name, x, y, stream) {
+                    var series = stream.data.filter(function (s) { return s.name == name; })[0];
+                    if (series == undefined) {
+                        series = { name: name, data: [], color: this.getColor(name) };
+                        stream.data.push(series);
                     }
-                    this.region = new geometry_3.Rect(this.region.x, miny, this.region.w, h);
+                    var p = new geometry_3.Point(x, y);
+                    this.accomodate(p);
+                    series.data.unshift(p);
                 };
-                RatingAggregator.prototype.logGame = function (g) {
-                    if (this.prev == null || g.endDate.getDate() != this.prev.getDate()) {
-                        this.window.breaks.x.push(new plot_data_1.Break(g.endDate.toString(), this.n + 1));
-                        this.n += 3;
-                    }
-                    else if (this.prev != null && g.endDate.getTime() - this.prev.getTime() > 30 * 60 * 1000) {
-                        this.window.breaks.x.push(new plot_data_1.Break("", this.n + 1));
-                        this.n += 3;
-                    }
-                    this.prev = g.endDate;
+                Aggregator.prototype.getColor = function (key) {
+                    if (!(key in this.colormap))
+                        this.colormap[key] = this.colors[this.cc = (this.cc + 1) % this.colors.length];
+                    return this.colormap[key];
+                };
+                return Aggregator;
+            }());
+            RatingAggregator = (function (_super) {
+                __extends(RatingAggregator, _super);
+                function RatingAggregator(windowName) {
+                    var _this = _super.call(this, windowName) || this;
+                    _this.ratings = {};
+                    _this.ratingso = {};
+                    _this.ratingsd = {};
+                    return _this;
+                }
+                RatingAggregator.prototype.logGameImpl = function (g) {
                     this.logTeam(g.red);
                     this.logTeam(g.blu);
-                    ++this.n;
                 };
                 RatingAggregator.prototype.logTeam = function (t) {
                     var r = this.getRating(t);
@@ -795,8 +822,8 @@ System.register("components/aggregators", ["lib/geometry", "lib/plot-data"], fun
                     var subratings = isDef ? this.ratingsd : this.ratingso;
                     var rall = avg(this.logRating(key, r, this.ratings));
                     var rsub = avg(this.logRating(key, r, subratings));
-                    this.postRating(name, rall, this.plot);
-                    this.postRating(name, rsub, isDef ? this.plotd : this.ploto);
+                    this.postRating(name, this.n, rall, this.plot);
+                    this.postRating(name, this.n, rsub, isDef ? this.plotd : this.ploto);
                 };
                 RatingAggregator.prototype.logRating = function (id, r, ratings) {
                     if (!(id in ratings))
@@ -804,23 +831,8 @@ System.register("components/aggregators", ["lib/geometry", "lib/plot-data"], fun
                     ratings[id].push(r);
                     return ratings[id];
                 };
-                RatingAggregator.prototype.postRating = function (key, r, stream) {
-                    var series = stream.data.filter(function (s) { return s.name == key; })[0];
-                    if (series == undefined) {
-                        series = { name: key, data: [], color: this.getColor(key) };
-                        stream.data.push(series);
-                    }
-                    var p = new geometry_3.Point(this.n, r);
-                    this.accomodate(p);
-                    series.data.unshift(p);
-                };
-                RatingAggregator.prototype.getColor = function (key) {
-                    if (!(key in this.colormap))
-                        this.colormap[key] = this.colors[this.cc = (this.cc + 1) % this.colors.length];
-                    return this.colormap[key];
-                };
                 return RatingAggregator;
-            }());
+            }(Aggregator));
             ScorewiseAggregator = (function (_super) {
                 __extends(ScorewiseAggregator, _super);
                 function ScorewiseAggregator() {
@@ -843,6 +855,38 @@ System.register("components/aggregators", ["lib/geometry", "lib/plot-data"], fun
                 return BinaryAggregator;
             }(RatingAggregator));
             exports_10("BinaryAggregator", BinaryAggregator);
+            WinrateAggregator = (function (_super) {
+                __extends(WinrateAggregator, _super);
+                function WinrateAggregator() {
+                    var _this = _super.call(this, 'Winrate') || this;
+                    _this.all = {};
+                    _this.off = {};
+                    _this.def = {};
+                    return _this;
+                }
+                WinrateAggregator.prototype.logGameImpl = function (g) {
+                    this.log(g.endDate, g.red.defence, g.redScore > g.bluScore, [{ records: this.all, series: this.plot }, { records: this.def, series: this.plotd }]);
+                    this.log(g.endDate, g.red.offence, g.redScore > g.bluScore, [{ records: this.all, series: this.plot }, { records: this.off, series: this.ploto }]);
+                    this.log(g.endDate, g.blu.defence, g.redScore < g.bluScore, [{ records: this.all, series: this.plot }, { records: this.def, series: this.plotd }]);
+                    this.log(g.endDate, g.blu.offence, g.redScore < g.bluScore, [{ records: this.all, series: this.plot }, { records: this.off, series: this.ploto }]);
+                };
+                WinrateAggregator.prototype.log = function (data, p, won, recordTo) {
+                    for (var _i = 0, recordTo_1 = recordTo; _i < recordTo_1.length; _i++) {
+                        var record = recordTo_1[_i];
+                        var id = p.apiPlayer._id;
+                        if (!(id in record.records))
+                            record.records[id] = { numGames: 0, numWon: 0 };
+                        var r = record.records[id];
+                        r.numGames++;
+                        if (won)
+                            r.numWon++;
+                        var name_3 = p.apiPlayer.firstName + ' ' + p.apiPlayer.lastName;
+                        this.postRating(name_3, this.n, 100 * r.numWon / r.numGames, record.series);
+                    }
+                };
+                return WinrateAggregator;
+            }(Aggregator));
+            exports_10("WinrateAggregator", WinrateAggregator);
             avg = function (a) {
                 return a.length == 0 ? NaN : a.reduce(function (a, b) { return a + b; }) / a.length;
             };

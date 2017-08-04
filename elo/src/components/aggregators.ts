@@ -8,23 +8,21 @@ export interface IAggregator {
     autobreak(): void;
 }
 
-abstract class RatingAggregator implements IAggregator {
-    private readonly ratings: { [id: string]: number[] } = {};
-    private readonly ratingso: { [id: string]: number[] } = {};
-    private readonly ratingsd: { [id: string]: number[] } = {};
-
+abstract class Aggregator implements IAggregator {
     public readonly window: IDataWindow;
+
+    private region: Rect = new Rect(0, NaN, 0, 0);
 
     protected readonly plot: IPlotData = { name: 'all', data: [] }
     protected readonly plotd: IPlotData = { name: 'def', data: [] }
     protected readonly ploto: IPlotData = { name: 'off', data: [] }
-    private region: Rect = new Rect(0, NaN, 0, 0);
 
-    private n: number = 0;
-    private prev: Date | null = null;
     private cc = -1;
     private colors = '#f44336;#3f51b5;#8bc34a;#607d8b;#ff5722;#00bcd4;#e91e63;#00b294;#03a9f4;#ffb900;#107c10'.split(';');
     private colormap: { [key: string]: string } = {};
+
+    protected n: number = 0;
+    private prev: Date | null = null;
 
     protected constructor(windowName: string) {
         const that = this;
@@ -36,7 +34,37 @@ abstract class RatingAggregator implements IAggregator {
         };
     }
 
-    private accomodate(p: Point) {
+    protected abstract logGameImpl(g: StatGame): void;
+
+    public logGame(g: StatGame): void {
+        if (this.prev == null || g.endDate.getDate() != this.prev.getDate()) {
+            this.window.breaks.x.push(new Break(g.endDate.toString(), this.n + 1))
+            this.n += 3;
+        }
+        else if (this.prev != null && g.endDate.getTime() - this.prev.getTime() > 30 * 60 * 1000) {
+            this.window.breaks.x.push(new Break("", this.n + 1))
+            this.n += 3;
+        }
+
+        this.prev = g.endDate;
+
+        this.logGameImpl(g);
+
+        ++this.n;
+    }
+
+    public autobreak(): void {
+        const h = (((this.region.h + 15) / 10) | 0) * 10;
+        const miny = ((this.region.y / 10) | 0) * 10;
+
+        for (let i = 0; i <= h; i += 10) {
+            this.window.breaks.y.push(new Break((miny + i).toString(), miny + i));
+        }
+
+        this.region = new Rect(this.region.x, miny, this.region.w, h);
+    }
+
+    protected accomodate(p: Point) {
         const r = this.region;
 
         let x = r.x;
@@ -63,33 +91,43 @@ abstract class RatingAggregator implements IAggregator {
         this.region = new Rect(x, y, w, h);
     }
 
-    public autobreak(): void {
-        const h = (((this.region.h + 15) / 10) | 0) * 10;
-        const miny = ((this.region.y / 10) | 0) * 10;
+    protected postRating(name: string, x: number, y: number, stream: IPlotData) {
+        let series = stream.data.filter(s => s.name == name)[0];
 
-        for (let i = 0; i <= h; i += 10) {
-            this.window.breaks.y.push(new Break((miny + i).toString(), miny + i));
+        if (series == undefined) {
+            series = { name: name, data: [], color: this.getColor(name) };
+            stream.data.push(series);
         }
 
-        this.region = new Rect(this.region.x, miny, this.region.w, h);
+        const p = new Point(x, y);
+        this.accomodate(p);
+        series.data.unshift(p)
     }
 
-    public logGame(g: StatGame): void {
-        if (this.prev == null || g.endDate.getDate() != this.prev.getDate()) {
-            this.window.breaks.x.push(new Break(g.endDate.toString(), this.n + 1))
-            this.n += 3;
-        }
-        else if (this.prev != null && g.endDate.getTime() - this.prev.getTime() > 30 * 60 * 1000) {
-            this.window.breaks.x.push(new Break("", this.n + 1))
-            this.n += 3;
-        }
 
-        this.prev = g.endDate;
+    private getColor(key: string): string {
+        if (!(key in this.colormap))
+            this.colormap[key] = this.colors[this.cc = (this.cc + 1) % this.colors.length];
 
+        return this.colormap[key];
+    }
+}
+
+abstract class RatingAggregator extends Aggregator {
+    private readonly ratings: { [id: string]: number[] } = {};
+    private readonly ratingso: { [id: string]: number[] } = {};
+    private readonly ratingsd: { [id: string]: number[] } = {};
+
+
+
+
+    constructor(windowName: string) {
+        super(windowName);
+    }
+
+    protected logGameImpl(g: StatGame): void {
         this.logTeam(g.red);
         this.logTeam(g.blu);
-
-        ++this.n;
     }
 
     private logTeam(t: StatTeam): void {
@@ -107,8 +145,8 @@ abstract class RatingAggregator implements IAggregator {
         const rall = avg(this.logRating(key, r, this.ratings));
         const rsub = avg(this.logRating(key, r, subratings));
 
-        this.postRating(name, rall, this.plot);
-        this.postRating(name, rsub, isDef ? this.plotd : this.ploto);
+        this.postRating(name, this.n, rall, this.plot);
+        this.postRating(name, this.n, rsub, isDef ? this.plotd : this.ploto);
     }
 
     private logRating(id: string, r: number, ratings: { [id: string]: number[] }) {
@@ -119,29 +157,9 @@ abstract class RatingAggregator implements IAggregator {
         return ratings[id];
     }
 
-    private postRating(key: string, r: number, stream: IPlotData) {
-        let series = stream.data.filter(s => s.name == key)[0];
-
-        if (series == undefined) {
-            series = { name: key, data: [], color: this.getColor(key) };
-            stream.data.push(series);
-        }
-
-        const p = new Point(this.n, r);
-        this.accomodate(p);
-        series.data.unshift(p)
-    }
-
-    private getColor(key: string): string {
-        if (!(key in this.colormap))
-            this.colormap[key] = this.colors[this.cc = (this.cc + 1) % this.colors.length];
-
-        return this.colormap[key];
-    }
 
     protected abstract getRating(t: StatTeam): number;
 }
-
 
 export class ScorewiseAggregator extends RatingAggregator {
     constructor() {
@@ -161,6 +179,43 @@ export class BinaryAggregator extends RatingAggregator {
     protected getRating(t: StatTeam): number {
         return t.ratings.binary.score;
     }
+}
+
+type record = { numGames: number, numWon: number };
+type recordMap = { [id: string]: record }
+
+export class WinrateAggregator extends Aggregator {
+    private readonly all: recordMap = {};
+    private readonly off: recordMap = {};
+    private readonly def: recordMap = {};
+
+    constructor() {
+        super('Winrate');
+    }
+
+    protected logGameImpl(g: StatGame): void {
+        this.log(g.endDate, g.red.defence, g.redScore > g.bluScore, [{ records: this.all, series: this.plot }, { records: this.def, series: this.plotd }]);
+        this.log(g.endDate, g.red.offence, g.redScore > g.bluScore, [{ records: this.all, series: this.plot }, { records: this.off, series: this.ploto }]);
+        this.log(g.endDate, g.blu.defence, g.redScore < g.bluScore, [{ records: this.all, series: this.plot }, { records: this.def, series: this.plotd }]);
+        this.log(g.endDate, g.blu.offence, g.redScore < g.bluScore, [{ records: this.all, series: this.plot }, { records: this.off, series: this.ploto }]);
+    }
+
+    private log(data: Date, p: StatPlayer, won: boolean, recordTo: { records: recordMap, series: IPlotData }[]) {
+        for (const record of recordTo) {
+            const id = p.apiPlayer._id;
+            if (!(id in record.records))
+                record.records[id] = { numGames: 0, numWon: 0 };
+
+            const r = record.records[id];
+            r.numGames++;
+            if (won)
+                r.numWon++;
+            const name = p.apiPlayer.firstName + ' ' + p.apiPlayer.lastName;
+
+            this.postRating(name, this.n, 100 * r.numWon / r.numGames, record.series);
+        }
+    }
+
 }
 
 const avg = (a: number[]): number => {

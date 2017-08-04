@@ -3,7 +3,7 @@
 import { AlmazApi, ApiPlayer, ApiTeam, ApiGame } from '../lib/almaz-api';
 import { Elo, EloPlayer } from '../lib/elo';
 import { GameProcessor, Player, Team, Game } from './game-processor';
-import { IAggregator, ScorewiseAggregator, BinaryAggregator } from './aggregators';
+import { IAggregator, ScorewiseAggregator, BinaryAggregator, WinrateAggregator } from './aggregators';
 import { Rect } from '../lib/geometry';
 import { Plotter } from '../lib/plotter';
 import { fullscreenCanvas } from '../lib/canvas';
@@ -45,7 +45,8 @@ export const getViewerModel = () => {
 
     const aggregators: IAggregator[] = [
         new ScorewiseAggregator(),
-        new BinaryAggregator()
+        new BinaryAggregator(),
+        new WinrateAggregator()
     ];
 
     const activeView = ko.observable('');
