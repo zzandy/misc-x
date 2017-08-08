@@ -8,6 +8,16 @@ button,
 select {
   font-size: 1.5cm;
 }
+body.data {
+  font-size: .4cm;
+}
+body.data button,
+body.data select {
+  font-size: .4cm;
+}
+table {
+  border-spacing: 1px;
+}
 button,
 select {
   border-radius: .2em;
@@ -36,6 +46,12 @@ button:disabled {
 .red select {
   color: #ffe5e5;
 }
+.red.winner {
+  background: #ff1a1a;
+}
+.red.winner.sour {
+  background: #7d6812;
+}
 .blu {
   background-color: #0055cc;
   color: #e5f0ff;
@@ -49,6 +65,12 @@ button:disabled {
 .blu button,
 .blu select {
   color: #e5f0ff;
+}
+.blu.winner {
+  background: #3388ff;
+}
+.blu.winner.sour {
+  background: #5a793b;
 }
 .row {
   display: flex;

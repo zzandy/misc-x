@@ -8,47 +8,91 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-System.register("components/score-model", [], function (exports_1, context_1) {
+System.register("lib/geometry", [], function (exports_1, context_1) {
     "use strict";
     var __moduleName = context_1 && context_1.id;
-    var getScoreSideModel, getScoreModel;
+    var Point, Rect, Range;
     return {
         setters: [],
         execute: function () {
-            getScoreSideModel = function () {
-                var score = ko.observable(null);
-                var extendedScore = ko.computed({
-                    read: function () {
-                        var v = score();
-                        return v != null && v > 3 ? v : 'more';
+            Point = (function () {
+                function Point(x, y) {
+                    this.x = x;
+                    this.y = y;
+                }
+                return Point;
+            }());
+            exports_1("Point", Point);
+            Rect = (function (_super) {
+                __extends(Rect, _super);
+                function Rect(x, y, w, h) {
+                    var _this = _super.call(this, x, y) || this;
+                    _this.w = w;
+                    _this.h = h;
+                    return _this;
+                }
+                Object.defineProperty(Rect.prototype, "horizontal", {
+                    get: function () {
+                        return new Range(this.x, this.w);
                     },
-                    write: function (value) {
-                        if (typeof (value) === 'number')
-                            score(value);
-                        else
-                            score(null);
-                    }
+                    enumerable: true,
+                    configurable: true
                 });
-                var isActive = function (n) {
-                    return score() == n;
-                };
-                var setScore = function (n) {
-                    score(n);
-                };
-                return { score: score, extendedScore: extendedScore, isActive: isActive, setScore: setScore };
-            };
-            exports_1("getScoreModel", getScoreModel = function () {
-                return {
-                    red: getScoreSideModel(),
-                    blu: getScoreSideModel()
-                };
-            });
+                Object.defineProperty(Rect.prototype, "vertical", {
+                    get: function () {
+                        return new Range(this.y, this.h);
+                    },
+                    enumerable: true,
+                    configurable: true
+                });
+                return Rect;
+            }(Point));
+            exports_1("Rect", Rect);
+            Range = (function () {
+                function Range(start, length) {
+                    this.start = start;
+                    this.length = length;
+                }
+                Object.defineProperty(Range.prototype, "end", {
+                    get: function () {
+                        return this.start + this.length;
+                    },
+                    enumerable: true,
+                    configurable: true
+                });
+                return Range;
+            }());
+            exports_1("Range", Range);
         }
     };
 });
-System.register("lib/ajax", [], function (exports_2, context_2) {
+System.register("lib/plot-data", [], function (exports_2, context_2) {
     "use strict";
     var __moduleName = context_2 && context_2.id;
+    var Break, IDataWindow;
+    return {
+        setters: [],
+        execute: function () {
+            Break = (function () {
+                function Break(label, coord) {
+                    this.label = label;
+                    this.coord = coord;
+                }
+                return Break;
+            }());
+            exports_2("Break", Break);
+            IDataWindow = (function () {
+                function IDataWindow() {
+                }
+                return IDataWindow;
+            }());
+            exports_2("IDataWindow", IDataWindow);
+        }
+    };
+});
+System.register("lib/ajax", [], function (exports_3, context_3) {
+    "use strict";
+    var __moduleName = context_3 && context_3.id;
     function request(verb, url, data) {
         if (data === void 0) { data = null; }
         return new Promise(function (resolve, reject) {
@@ -71,24 +115,24 @@ System.register("lib/ajax", [], function (exports_2, context_2) {
                 http.send(null);
         });
     }
-    exports_2("request", request);
+    exports_3("request", request);
     function postJson(url, data) {
         return request('POST', url, data);
     }
-    exports_2("postJson", postJson);
+    exports_3("postJson", postJson);
     function getJson(url) {
         return request('GET', url);
     }
-    exports_2("getJson", getJson);
+    exports_3("getJson", getJson);
     return {
         setters: [],
         execute: function () {
         }
     };
 });
-System.register("lib/almaz-api", ["lib/ajax"], function (exports_3, context_3) {
+System.register("lib/almaz-api", ["lib/ajax"], function (exports_4, context_4) {
     "use strict";
-    var __moduleName = context_3 && context_3.id;
+    var __moduleName = context_4 && context_4.id;
     var ajax_1, ApiPlayer, ApiTeam, ApiGame, AlmazApi;
     return {
         setters: [
@@ -102,19 +146,19 @@ System.register("lib/almaz-api", ["lib/ajax"], function (exports_3, context_3) {
                 }
                 return ApiPlayer;
             }());
-            exports_3("ApiPlayer", ApiPlayer);
+            exports_4("ApiPlayer", ApiPlayer);
             ApiTeam = (function () {
                 function ApiTeam() {
                 }
                 return ApiTeam;
             }());
-            exports_3("ApiTeam", ApiTeam);
+            exports_4("ApiTeam", ApiTeam);
             ApiGame = (function () {
                 function ApiGame() {
                 }
                 return ApiGame;
             }());
-            exports_3("ApiGame", ApiGame);
+            exports_4("ApiGame", ApiGame);
             AlmazApi = (function () {
                 function AlmazApi(baseUrl) {
                     var state = { url: baseUrl, players: [] };
@@ -165,13 +209,13 @@ System.register("lib/almaz-api", ["lib/ajax"], function (exports_3, context_3) {
                 };
                 return AlmazApi;
             }());
-            exports_3("AlmazApi", AlmazApi);
+            exports_4("AlmazApi", AlmazApi);
         }
     };
 });
-System.register("lib/elo", [], function (exports_4, context_4) {
+System.register("lib/elo", [], function (exports_5, context_5) {
     "use strict";
-    var __moduleName = context_4 && context_4.id;
+    var __moduleName = context_5 && context_5.id;
     var EloPlayer, Elo;
     return {
         setters: [],
@@ -187,7 +231,7 @@ System.register("lib/elo", [], function (exports_4, context_4) {
                 }
                 return EloPlayer;
             }());
-            exports_4("EloPlayer", EloPlayer);
+            exports_5("EloPlayer", EloPlayer);
             Elo = (function () {
                 function Elo(x10diff, kFactor) {
                     if (x10diff === void 0) { x10diff = 400; }
@@ -215,14 +259,341 @@ System.register("lib/elo", [], function (exports_4, context_4) {
                 };
                 return Elo;
             }());
-            exports_4("Elo", Elo);
+            exports_5("Elo", Elo);
         }
     };
 });
-System.register("components/submitter-model", ["lib/almaz-api", "lib/elo", "components/score-model"], function (exports_5, context_5) {
+System.register("components/game-processor", [], function (exports_6, context_6) {
     "use strict";
-    var __moduleName = context_5 && context_5.id;
-    var almaz_api_1, elo_1, score_model_1, getSource, getCurrentTeamModel, getCurrentGameModel, getPendingUploads, setPendingUploads, getSubmitterModel, byEndDate, removeDuplicates, areDuplicates, teamEqual, removeStagingData, uniqueNickName, normalizeName, isNullObservable, whenAllNotNull;
+    var __moduleName = context_6 && context_6.id;
+    var GameProcessor, byEndDate, removeDuplicates, areDuplicates, teamEqual, removeStagingData;
+    return {
+        setters: [],
+        execute: function () {
+            GameProcessor = (function () {
+                function GameProcessor(playerAdapter, teamAdapter, gameAdapter) {
+                    this.playerAdapter = playerAdapter;
+                    this.teamAdapter = teamAdapter;
+                    this.gameAdapter = gameAdapter;
+                    this.games = [];
+                    this.teams = [];
+                    this.players = [];
+                }
+                Object.defineProperty(GameProcessor.prototype, "numGames", {
+                    get: function () { return this.games.length; },
+                    enumerable: true,
+                    configurable: true
+                });
+                ;
+                GameProcessor.prototype.findPlayer = function (player) {
+                    var p = this.players.filter(function (p) { return p.apiPlayer._id == player._id; })[0];
+                    if (p === undefined) {
+                        p = this.playerAdapter({ apiPlayer: player });
+                        this.players.push(p);
+                    }
+                    return p;
+                };
+                GameProcessor.prototype.findTeam = function (defence, offence) {
+                    var matches = this.teams.filter(function (t) { return t.defence == defence && t.offence == offence; });
+                    if (matches.length == 0) {
+                        var team = {
+                            defence: defence,
+                            offence: offence,
+                        };
+                        var record = this.teamAdapter(team);
+                        this.teams.push(record);
+                        return record;
+                    }
+                    else {
+                        return matches[0];
+                    }
+                };
+                GameProcessor.prototype.findGames = function (team) {
+                    return this.games.filter(function (g) { return g.blu == team || g.red == team; });
+                };
+                ;
+                GameProcessor.prototype.findMutualGames = function (a, b) {
+                    return this.games.filter(function (g) { return (g.blu == a && g.red == b) || (g.blu == b && g.red == a); });
+                };
+                ;
+                GameProcessor.prototype.processGames = function (games) {
+                    games.sort(byEndDate)
+                        .filter(removeStagingData)
+                        .filter(removeDuplicates)
+                        .forEach(this.logGame.bind(this));
+                };
+                GameProcessor.prototype.logGame = function (game) {
+                    var red = this.findTeam(this.findPlayer(game.red.defense), this.findPlayer(game.red.offense));
+                    var blu = this.findTeam(this.findPlayer(game.blue.defense), this.findPlayer(game.blue.offense));
+                    var gameRecord = {
+                        red: red,
+                        blu: blu,
+                        redScore: game.red.score || 0,
+                        bluScore: game.blue.score || 0,
+                        startDate: new Date(game.startDate),
+                        endDate: new Date(game.endDate)
+                    };
+                    this.games.push(this.gameAdapter(gameRecord));
+                };
+                ;
+                return GameProcessor;
+            }());
+            exports_6("GameProcessor", GameProcessor);
+            byEndDate = function (a, b) {
+                return new Date(a.endDate).getTime() - new Date(b.endDate).getTime();
+            };
+            removeDuplicates = function (game, i, a) {
+                return i == 0 || !areDuplicates(game, a[i - 1]);
+            };
+            areDuplicates = function (a, b) {
+                var diff = Math.abs(new Date(a.endDate).getTime() - new Date(b.endDate).getTime());
+                return diff < 120000 && ((teamEqual(a.red, b.red) && teamEqual(a.blue, b.blue)) || (teamEqual(a.red, b.blue) && teamEqual(a.blue, b.red)));
+            };
+            teamEqual = function (a, b) {
+                return a.score == b.score && a.defense._id == b.defense._id && a.offense._id == b.offense._id;
+            };
+            removeStagingData = function (game) {
+                return 'source' in game && game.source.indexOf('staging') == -1;
+            };
+        }
+    };
+});
+System.register("lib/canvas", [], function (exports_7, context_7) {
+    "use strict";
+    var __moduleName = context_7 && context_7.id;
+    function fullscreenCanvas(relative) {
+        var c = document.createElement('canvas');
+        var ctx = c.getContext('2d');
+        if (ctx == null)
+            throw new Error('failed to get \'2d\' context');
+        ctx.canvas.width = window.innerWidth;
+        ctx.canvas.height = window.innerHeight;
+        if (!relative) {
+            ctx.canvas.style.position = 'absolute';
+            ctx.canvas.style.top = '0';
+            ctx.canvas.style.left = '0';
+        }
+        ctx.clear = function () {
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+            return ctx;
+        };
+        ctx.makePath = function (vertices) {
+            ctx.beginPath();
+            ctx.moveTo(vertices[0], vertices[1]);
+            for (var i = 2; i < vertices.length; i += 2) {
+                ctx.lineTo(vertices[i], vertices[i + 1]);
+            }
+            ctx.closePath();
+            return ctx;
+        };
+        ctx.strokeCircle = function (x, y, r) {
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, 2 * Math.PI, true);
+            ctx.closePath();
+            ctx.stroke();
+            return ctx;
+        };
+        ctx.fillCircle = function (x, y, r) {
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, 2 * Math.PI, true);
+            ctx.closePath();
+            ctx.fill();
+            return ctx;
+        };
+        document.body.appendChild(c);
+        return ctx;
+    }
+    exports_7("fullscreenCanvas", fullscreenCanvas);
+    return {
+        setters: [],
+        execute: function () {
+        }
+    };
+});
+System.register("lib/plotter", ["lib/geometry"], function (exports_8, context_8) {
+    "use strict";
+    var __moduleName = context_8 && context_8.id;
+    function last(array) {
+        return array[array.length - 1];
+    }
+    exports_8("last", last);
+    var geometry_1, Plotter;
+    return {
+        setters: [
+            function (geometry_1_1) {
+                geometry_1 = geometry_1_1;
+            }
+        ],
+        execute: function () {
+            Plotter = (function () {
+                function Plotter(ctx, region) {
+                    this.ctx = ctx;
+                    this.region = region;
+                }
+                Plotter.prototype.render = function (data, viewName) {
+                    var view = data.views.filter(function (v) { return v.name == viewName; })[0];
+                    if (view === undefined)
+                        throw new Error("View " + viewName + " not found");
+                    var labels = view.data.map(function (s) { return s.name; });
+                    this.ctx.font = '10pt Segoe UI';
+                    var axisLabels = Plotter.getMaxTextWidth(this.ctx, data.breaks.y.map(function (b) { return b.label; })) + 2;
+                    this.ctx.font = '12pt Segoe UI';
+                    var labelWidth = Plotter.getMaxTextWidth(this.ctx, labels) + 5;
+                    var region = new geometry_1.Rect(this.region.x + axisLabels, this.region.y - 30, this.region.w - labelWidth - axisLabels, this.region.h + 30);
+                    var scale = Plotter.getScale(region, data.window);
+                    var labelPos = view.data.map(function (s) { return { text: s.name, pos: scale(new geometry_1.Point(0, s.data[0].y)).y, color: s.color }; });
+                    Plotter.adjustLabelPositions(20, labelPos);
+                    this.ctx.fillStyle = 'silver';
+                    this.placeLabels(axisLabels + region.x + region.w + 2, labelPos);
+                    this.drawBreaks(data.breaks, region, scale, axisLabels);
+                    this.plotData(scale, view);
+                };
+                Plotter.getScale = function (screen, world) {
+                    var ws = screen.horizontal.length;
+                    var hs = screen.vertical.length;
+                    var ww = world.horizontal.length;
+                    var hw = world.vertical.length;
+                    var sx = ws / ww;
+                    var sy = hs / hw;
+                    return function (coords) {
+                        var wx = coords.x - world.horizontal.start;
+                        var wy = coords.y - world.vertical.start;
+                        return new geometry_1.Point(screen.horizontal.start + sx * wx, screen.vertical.start + sy * wy);
+                    };
+                };
+                Plotter.getMaxTextWidth = function (ctx, labels) {
+                    var res = 0;
+                    for (var _i = 0, labels_1 = labels; _i < labels_1.length; _i++) {
+                        var label = labels_1[_i];
+                        var w = ctx.measureText(label).width;
+                        res = Math.max(res, w);
+                    }
+                    return res;
+                };
+                Plotter.adjustLabelPositions = function (height, labels) {
+                    labels.sort(function (a, b) { return a.pos - b.pos; });
+                    var overlap = true;
+                    var retries = 0;
+                    while (retries < 10 && overlap) {
+                        overlap = false;
+                        ++retries;
+                        var last_1 = labels[0];
+                        for (var _i = 0, labels_2 = labels; _i < labels_2.length; _i++) {
+                            var next = labels_2[_i];
+                            if (last_1 == next)
+                                continue;
+                            var gap = next.pos - last_1.pos;
+                            if (gap < height) {
+                                last_1.pos -= (height - gap) / 2;
+                                next.pos += (height - gap) / 2;
+                                overlap = true;
+                            }
+                            last_1 = next;
+                        }
+                    }
+                };
+                Plotter.prototype.placeLabels = function (offset, labels) {
+                    for (var _i = 0, labels_3 = labels; _i < labels_3.length; _i++) {
+                        var label = labels_3[_i];
+                        this.ctx.fillStyle = label.color;
+                        this.ctx.fillText(label.text, offset, label.pos);
+                    }
+                };
+                Plotter.prototype.drawBreaks = function (breaks, region, scale, pad) {
+                    this.ctx.font = '10pt Segoe UI';
+                    for (var _i = 0, _a = breaks.x; _i < _a.length; _i++) {
+                        var $break = _a[_i];
+                        var x = scale(new geometry_1.Point($break.coord, 0)).x;
+                        this.ctx.fillStyle = $break.label == '' ? '#222' : '#333';
+                        this.ctx.fillRect(x | 0 + .5, region.y, 1, region.h);
+                    }
+                    for (var _b = 0, _c = breaks.y; _b < _c.length; _b++) {
+                        var $break = _c[_b];
+                        var y = scale(new geometry_1.Point(0, $break.coord)).y;
+                        this.ctx.fillStyle = 'silver';
+                        this.ctx.fillRect(region.x, y | 0 + .5, region.w, 1);
+                        this.ctx.fillText($break.label, region.x - pad, y + 5);
+                    }
+                };
+                Plotter.prototype.plotData = function (scale, view) {
+                    for (var _i = 0, _a = view.data; _i < _a.length; _i++) {
+                        var series = _a[_i];
+                        this.ctx.fillStyle = series.color;
+                        this.ctx.strokeStyle = series.color;
+                        var prev = null;
+                        for (var _b = 0, _c = series.data; _b < _c.length; _b++) {
+                            var point = _c[_b];
+                            var p = scale(point);
+                            this.ctx.fillCircle(p.x, p.y, 1.7);
+                            if (prev !== null) {
+                                this.ctx.beginPath();
+                                this.ctx.moveTo(prev.x, prev.y);
+                                this.ctx.lineTo(p.x, p.y);
+                                this.ctx.stroke();
+                            }
+                            prev = p;
+                        }
+                    }
+                };
+                return Plotter;
+            }());
+            exports_8("Plotter", Plotter);
+        }
+    };
+});
+System.register("components/date", [], function (exports_9, context_9) {
+    "use strict";
+    var __moduleName = context_9 && context_9.id;
+    var formatTimespan, formatDate, zf, getMonday, addDays;
+    return {
+        setters: [],
+        execute: function () {
+            formatTimespan = function (ts, inclMs) {
+                var s = 1000;
+                var m = 60 * s;
+                var h = 60 * m;
+                var d = 24 * h;
+                var days = ts / d | 0;
+                ts -= days * d;
+                var hours = ts / h | 0;
+                ts -= hours * h;
+                var minutes = ts / m | 0;
+                ts -= minutes * m;
+                var seconds = ts / s | 0;
+                ts -= seconds * s;
+                var repr = [zf(hours, 2), zf(minutes, 2), zf(seconds, 2)].join(':');
+                if (days > 0)
+                    repr = days + '.' + repr;
+                if (inclMs)
+                    repr = repr + '.' + zf(ts, 3);
+                return repr;
+            };
+            formatDate = function (date) {
+                var day = 'Sun,Mon,Tue,Wed,Thu,Fri,Sat'.split(',');
+                return day[date.getDay()] + ', ' + date.getFullYear() + '-' + zf(date.getMonth() + 1, 2) + '-' + zf(date.getDate(), 2);
+            };
+            zf = function (v, w) {
+                var val = v.toString();
+                if (val.length < w)
+                    val = new Array(w - val.length + 1).join('0') + val;
+                return val;
+            };
+            getMonday = function (date) {
+                if (date === void 0) { date = new Date(); }
+                var today = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                var monday = addDays(today, -Math.abs(today.getDay() - 1));
+                return monday;
+            };
+            exports_9("addDays", addDays = function (date, days) {
+                return new Date(date.getTime() + days * 24 * 60 * 60 * 1000);
+            });
+        }
+    };
+});
+System.register("components/viewer-model", ["lib/almaz-api", "lib/elo", "components/game-processor", "components/aggregators", "lib/geometry", "lib/plotter", "lib/canvas", "components/date"], function (exports_10, context_10) {
+    "use strict";
+    var __moduleName = context_10 && context_10.id;
+    var almaz_api_1, elo_1, game_processor_1, aggregators_1, geometry_2, plotter_1, canvas_1, date_1, getViewerModel;
     return {
         setters: [
             function (almaz_api_1_1) {
@@ -231,8 +602,442 @@ System.register("components/submitter-model", ["lib/almaz-api", "lib/elo", "comp
             function (elo_1_1) {
                 elo_1 = elo_1_1;
             },
+            function (game_processor_1_1) {
+                game_processor_1 = game_processor_1_1;
+            },
+            function (aggregators_1_1) {
+                aggregators_1 = aggregators_1_1;
+            },
+            function (geometry_2_1) {
+                geometry_2 = geometry_2_1;
+            },
+            function (plotter_1_1) {
+                plotter_1 = plotter_1_1;
+            },
+            function (canvas_1_1) {
+                canvas_1 = canvas_1_1;
+            },
+            function (date_1_1) {
+                date_1 = date_1_1;
+            }
+        ],
+        execute: function () {
+            exports_10("getViewerModel", getViewerModel = function () {
+                var loading = ko.observable(true);
+                var ctx = canvas_1.fullscreenCanvas(true);
+                ctx.canvas.width -= 10;
+                ctx.canvas.height -= 10;
+                var games = ko.observableArray([]);
+                var haveData = ko.computed(function () { return games().length > 0; });
+                var shouldShowData = ko.observable((function () {
+                    var v = localStorage.getItem('show-games-table');
+                    return v === undefined || v == 'true';
+                })());
+                shouldShowData.subscribe(function (v) { return localStorage.setItem('show-games-table', v.toString()); });
+                var showData = ko.computed(function () { return !loading() && haveData() && shouldShowData(); });
+                var showCanvas = ko.computed(function () { return !loading() && haveData(); });
+                var cutoff = date_1.addDays(new Date(), -21.5);
+                var aggregators = [
+                    new aggregators_1.ScorewiseAggregator(cutoff),
+                    new aggregators_1.BinaryAggregator(cutoff),
+                    new aggregators_1.WinrateAggregator(cutoff),
+                    new aggregators_1.RecentWinrateAggregator(cutoff, 100)
+                ];
+                var activeView = ko.observable('');
+                var activeSubview = ko.observable('');
+                var activeViews = ko.observableArray([]);
+                var activeSubviews = ko.observableArray([]);
+                activeSubviews.subscribe(function (v) { activeSubview(v[0]); render(); });
+                activeViews.subscribe(function (v) { activeView(v[0]); });
+                activeView.subscribe(function (v) {
+                    var activeAggregator = aggregators.filter(function (a) { return a.window.name == v; })[0];
+                    if (activeAggregator !== undefined) {
+                        activeSubviews(activeAggregator.window.views.map(function (v) { return v.name; }));
+                        render();
+                    }
+                });
+                activeSubview.subscribe(function (v) { return render(); });
+                activeViews(aggregators.map(function (a) { return a.window.name; }));
+                var numGames = ko.observable('...');
+                var numGamesTotal = ko.observable('...');
+                var url = 'https://foosball-results.herokuapp.com/api/';
+                var api = new almaz_api_1.AlmazApi(url);
+                var newPlayer = function (player) {
+                    return {
+                        apiPlayer: player.apiPlayer,
+                        games: []
+                    };
+                };
+                var elo = new elo_1.Elo();
+                var elos = {
+                    binary: function (p1, p2, s1, s2) {
+                        var b1 = p1.score;
+                        var b2 = p2.score;
+                        elo.game(p1, p2, s1 > s2 ? 1 : 0, s1 < s2 ? 1 : 0);
+                        return [p1.score - b1, p2.score - b2];
+                    },
+                    scorewise: function (p1, p2, s1, s2) {
+                        var b1 = p1.score;
+                        var b2 = p2.score;
+                        elo.game(p1, p2, s1, s2);
+                        return [p1.score - b1, p2.score - b2];
+                    }
+                };
+                var newTeam = function (team) {
+                    var ratings = {};
+                    for (var name_1 in elos) {
+                        ratings[name_1] = new elo_1.EloPlayer();
+                    }
+                    return {
+                        defence: team.defence,
+                        offence: team.offence,
+                        ratings: ratings
+                    };
+                };
+                var newGame = function (game) {
+                    var redDeltas = {};
+                    var bluDeltas = {};
+                    for (var name_2 in elos) {
+                        var fn = elos[name_2];
+                        var deltas = fn(game.red.ratings[name_2], game.blu.ratings[name_2], game.redScore, game.bluScore);
+                        redDeltas[name_2] = deltas[0];
+                        bluDeltas[name_2] = deltas[1];
+                    }
+                    var g = {
+                        red: game.red,
+                        blu: game.blu,
+                        redScore: game.redScore,
+                        bluScore: game.bluScore,
+                        redDeltas: redDeltas,
+                        bluDeltas: bluDeltas,
+                        startDate: game.startDate,
+                        endDate: game.endDate
+                    };
+                    game.red.defence.games.push(g);
+                    game.red.offence.games.push(g);
+                    game.blu.defence.games.push(g);
+                    game.blu.offence.games.push(g);
+                    aggregators.forEach(function (a) { return a.logGame(g); });
+                    return g;
+                };
+                var gp = new game_processor_1.GameProcessor(newPlayer, newTeam, newGame);
+                api.getGames("").then(loadGames);
+                function loadGames(data) {
+                    numGamesTotal(data.length);
+                    gp.processGames(data);
+                    numGames(gp.numGames);
+                    games(gp.games);
+                    loading(false);
+                    aggregators.forEach(function (a) { return a.autobreak(); });
+                    render();
+                }
+                function render() {
+                    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                    var r = new geometry_2.Rect(5, ctx.canvas.height - 5, ctx.canvas.width - 10, -ctx.canvas.height + 10);
+                    var p = new plotter_1.Plotter(ctx, r);
+                    var activeAggregator = aggregators.filter(function (a) { return a.window.name == activeView(); })[0];
+                    if (activeAggregator !== undefined)
+                        p.render(activeAggregator.window, activeSubview());
+                }
+                return {
+                    loading: loading,
+                    haveData: haveData,
+                    shouldShowData: shouldShowData,
+                    showData: showData,
+                    showCanvas: showCanvas,
+                    games: games,
+                    numGames: numGames,
+                    numGamesTotal: numGamesTotal,
+                    activeView: activeView,
+                    activeSubview: activeSubview,
+                    activeViews: activeViews,
+                    activeSubviews: activeSubviews
+                };
+            });
+        }
+    };
+});
+System.register("components/aggregators", ["lib/geometry", "lib/plot-data"], function (exports_11, context_11) {
+    "use strict";
+    var __moduleName = context_11 && context_11.id;
+    var geometry_3, plot_data_1, Aggregator, RatingAggregator, ScorewiseAggregator, BinaryAggregator, WinrateAggregator, RecentWinrateAggregator, sum, avg;
+    return {
+        setters: [
+            function (geometry_3_1) {
+                geometry_3 = geometry_3_1;
+            },
+            function (plot_data_1_1) {
+                plot_data_1 = plot_data_1_1;
+            }
+        ],
+        execute: function () {
+            Aggregator = (function () {
+                function Aggregator(cutoff, windowName) {
+                    this.cutoff = cutoff;
+                    this.region = new geometry_3.Rect(NaN, NaN, 0, 0);
+                    this.plot = { name: 'all', data: [] };
+                    this.plotd = { name: 'def', data: [] };
+                    this.ploto = { name: 'off', data: [] };
+                    this.cc = -1;
+                    this.colors = '#f44336;#3f51b5;#8bc34a;#607d8b;#ff5722;#00bcd4;#e91e63;#00b294;#03a9f4;#ffb900;#107c10'.split(';');
+                    this.colormap = {};
+                    this.n = 0;
+                    this.prev = null;
+                    var that = this;
+                    this.window = {
+                        name: windowName,
+                        get window() { return that.region; },
+                        breaks: { x: [], y: [] },
+                        views: [this.plot, this.plotd, this.ploto]
+                    };
+                }
+                Aggregator.prototype.logGame = function (g) {
+                    if (this.prev == null || g.endDate.getDate() != this.prev.getDate()) {
+                        this.window.breaks.x.push(new plot_data_1.Break(g.endDate.toString(), this.n + 1));
+                        this.n += 3;
+                    }
+                    else if (this.prev != null && g.endDate.getTime() - this.prev.getTime() > 30 * 60 * 1000) {
+                        this.window.breaks.x.push(new plot_data_1.Break("", this.n + 1));
+                        this.n += 3;
+                    }
+                    this.prev = g.endDate;
+                    this.logGameImpl(g);
+                    ++this.n;
+                };
+                Aggregator.prototype.autobreak = function () {
+                    var h = (((this.region.h + 15) / 10) | 0) * 10;
+                    var miny = ((this.region.y / 10) | 0) * 10;
+                    for (var i = 0; i <= h; i += 10) {
+                        this.window.breaks.y.push(new plot_data_1.Break((miny + i).toString(), miny + i));
+                    }
+                    this.region = new geometry_3.Rect(this.region.x, miny, this.region.w, h);
+                };
+                Aggregator.prototype.accomodate = function (p) {
+                    var r = this.region;
+                    var x = isNaN(r.x) ? p.x : r.x;
+                    var y = isNaN(r.y) ? p.y : r.y;
+                    var w = r.w;
+                    var h = r.h;
+                    if (p.x < x) {
+                        w += x - p.x;
+                        x = p.x;
+                    }
+                    if (p.x > x + w) {
+                        w += p.x - x - w;
+                    }
+                    if (p.y < y) {
+                        h += y - p.y;
+                        y = p.y;
+                    }
+                    if (p.y > y + h) {
+                        h += p.y - y - h;
+                    }
+                    this.region = new geometry_3.Rect(x, y, w, h);
+                };
+                Aggregator.prototype.postRating = function (name, date, x, y, stream) {
+                    if (date.getTime() < this.cutoff.getTime())
+                        return;
+                    var series = stream.data.filter(function (s) { return s.name == name; })[0];
+                    if (series == undefined) {
+                        series = { name: name, data: [], color: this.getColor(name) };
+                        stream.data.push(series);
+                    }
+                    var p = new geometry_3.Point(x, y);
+                    this.accomodate(p);
+                    series.data.unshift(p);
+                };
+                Aggregator.prototype.getColor = function (key) {
+                    if (!(key in this.colormap))
+                        this.colormap[key] = this.colors[this.cc = (this.cc + 1) % this.colors.length];
+                    return this.colormap[key];
+                };
+                return Aggregator;
+            }());
+            RatingAggregator = (function (_super) {
+                __extends(RatingAggregator, _super);
+                function RatingAggregator(cutoff, windowName) {
+                    var _this = _super.call(this, cutoff, windowName) || this;
+                    _this.ratings = {};
+                    _this.ratingso = {};
+                    _this.ratingsd = {};
+                    return _this;
+                }
+                RatingAggregator.prototype.logGameImpl = function (g) {
+                    this.logTeam(g.red, g.endDate);
+                    this.logTeam(g.blu, g.endDate);
+                };
+                RatingAggregator.prototype.logTeam = function (t, date) {
+                    var r = this.getRating(t);
+                    this.logPlayer(r, date, t.defence, true);
+                    this.logPlayer(r, date, t.offence, false);
+                };
+                RatingAggregator.prototype.logPlayer = function (r, date, p, isDef) {
+                    var key = p.apiPlayer._id;
+                    var name = p.apiPlayer.firstName + ' ' + p.apiPlayer.lastName;
+                    var subratings = isDef ? this.ratingsd : this.ratingso;
+                    var rall = avg(this.logRating(key, r, this.ratings));
+                    var rsub = avg(this.logRating(key, r, subratings));
+                    this.postRating(name, date, this.n, rall, this.plot);
+                    this.postRating(name, date, this.n, rsub, isDef ? this.plotd : this.ploto);
+                };
+                RatingAggregator.prototype.logRating = function (id, r, ratings) {
+                    if (!(id in ratings))
+                        ratings[id] = [];
+                    ratings[id].push(r);
+                    return ratings[id];
+                };
+                return RatingAggregator;
+            }(Aggregator));
+            ScorewiseAggregator = (function (_super) {
+                __extends(ScorewiseAggregator, _super);
+                function ScorewiseAggregator(cutoff) {
+                    return _super.call(this, cutoff, "Scorewise rating") || this;
+                }
+                ScorewiseAggregator.prototype.getRating = function (t) {
+                    return t.ratings.scorewise.score;
+                };
+                return ScorewiseAggregator;
+            }(RatingAggregator));
+            exports_11("ScorewiseAggregator", ScorewiseAggregator);
+            BinaryAggregator = (function (_super) {
+                __extends(BinaryAggregator, _super);
+                function BinaryAggregator(cutoff) {
+                    return _super.call(this, cutoff, "Binary rating") || this;
+                }
+                BinaryAggregator.prototype.getRating = function (t) {
+                    return t.ratings.binary.score;
+                };
+                return BinaryAggregator;
+            }(RatingAggregator));
+            exports_11("BinaryAggregator", BinaryAggregator);
+            WinrateAggregator = (function (_super) {
+                __extends(WinrateAggregator, _super);
+                function WinrateAggregator(cutoff) {
+                    var _this = _super.call(this, cutoff, 'Winrate') || this;
+                    _this.all = {};
+                    _this.off = {};
+                    _this.def = {};
+                    return _this;
+                }
+                WinrateAggregator.prototype.logGameImpl = function (g) {
+                    this.log(g.endDate, g.red.defence, g.redScore > g.bluScore, [{ records: this.all, series: this.plot }, { records: this.def, series: this.plotd }]);
+                    this.log(g.endDate, g.red.offence, g.redScore > g.bluScore, [{ records: this.all, series: this.plot }, { records: this.off, series: this.ploto }]);
+                    this.log(g.endDate, g.blu.defence, g.redScore < g.bluScore, [{ records: this.all, series: this.plot }, { records: this.def, series: this.plotd }]);
+                    this.log(g.endDate, g.blu.offence, g.redScore < g.bluScore, [{ records: this.all, series: this.plot }, { records: this.off, series: this.ploto }]);
+                };
+                WinrateAggregator.prototype.log = function (date, p, won, recordTo) {
+                    for (var _i = 0, recordTo_1 = recordTo; _i < recordTo_1.length; _i++) {
+                        var record = recordTo_1[_i];
+                        var id = p.apiPlayer._id;
+                        if (!(id in record.records))
+                            record.records[id] = { numGames: 0, numWon: 0 };
+                        var r = record.records[id];
+                        r.numGames++;
+                        if (won)
+                            r.numWon++;
+                        var name_3 = p.apiPlayer.firstName + ' ' + p.apiPlayer.lastName;
+                        this.postRating(name_3, date, this.n, 100 * r.numWon / r.numGames, record.series);
+                    }
+                };
+                return WinrateAggregator;
+            }(Aggregator));
+            exports_11("WinrateAggregator", WinrateAggregator);
+            RecentWinrateAggregator = (function (_super) {
+                __extends(RecentWinrateAggregator, _super);
+                function RecentWinrateAggregator(cutoff, nGames) {
+                    var _this = _super.call(this, cutoff, "Winrate (" + nGames + ")") || this;
+                    _this.nGames = nGames;
+                    _this.all = {};
+                    _this.off = {};
+                    _this.def = {};
+                    return _this;
+                }
+                RecentWinrateAggregator.prototype.logGameImpl = function (g) {
+                    this.log(g.endDate, g.red.defence, g.redScore > g.bluScore, [{ records: this.all, series: this.plot }, { records: this.def, series: this.plotd }]);
+                    this.log(g.endDate, g.red.offence, g.redScore > g.bluScore, [{ records: this.all, series: this.plot }, { records: this.off, series: this.ploto }]);
+                    this.log(g.endDate, g.blu.defence, g.redScore < g.bluScore, [{ records: this.all, series: this.plot }, { records: this.def, series: this.plotd }]);
+                    this.log(g.endDate, g.blu.offence, g.redScore < g.bluScore, [{ records: this.all, series: this.plot }, { records: this.off, series: this.ploto }]);
+                };
+                RecentWinrateAggregator.prototype.log = function (date, p, won, recordTo) {
+                    for (var _i = 0, recordTo_2 = recordTo; _i < recordTo_2.length; _i++) {
+                        var record = recordTo_2[_i];
+                        var id = p.apiPlayer._id;
+                        if (!(id in record.records))
+                            record.records[id] = [];
+                        var r = record.records[id];
+                        if (r.push(won ? 1 : 0) > this.nGames)
+                            r.shift();
+                        var name_4 = p.apiPlayer.firstName + ' ' + p.apiPlayer.lastName;
+                        this.postRating(name_4, date, this.n, 100 * sum(r) / r.length, record.series);
+                    }
+                };
+                return RecentWinrateAggregator;
+            }(Aggregator));
+            exports_11("RecentWinrateAggregator", RecentWinrateAggregator);
+            sum = function (a) {
+                return a.reduce(function (a, b) { return a + b; }, 0);
+            };
+            avg = function (a) {
+                return a.length == 0 ? NaN : sum(a) / a.length;
+            };
+        }
+    };
+});
+System.register("components/score-model", [], function (exports_12, context_12) {
+    "use strict";
+    var __moduleName = context_12 && context_12.id;
+    var getScoreSideModel, getScoreModel;
+    return {
+        setters: [],
+        execute: function () {
+            getScoreSideModel = function () {
+                var score = ko.observable(null);
+                var extendedScore = ko.computed({
+                    read: function () {
+                        var v = score();
+                        return v != null && v > 3 ? v : 'more';
+                    },
+                    write: function (value) {
+                        if (typeof (value) === 'number')
+                            score(value);
+                        else
+                            score(null);
+                    }
+                });
+                var isActive = function (n) {
+                    return score() == n;
+                };
+                var setScore = function (n) {
+                    score(n);
+                };
+                return { score: score, extendedScore: extendedScore, isActive: isActive, setScore: setScore };
+            };
+            exports_12("getScoreModel", getScoreModel = function () {
+                return {
+                    red: getScoreSideModel(),
+                    blu: getScoreSideModel()
+                };
+            });
+        }
+    };
+});
+System.register("components/submitter-model", ["lib/almaz-api", "lib/elo", "components/score-model", "components/game-processor"], function (exports_13, context_13) {
+    "use strict";
+    var __moduleName = context_13 && context_13.id;
+    var almaz_api_2, elo_2, score_model_1, game_processor_2, getSource, getCurrentTeamModel, getCurrentGameModel, getPendingUploads, setPendingUploads, getSubmitterModel, uniqueNickName, normalizeName, isNullObservable, whenAllNotNull;
+    return {
+        setters: [
+            function (almaz_api_2_1) {
+                almaz_api_2 = almaz_api_2_1;
+            },
+            function (elo_2_1) {
+                elo_2 = elo_2_1;
+            },
             function (score_model_1_1) {
                 score_model_1 = score_model_1_1;
+            },
+            function (game_processor_2_1) {
+                game_processor_2 = game_processor_2_1;
             }
         ],
         execute: function () {
@@ -292,18 +1097,41 @@ System.register("components/submitter-model", ["lib/almaz-api", "lib/elo", "comp
             setPendingUploads = function (games) {
                 localStorage.setItem('kicker-pending-uploads', JSON.stringify(games));
             };
-            exports_5("getSubmitterModel", getSubmitterModel = function () {
+            exports_13("getSubmitterModel", getSubmitterModel = function () {
                 var url = 'https://foosball-results.herokuapp.com/api/';
-                var api = new almaz_api_1.AlmazApi(url);
+                var api = new almaz_api_2.AlmazApi(url);
                 var apiSource = 'og-source/' + getSource();
                 var m = {};
-                var teams = [];
-                var games = [];
+                var elo = new elo_2.Elo();
+                var players = m.players = ko.observableArray([]);
+                var newPlayer = function (player) {
+                    var p = players().filter(function (p) { return p.apiPlayer._id == player.apiPlayer._id; })[0];
+                    console.log(players().length, player, p);
+                    return p;
+                };
+                var newTeam = function (team) {
+                    return {
+                        defence: team.defence,
+                        offence: team.offence,
+                        rating: new elo_2.EloPlayer()
+                    };
+                };
+                var newGame = function (game) {
+                    elo.game(game.red.rating, game.blu.rating, game.redScore, game.bluScore);
+                    return {
+                        red: game.red,
+                        blu: game.blu,
+                        redScore: game.redScore,
+                        bluScore: game.bluScore,
+                        startDate: game.startDate,
+                        endDate: game.endDate
+                    };
+                };
+                var gp = new game_processor_2.GameProcessor(newPlayer, newTeam, newGame);
                 var pendingUploads = getPendingUploads();
                 var startTime;
                 var currentGame = getCurrentGameModel();
                 m.currentGame = ko.observable(currentGame);
-                var players = m.players = ko.observableArray([]);
                 var gameReady = m.gameReady = ko.observable(false);
                 var playersReady = m.playersReady = ko.observable(false);
                 var gamesReady = m.gamesReady = ko.observable(false);
@@ -320,9 +1148,9 @@ System.register("components/submitter-model", ["lib/almaz-api", "lib/elo", "comp
                 };
                 gameReady.subscribe(function (v) {
                     if (v) {
-                        var red = findTeam(currentGame.red.defence(), currentGame.red.offence());
-                        var blu = findTeam(currentGame.blu.defence(), currentGame.blu.offence());
-                        var commonGames = findMutualGames(red, blu);
+                        var red = gp.findTeam(currentGame.red.defence(), currentGame.red.offence());
+                        var blu = gp.findTeam(currentGame.blu.defence(), currentGame.blu.offence());
+                        var commonGames = gp.findMutualGames(red, blu);
                         var n = commonGames.length;
                         currentGame.historicGames(n);
                         var redWins = commonGames.filter(findWins(red));
@@ -337,37 +1165,13 @@ System.register("components/submitter-model", ["lib/almaz-api", "lib/elo", "comp
                     }
                 });
                 var picksPending = [];
-                var findPlayer = function (id) {
-                    return players().filter(function (p) { return p.apiPlayer._id == id; })[0];
-                };
-                var findTeam = function (defence, offence) {
-                    var matches = teams.filter(function (t) { return t.defence == defence && t.offence == offence; });
-                    if (matches.length == 0) {
-                        var team = {
-                            defence: defence,
-                            offence: offence,
-                            rating: new elo_1.EloPlayer()
-                        };
-                        teams.push(team);
-                        return team;
-                    }
-                    else {
-                        return matches[0];
-                    }
-                };
-                var findGames = function (team) {
-                    return games.filter(function (g) { return g.blu == team || g.red == team; });
-                };
-                var findMutualGames = function (a, b) {
-                    return games.filter(function (g) { return (g.blu == a && g.red == b) || (g.blu == b && g.red == a); });
-                };
                 var loadTeam = function (side) {
                     whenAllNotNull(gamesReady).then(function () {
                         var pickTeam = currentGame[side];
                         var def = pickTeam.defence();
                         var off = pickTeam.offence();
-                        var team = findTeam(def, off);
-                        var gamesx = findGames(team);
+                        var team = gp.findTeam(def, off);
+                        var gamesx = gp.findGames(team);
                         pickTeam.numTotalGames(gamesx.length);
                     });
                 };
@@ -434,8 +1238,8 @@ System.register("components/submitter-model", ["lib/almaz-api", "lib/elo", "comp
                             score: scores.blu.score() || 0,
                         }
                     };
-                    logGame(gamePlayed);
-                    m.numGames(games.length);
+                    gp.logGame(gamePlayed);
+                    m.numGames(gp.numGames);
                     uploadGame(gamePlayed);
                     var redScore = scores.red.score();
                     var bluScore = scores.blu.score();
@@ -497,46 +1301,14 @@ System.register("components/submitter-model", ["lib/almaz-api", "lib/elo", "comp
                     });
                 };
                 dumpPendingUploads();
-                var elo = new elo_1.Elo();
-                var logGame = function (game) {
-                    var red = findTeam(findPlayer(game.red.defense._id), findPlayer(game.red.offense._id));
-                    var blu = findTeam(findPlayer(game.blue.defense._id), findPlayer(game.blue.offense._id));
-                    var gameRecord = {
-                        red: red,
-                        blu: blu,
-                        redScore: game.red.score || 0,
-                        bluScore: game.blue.score || 0,
-                    };
-                    elo.game(red.rating, blu.rating, gameRecord.redScore, gameRecord.bluScore);
-                    games.push(gameRecord);
-                };
                 api.getGames('').then(function (apiGames) {
-                    apiGames.sort(byEndDate)
-                        .filter(removeStagingData)
-                        .filter(removeDuplicates)
-                        .forEach(logGame);
-                    m.numGames(games.length);
+                    gp.processGames(apiGames);
+                    m.numGames(gp.numGames);
                     m.gamesReady(true);
                 });
                 resetPicking();
                 return m;
             });
-            byEndDate = function (a, b) {
-                return new Date(a.endDate).getTime() - new Date(b.endDate).getTime();
-            };
-            removeDuplicates = function (game, i, a) {
-                return i == 0 || !areDuplicates(game, a[i - 1]);
-            };
-            areDuplicates = function (a, b) {
-                var diff = Math.abs(new Date(a.endDate).getTime() - new Date(b.endDate).getTime());
-                return diff < 120000 && ((teamEqual(a.red, b.red) && teamEqual(a.blue, b.blue)) || (teamEqual(a.red, b.blue) && teamEqual(a.blue, b.red)));
-            };
-            teamEqual = function (a, b) {
-                return a.score == b.score && a.defense._id == b.defense._id && a.offense._id == b.offense._id;
-            };
-            removeStagingData = function (game) {
-                return 'source' in game && game.source.indexOf('staging') == -1;
-            };
             uniqueNickName = function (player, players) {
                 var nickName = normalizeName(player.firstName);
                 if (!players.some(function (p) { return p._id != player._id && normalizeName(p.firstName) == nickName; }))
@@ -583,61 +1355,9 @@ System.register("components/submitter-model", ["lib/almaz-api", "lib/elo", "comp
         }
     };
 });
-System.register("lib/canvas", [], function (exports_6, context_6) {
+System.register("lib/color", [], function (exports_14, context_14) {
     "use strict";
-    var __moduleName = context_6 && context_6.id;
-    function fullscreenCanvas(relative) {
-        var c = document.createElement('canvas');
-        var ctx = c.getContext('2d');
-        if (ctx == null)
-            throw new Error('failed to get \'2d\' context');
-        ctx.canvas.width = window.innerWidth;
-        ctx.canvas.height = window.innerHeight;
-        if (!relative) {
-            ctx.canvas.style.position = 'absolute';
-            ctx.canvas.style.top = '0';
-            ctx.canvas.style.left = '0';
-        }
-        ctx.clear = function () {
-            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-            return ctx;
-        };
-        ctx.makePath = function (vertices) {
-            ctx.beginPath();
-            ctx.moveTo(vertices[0], vertices[1]);
-            for (var i = 2; i < vertices.length; i += 2) {
-                ctx.lineTo(vertices[i], vertices[i + 1]);
-            }
-            ctx.closePath();
-            return ctx;
-        };
-        ctx.strokeCircle = function (x, y, r) {
-            ctx.beginPath();
-            ctx.arc(x, y, r, 0, 2 * Math.PI, true);
-            ctx.closePath();
-            ctx.stroke();
-            return ctx;
-        };
-        ctx.fillCircle = function (x, y, r) {
-            ctx.beginPath();
-            ctx.arc(x, y, r, 0, 2 * Math.PI, true);
-            ctx.closePath();
-            ctx.fill();
-            return ctx;
-        };
-        document.body.appendChild(c);
-        return ctx;
-    }
-    exports_6("fullscreenCanvas", fullscreenCanvas);
-    return {
-        setters: [],
-        execute: function () {
-        }
-    };
-});
-System.register("lib/color", [], function (exports_7, context_7) {
-    "use strict";
-    var __moduleName = context_7 && context_7.id;
+    var __moduleName = context_14 && context_14.id;
     function hcy2rgb(h, c, y, a) {
         var r = .3;
         var g = .59;
@@ -667,205 +1387,16 @@ System.register("lib/color", [], function (exports_7, context_7) {
         var rgbdata = [rgb[0] + m, rgb[1] + m, rgb[2] + m];
         return 'rgba(' + (rgbdata[0] * 255).toFixed(0) + ',' + (rgbdata[1] * 255).toFixed(0) + ',' + (rgbdata[2] * 255).toFixed(0) + ', ' + (a || 1) + ')';
     }
-    exports_7("hcy2rgb", hcy2rgb);
+    exports_14("hcy2rgb", hcy2rgb);
     return {
         setters: [],
         execute: function () {
         }
     };
 });
-System.register("lib/geometry", [], function (exports_8, context_8) {
+System.register("lib/view-selector", [], function (exports_15, context_15) {
     "use strict";
-    var __moduleName = context_8 && context_8.id;
-    var Point, Rect, Range;
-    return {
-        setters: [],
-        execute: function () {
-            Point = (function () {
-                function Point(x, y) {
-                    this.x = x;
-                    this.y = y;
-                }
-                return Point;
-            }());
-            exports_8("Point", Point);
-            Rect = (function (_super) {
-                __extends(Rect, _super);
-                function Rect(x, y, w, h) {
-                    var _this = _super.call(this, x, y) || this;
-                    _this.w = w;
-                    _this.h = h;
-                    return _this;
-                }
-                Object.defineProperty(Rect.prototype, "horizontal", {
-                    get: function () {
-                        return new Range(this.x, this.w);
-                    },
-                    enumerable: true,
-                    configurable: true
-                });
-                Object.defineProperty(Rect.prototype, "vertical", {
-                    get: function () {
-                        return new Range(this.y, this.h);
-                    },
-                    enumerable: true,
-                    configurable: true
-                });
-                return Rect;
-            }(Point));
-            exports_8("Rect", Rect);
-            Range = (function () {
-                function Range(start, length) {
-                    this.start = start;
-                    this.length = length;
-                }
-                Object.defineProperty(Range.prototype, "end", {
-                    get: function () {
-                        return this.start + this.length;
-                    },
-                    enumerable: true,
-                    configurable: true
-                });
-                return Range;
-            }());
-            exports_8("Range", Range);
-        }
-    };
-});
-System.register("lib/plot-data", [], function (exports_9, context_9) {
-    "use strict";
-    var __moduleName = context_9 && context_9.id;
-    var Break, DataWindow, PlotData, Series;
-    return {
-        setters: [],
-        execute: function () {
-            Break = (function () {
-                function Break(label, coord) {
-                    this.label = label;
-                    this.coord = coord;
-                }
-                return Break;
-            }());
-            exports_9("Break", Break);
-            DataWindow = (function () {
-                function DataWindow(name, window, xBreaks, yBreaks, views) {
-                    this.name = name;
-                    this.window = window;
-                    this.xBreaks = xBreaks;
-                    this.yBreaks = yBreaks;
-                    this.views = views;
-                }
-                return DataWindow;
-            }());
-            exports_9("DataWindow", DataWindow);
-            PlotData = (function () {
-                function PlotData(name, data) {
-                    this.name = name;
-                    this.data = data;
-                }
-                return PlotData;
-            }());
-            exports_9("PlotData", PlotData);
-            Series = (function () {
-                function Series(name, data) {
-                    this.name = name;
-                    this.data = data;
-                }
-                return Series;
-            }());
-            exports_9("Series", Series);
-        }
-    };
-});
-System.register("lib/plotter", ["lib/geometry"], function (exports_10, context_10) {
-    "use strict";
-    var __moduleName = context_10 && context_10.id;
-    function last(array) {
-        return array[array.length - 1];
-    }
-    exports_10("last", last);
-    var geometry_1, Plotter;
-    return {
-        setters: [
-            function (geometry_1_1) {
-                geometry_1 = geometry_1_1;
-            }
-        ],
-        execute: function () {
-            Array.prototype.mapMany = function (fn) {
-                var res = new Array();
-                this.forEach(function (item, index, array) {
-                    var subres = fn(item, index, array);
-                    res = res.concat(subres);
-                });
-                return res;
-            };
-            Plotter = (function () {
-                function Plotter(ctx, region) {
-                    this.ctx = ctx;
-                    this.region = region;
-                }
-                Plotter.prototype.render = function (world, data) {
-                    var allSeries = data.data.map(function (d) { return last(d.data).y.toFixed(0) + " " + d.name; });
-                    var labelWidth = Plotter.getMaxTextWidth(this.ctx, allSeries);
-                    var region = new geometry_1.Rect(this.region.x, this.region.y, this.region.w - 30, this.region.h);
-                    var scale = Plotter.getScale(region, world);
-                    var labels = Plotter.getLabelPositions(data.data.map(function (s) { return { text: s.name, pos: s.data[0].y }; }));
-                };
-                Plotter.getScale = function (screen, world) {
-                    var ws = screen.horizontal.length;
-                    var hs = screen.vertical.length;
-                    var ww = world.horizontal.length;
-                    var hw = world.vertical.length;
-                    var sx = ws / ww;
-                    var sy = hs / hw;
-                    return function (coords) {
-                        var wx = coords.x - world.horizontal.start;
-                        var wy = coords.y - world.vertical.start;
-                        return new geometry_1.Point(screen.horizontal.start + sx * wx, screen.vertical.start + sy * wy);
-                    };
-                };
-                Plotter.getMaxTextWidth = function (ctx, labels) {
-                    var res = 0;
-                    for (var _i = 0, labels_1 = labels; _i < labels_1.length; _i++) {
-                        var label = labels_1[_i];
-                        var w = ctx.measureText(label).width;
-                        res = Math.max(res, w);
-                    }
-                    return res;
-                };
-                Plotter.getLabelPositions = function (labels) {
-                    labels.sort(function (a, b) { return a.pos - b.pos; });
-                    var overlap = true;
-                    var retries = 0;
-                    var height = 16;
-                    while (retries < 10 && overlap) {
-                        overlap = false;
-                        ++retries;
-                        var last_1 = labels[0];
-                        for (var _i = 0, labels_2 = labels; _i < labels_2.length; _i++) {
-                            var next = labels_2[_i];
-                            if (last_1 == next)
-                                continue;
-                            var gap = next.pos - last_1.pos;
-                            if (gap < height) {
-                                last_1.pos -= (height - gap) / 2;
-                                next.pos += (height - gap) / 2;
-                                overlap = true;
-                            }
-                            last_1 = next;
-                        }
-                    }
-                };
-                return Plotter;
-            }());
-            exports_10("Plotter", Plotter);
-        }
-    };
-});
-System.register("lib/view-selector", [], function (exports_11, context_11) {
-    "use strict";
-    var __moduleName = context_11 && context_11.id;
+    var __moduleName = context_15 && context_15.id;
     return {
         setters: [],
         execute: function () {
