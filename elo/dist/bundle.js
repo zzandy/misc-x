@@ -460,7 +460,7 @@ System.register("lib/plotter", ["lib/geometry"], function (exports_8, context_8)
                     var labelPos = view.data.map(function (s) { return { text: s.name, pos: scale(new geometry_1.Point(0, s.data[0].y)).y, color: s.color }; });
                     Plotter.adjustLabelPositions(20, labelPos);
                     this.ctx.fillStyle = 'silver';
-                    this.placeLabels(axisLabels + region.x + region.w + 2, labelPos);
+                    this.placeLabels(region.x + region.w + 5, labelPos);
                     this.drawBreaks(data.breaks, region, scale, axisLabels);
                     this.plotData(scale, view);
                 };
@@ -520,7 +520,7 @@ System.register("lib/plotter", ["lib/geometry"], function (exports_8, context_8)
                     for (var _i = 0, _a = breaks.x; _i < _a.length; _i++) {
                         var $break = _a[_i];
                         var x = scale(new geometry_1.Point($break.coord, 0)).x;
-                        this.ctx.fillStyle = $break.label == '' ? '#222' : '#333';
+                        this.ctx.fillStyle = $break.label == '' ? '#222' : '#666';
                         this.ctx.fillRect(x | 0 + .5, region.y, 1, region.h);
                     }
                     for (var _b = 0, _c = breaks.y; _b < _c.length; _b++) {

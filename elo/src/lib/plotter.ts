@@ -33,7 +33,7 @@ export class Plotter implements IPlotter {
         Plotter.adjustLabelPositions(20, labelPos);
 
         this.ctx.fillStyle = 'silver';
-        this.placeLabels(axisLabels + region.x + region.w + 2, labelPos);
+        this.placeLabels(region.x + region.w + 5, labelPos);
         this.drawBreaks(data.breaks, region, scale, axisLabels);
         this.plotData(scale, view);
     }
@@ -109,7 +109,7 @@ export class Plotter implements IPlotter {
         for (const $break of breaks.x) {
             const x = scale(new Point($break.coord, 0)).x;
 
-            this.ctx.fillStyle = $break.label == '' ? '#222' : '#333';
+            this.ctx.fillStyle = $break.label == '' ? '#222' : '#666';
             this.ctx.fillRect(x | 0 + .5, region.y, 1, region.h);
         }
 
