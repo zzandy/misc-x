@@ -875,8 +875,6 @@ System.register("components/aggregators", ["lib/geometry", "lib/plot-data"], fun
                 function RatingAggregator(cutoff, windowName) {
                     var _this = _super.call(this, cutoff, windowName) || this;
                     _this.ratings = {};
-                    _this.ratingso = {};
-                    _this.ratingsd = {};
                     return _this;
                 }
                 RatingAggregator.prototype.logGameImpl = function (g) {
@@ -885,23 +883,27 @@ System.register("components/aggregators", ["lib/geometry", "lib/plot-data"], fun
                 };
                 RatingAggregator.prototype.logTeam = function (t, date) {
                     var r = this.getRating(t);
+                    this.ratings[t.defence.apiPlayer._id + '-' + t.offence.apiPlayer._id] = r;
                     this.logPlayer(r, date, t.defence, true);
                     this.logPlayer(r, date, t.offence, false);
                 };
                 RatingAggregator.prototype.logPlayer = function (r, date, p, isDef) {
                     var key = p.apiPlayer._id;
                     var name = p.apiPlayer.firstName + ' ' + p.apiPlayer.lastName;
-                    var subratings = isDef ? this.ratingsd : this.ratingso;
-                    var rall = avg(this.logRating(key, r, this.ratings));
-                    var rsub = avg(this.logRating(key, r, subratings));
+                    var ratings = [];
+                    var subratings = [];
+                    for (var id in this.ratings) {
+                        var _a = id.split('-'), defid = _a[0], offid = _a[1];
+                        if (defid == p.apiPlayer._id || offid == p.apiPlayer._id)
+                            ratings.push(this.ratings[id]);
+                        if ((isDef && defid == p.apiPlayer._id) || (!isDef && offid == p.apiPlayer._id))
+                            subratings.push(this.ratings[id]);
+                    }
+                    var rall = avg(ratings);
+                    var rsub = avg(subratings);
                     this.postRating(name, date, this.n, rall, this.plot);
                     this.postRating(name, date, this.n, rsub, isDef ? this.plotd : this.ploto);
-                };
-                RatingAggregator.prototype.logRating = function (id, r, ratings) {
-                    if (!(id in ratings))
-                        ratings[id] = [];
-                    ratings[id].push(r);
-                    return ratings[id];
+                    return rall;
                 };
                 return RatingAggregator;
             }(Aggregator));

@@ -117,10 +117,10 @@ abstract class Aggregator implements IAggregator {
     }
 }
 
+type numberMap = { [id: string]: number };
+
 abstract class RatingAggregator extends Aggregator {
-    private readonly ratings: { [id: string]: number[] } = {};
-    private readonly ratingso: { [id: string]: number[] } = {};
-    private readonly ratingsd: { [id: string]: number[] } = {};
+    private readonly ratings: numberMap = {};
 
     constructor(cutoff: Date, windowName: string) {
         super(cutoff, windowName);
@@ -133,6 +133,9 @@ abstract class RatingAggregator extends Aggregator {
 
     private logTeam(t: StatTeam, date: Date): void {
         const r = this.getRating(t);
+
+        this.ratings[t.defence.apiPlayer._id + '-' + t.offence.apiPlayer._id] = r;
+
         this.logPlayer(r, date, t.defence, true);
         this.logPlayer(r, date, t.offence, false);
     }
@@ -141,23 +144,27 @@ abstract class RatingAggregator extends Aggregator {
         const key = p.apiPlayer._id;
         const name = p.apiPlayer.firstName + ' ' + p.apiPlayer.lastName;
 
-        const subratings = isDef ? this.ratingsd : this.ratingso;
+        const ratings = [];
+        const subratings = [];
 
-        const rall = avg(this.logRating(key, r, this.ratings));
-        const rsub = avg(this.logRating(key, r, subratings));
+        for (const id in this.ratings) {
+            const [defid, offid] = id.split('-');
+
+            if (defid == p.apiPlayer._id || offid == p.apiPlayer._id)
+                ratings.push(this.ratings[id]);
+
+            if ((isDef && defid == p.apiPlayer._id) || (!isDef && offid == p.apiPlayer._id))
+                subratings.push(this.ratings[id]);
+        }
+
+        const rall = avg(ratings);
+        const rsub = avg(subratings);
 
         this.postRating(name, date, this.n, rall, this.plot);
         this.postRating(name, date, this.n, rsub, isDef ? this.plotd : this.ploto);
+
+        return rall;
     }
-
-    private logRating(id: string, r: number, ratings: { [id: string]: number[] }) {
-        if (!(id in ratings))
-            ratings[id] = [];
-
-        ratings[id].push(r);
-        return ratings[id];
-    }
-
 
     protected abstract getRating(t: StatTeam): number;
 }
