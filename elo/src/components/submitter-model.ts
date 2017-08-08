@@ -3,6 +3,18 @@
 import { AlmazApi, ApiPlayer, ApiTeam, ApiGame } from '../lib/almaz-api';
 import { Elo, EloPlayer } from '../lib/elo';
 import { getScoreModel } from 'score-model';
+import { GameProcessor, Player, Team, Game } from './game-processor';
+
+interface NickPlayer extends Player {
+    nickName: string;
+}
+
+interface EloTeam extends Team<NickPlayer> {
+    rating: EloPlayer
+}
+
+interface EloGame extends Game<NickPlayer, EloTeam> {
+}
 
 ko.bindingHandlers['text-as-pct'] = {
     update: (e, value, all) => {
@@ -12,24 +24,6 @@ ko.bindingHandlers['text-as-pct'] = {
         else
             (<Element>e).innerHTML = '&nbsp;';
     }
-}
-
-interface Player {
-    readonly nickName: string;
-    readonly apiPlayer: ApiPlayer;
-}
-
-interface Team {
-    defence: Player;
-    offence: Player;
-    rating: EloPlayer;
-}
-
-interface Game {
-    red: Team;
-    blu: Team;
-    redScore: number;
-    bluScore: number
 }
 
 const getSource = () => {
@@ -47,8 +41,8 @@ const getSource = () => {
 }
 
 const getCurrentTeamModel = () => {
-    const d = ko.observable<Player>(null);
-    const o = ko.observable<Player>(null);
+    const d = ko.observable<NickPlayer>(null);
+    const o = ko.observable<NickPlayer>(null);
 
     return {
         numTotalGames: ko.observable<number | null>(null),
@@ -58,11 +52,11 @@ const getCurrentTeamModel = () => {
         defence: d,
         offence: o,
         defenceNickName: ko.computed(() => {
-            const v: Player = d();
+            const v: NickPlayer = d();
             return v == null ? null : v.nickName;
         }),
         offenceNickName: ko.computed(() => {
-            const v: Player = o();
+            const v: NickPlayer = o();
             return v == null ? null : v.nickName;
         })
     }
@@ -96,16 +90,47 @@ export const getSubmitterModel = () => {
     const apiSource = 'og-source/' + getSource();
 
     const m: any = {};
+    const elo = new Elo();
+    const players = m.players = ko.observableArray<NickPlayer>([]);
 
-    const teams: Team[] = [];
-    const games: Game[] = [];
+    const newPlayer = (player: Player): NickPlayer => {
+
+        const p = players().filter(p => p.apiPlayer._id == player.apiPlayer._id)[0];
+
+        console.log(players().length, player, p)
+
+        return p;
+    }
+
+    const newTeam = (team: Team<NickPlayer>): EloTeam => {
+        return {
+            defence: team.defence,
+            offence: team.offence,
+            rating: new EloPlayer()
+        }
+    }
+
+    const newGame = (game: Game<NickPlayer, EloTeam>): EloGame => {
+        elo.game(game.red.rating, game.blu.rating, game.redScore, game.bluScore);
+
+        return {
+            red: game.red,
+            blu: game.blu,
+            redScore: game.redScore,
+            bluScore: game.bluScore,
+            startDate: game.startDate,
+            endDate: game.endDate
+        }
+    }
+
+    const gp = new GameProcessor<NickPlayer, EloTeam, EloGame>(newPlayer, newTeam, newGame);
 
     const pendingUploads = getPendingUploads();
 
     let startTime: Date;
     let currentGame = getCurrentGameModel();
     m.currentGame = ko.observable(currentGame);
-    const players = m.players = ko.observableArray<Player>([]);
+
     const gameReady = m.gameReady = ko.observable<boolean>(false);
 
     const playersReady = m.playersReady = ko.observable(false);
@@ -117,8 +142,8 @@ export const getSubmitterModel = () => {
         return scores.red.score() != null && scores.blu.score() != null && scores.blu.score() != scores.red.score();
     });
 
-    const findWins = (team: Team) => {
-        return (game: Game) => {
+    const findWins = (team: EloTeam) => {
+        return (game: EloGame) => {
             return (game.blu == team && game.bluScore > game.redScore)
                 || (game.red == team && game.redScore > game.bluScore);
         };
@@ -126,10 +151,10 @@ export const getSubmitterModel = () => {
 
     gameReady.subscribe((v: boolean) => {
         if (v) {
-            const red = findTeam(currentGame.red.defence(), currentGame.red.offence());
-            const blu = findTeam(currentGame.blu.defence(), currentGame.blu.offence());
+            const red = gp.findTeam(currentGame.red.defence(), currentGame.red.offence());
+            const blu = gp.findTeam(currentGame.blu.defence(), currentGame.blu.offence());
 
-            const commonGames = findMutualGames(red, blu);
+            const commonGames = gp.findMutualGames(red, blu);
             const n = commonGames.length;
 
             currentGame.historicGames(n);
@@ -152,35 +177,6 @@ export const getSubmitterModel = () => {
 
     let picksPending: KnockoutObservable<Player>[] = [];
 
-    const findPlayer = (id: string) => {
-        return players().filter(p => p.apiPlayer._id == id)[0];
-    }
-
-    const findTeam = (defence: Player, offence: Player) => {
-        const matches = teams.filter(t => t.defence == defence && t.offence == offence);
-
-        if (matches.length == 0) {
-            const team = {
-                defence: defence,
-                offence: offence,
-                rating: new EloPlayer()
-            };
-            teams.push(team);
-            return team;
-        }
-        else {
-            return matches[0];
-        }
-    }
-
-    const findGames = (team: Team) => {
-        return games.filter(g => g.blu == team || g.red == team);
-    };
-
-    const findMutualGames = (a: Team, b: Team) => {
-        return games.filter(g => (g.blu == a && g.red == b) || (g.blu == b && g.red == a));
-    };
-
     const loadTeam = (side: 'red' | 'blu') => {
         whenAllNotNull(gamesReady).then(() => {
             const pickTeam = currentGame[side];
@@ -188,8 +184,8 @@ export const getSubmitterModel = () => {
             const def = pickTeam.defence();
             const off = pickTeam.offence();
 
-            const team = findTeam(def, off);
-            const gamesx = findGames(team);
+            const team = gp.findTeam(def, off);
+            const gamesx = gp.findGames(team);
 
             pickTeam.numTotalGames(gamesx.length);
         });
@@ -275,8 +271,8 @@ export const getSubmitterModel = () => {
             }
         };
 
-        logGame(gamePlayed);
-        m.numGames(games.length);
+        gp.logGame(gamePlayed);
+        m.numGames(gp.numGames);
         uploadGame(gamePlayed);
 
         const redScore = scores.red.score();
@@ -352,29 +348,10 @@ export const getSubmitterModel = () => {
 
     dumpPendingUploads();
 
-    const elo = new Elo();
-    const logGame = (game: ApiGame) => {
-        const red = findTeam(findPlayer(game.red.defense._id), findPlayer(game.red.offense._id));
-        const blu = findTeam(findPlayer(game.blue.defense._id), findPlayer(game.blue.offense._id));
-
-        const gameRecord = {
-            red: red,
-            blu: blu,
-            redScore: game.red.score || 0,
-            bluScore: game.blue.score || 0,
-        };
-
-        elo.game(red.rating, blu.rating, gameRecord.redScore, gameRecord.bluScore);
-
-        games.push(gameRecord);
-    };
-
     api.getGames('').then((apiGames) => {
-        apiGames.sort(byEndDate)
-            .filter(removeStagingData)
-            .filter(removeDuplicates)
-            .forEach(logGame);
-        m.numGames(games.length);
+        gp.processGames(apiGames);
+
+        m.numGames(gp.numGames);
         m.gamesReady(true);
     });
 
@@ -382,27 +359,6 @@ export const getSubmitterModel = () => {
 
     return m;
 };
-
-const byEndDate = (a: ApiGame, b: ApiGame) => {
-    return new Date(a.endDate).getTime() - new Date(b.endDate).getTime();
-}
-
-const removeDuplicates = (game: ApiGame, i: number, a: ApiGame[]) => {
-    return i == 0 || !areDuplicates(game, a[i - 1]);
-};
-
-const areDuplicates = (a: ApiGame, b: ApiGame) => {
-    const diff = Math.abs(new Date(a.endDate).getTime() - new Date(b.endDate).getTime());
-    return diff < 120000 && ((teamEqual(a.red, b.red) && teamEqual(a.blue, b.blue)) || (teamEqual(a.red, b.blue) && teamEqual(a.blue, b.red)));
-}
-
-const teamEqual = (a: ApiTeam, b: ApiTeam) => {
-    return a.score == b.score && a.defense._id == b.defense._id && a.offense._id == b.offense._id;
-}
-
-const removeStagingData = (game: ApiGame) => {
-    return 'source' in game && game.source.indexOf('staging') == -1;
-}
 
 const uniqueNickName = (player: ApiPlayer, players: ApiPlayer[]) => {
     let nickName = normalizeName(player.firstName);

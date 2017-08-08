@@ -2,18 +2,24 @@ import { Point, Rect } from 'geometry';
 
 export class Break { constructor(public readonly label: string, public readonly coord: number) { } }
 
-export class DataWindow {
-    constructor(public readonly name: string, public readonly window: Rect, public readonly xBreaks: Break[], public readonly yBreaks: Break[], public readonly views: PlotData[]) { }
+export class IDataWindow {
+    readonly name: string;
+    readonly window: Rect;
+    readonly breaks: { x: Break[], y: Break[] };
+    readonly views: IPlotData[];
 }
 
-export class PlotData {
-    constructor(public readonly name: string, public readonly data: Series[]) { }
+export interface IPlotData {
+    readonly name: string;
+    readonly data: ISeries[];
 }
 
-export class Series {
-    constructor(public readonly name: string, public readonly data: Point[]) { }
+export interface ISeries {
+    readonly name: string;
+    readonly data: Point[];
+    readonly color: string;
 }
 
-export interface IRender {
-    render(data: DataWindow): void;
+export interface IPlotter {
+    render(data: IDataWindow, viewName: string): void;
 }

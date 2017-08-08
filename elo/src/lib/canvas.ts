@@ -9,7 +9,7 @@ export interface ICanvasRenderingContext2D extends CanvasRenderingContext2D {
 export const getCanvas = (isRelative: boolean = false): HTMLCanvasElement => {
     const can = document.createElement('canvas');
 
-    can.width = window.innerWidth;
+  can.width = window.innerWidth;
     can.height = window.innerHeight;
 
     if (!isRelative) {
@@ -21,8 +21,8 @@ export const getCanvas = (isRelative: boolean = false): HTMLCanvasElement => {
     return can;
 }
 
-export const fullscreenCanvas3d = (): WebGLRenderingContext => {
-    const can = getCanvas();
+export const fullscreenCanvas3d = (relative: boolean = false): WebGLRenderingContext => {
+    const can = getCanvas(relative);
     const gl = can.getContext('webgl');
 
     if (gl == null) throw new Error('failed to get \'webgl\' context');
