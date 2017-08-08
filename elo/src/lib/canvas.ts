@@ -6,7 +6,7 @@ export interface ICanvasRenderingContext2D extends CanvasRenderingContext2D {
     strokeCircle(x: number, y: number, r: number): ICanvasRenderingContext2D;
 }
 
-export function fullscreenCanvas(relative: boolean): ICanvasRenderingContext2D {
+export function fullscreenCanvas(relative: boolean = false): ICanvasRenderingContext2D {
 
     let c = document.createElement('canvas');
     let ctx = <ICanvasRenderingContext2D>c.getContext('2d');
