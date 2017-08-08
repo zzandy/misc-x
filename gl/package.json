@@ -1,0 +1,19 @@
+{
+  "name": "gl",
+  "version": "1.0.0",
+  "main": "src/index.tsx",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "less": "lessc src/style.less dist/style.css",
+    "watch": "tsc -w"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {},
+  "devDependencies": {
+    "@types/knockout": "^3.4.41",
+    "systemjs": "^0.20.15",
+    "typescript": "^2.4.1"
+  }
+}
