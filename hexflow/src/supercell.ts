@@ -34,7 +34,7 @@ export class Supercell {
         const b = this.rank * 3;
 
         const leftup = 2 * x + b;
-        const top = (x + 1) / 2;
+        const top = (x + a) / 2;
         const rightup = b - x;
         const rightdown = 2 * x - a;
         const bottom = (x - b) / 2;

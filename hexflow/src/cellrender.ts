@@ -9,7 +9,7 @@ export class Point {
 const q = 1 / Math.sqrt(3);
 const sq32 = Math.sqrt(3) / 2;
 
-abstract class CellRender<TValue> {
+export abstract class CellRender<TValue> {
     constructor(private readonly cellsize: number) { }
 
     public render(ctx: ICanvasRenderingContext2D, cells: CellStore<TValue>) {
@@ -17,21 +17,21 @@ abstract class CellRender<TValue> {
         cells.forEach((pos: HexPos, value: TValue) => this.renderCell(ctx, pos, value));
     }
 
-    public renderCell(ctx: ICanvasRenderingContext2D, pos: HexPos, value: TValue) {
+    private renderCell(ctx: ICanvasRenderingContext2D, pos: HexPos, value: TValue) {
         const s = this.cellsize;
-        const { x, y } = this.getScreen(pos);
+        const { x, y } = this.getScreen(ctx, pos);
 
         ctx.fillStyle = this.getCellColor(value);
         this.fillHex(ctx, x, y, s);
     }
 
-    abstract getCellColor(value: TValue): string;
+    protected abstract getCellColor(value: TValue): string;
 
-    private getScreen(pos: HexPos): Point {
+    private getScreen(ctx: ICanvasRenderingContext2D, pos: HexPos): Point {
         const s = this.cellsize;
         const q = .95;
 
-        return new Point(q * s * pos.j * sq32, q * -s * (pos.i - pos.j / 2))
+        return new Point(ctx.canvas.width/2+q * s * pos.j * sq32, ctx.canvas.height/2+q * -s * (pos.i - pos.j / 2))
     }
 
     private fillHex(ctx: ICanvasRenderingContext2D, x: number, y: number, s: number): void {
