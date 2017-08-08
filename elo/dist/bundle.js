@@ -362,17 +362,11 @@ System.register("lib/canvas", [], function (exports_7, context_7) {
     "use strict";
     var __moduleName = context_7 && context_7.id;
     function fullscreenCanvas(relative) {
-        var c = document.createElement('canvas');
-        var ctx = c.getContext('2d');
+        if (relative === void 0) { relative = false; }
+        var can = getCanvas(relative);
+        var ctx = can.getContext('2d');
         if (ctx == null)
             throw new Error('failed to get \'2d\' context');
-        ctx.canvas.width = window.innerWidth;
-        ctx.canvas.height = window.innerHeight;
-        if (!relative) {
-            ctx.canvas.style.position = 'absolute';
-            ctx.canvas.style.top = '0';
-            ctx.canvas.style.left = '0';
-        }
         ctx.clear = function () {
             ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
             return ctx;
@@ -400,13 +394,35 @@ System.register("lib/canvas", [], function (exports_7, context_7) {
             ctx.fill();
             return ctx;
         };
-        document.body.appendChild(c);
+        document.body.appendChild(can);
         return ctx;
     }
     exports_7("fullscreenCanvas", fullscreenCanvas);
+    var getCanvas, fullscreenCanvas3d;
     return {
         setters: [],
         execute: function () {
+            exports_7("getCanvas", getCanvas = function (isRelative) {
+                if (isRelative === void 0) { isRelative = false; }
+                var can = document.createElement('canvas');
+                can.width = window.innerWidth;
+                can.height = window.innerHeight;
+                if (!isRelative) {
+                    can.style.position = 'absolute';
+                    can.style.top = '0';
+                    can.style.left = '0';
+                }
+                return can;
+            });
+            exports_7("fullscreenCanvas3d", fullscreenCanvas3d = function (relative) {
+                if (relative === void 0) { relative = false; }
+                var can = getCanvas(relative);
+                var gl = can.getContext('webgl');
+                if (gl == null)
+                    throw new Error('failed to get \'webgl\' context');
+                document.body.appendChild(can);
+                return gl;
+            });
         }
     };
 });
@@ -526,6 +542,7 @@ System.register("lib/plotter", ["lib/geometry"], function (exports_8, context_8)
                             var p = scale(point);
                             this.ctx.fillCircle(p.x, p.y, 1.7);
                             if (prev !== null) {
+                                this.ctx.lineWidth = prev.x - p.x > 10 ? .5 : 1;
                                 this.ctx.beginPath();
                                 this.ctx.moveTo(prev.x, prev.y);
                                 this.ctx.lineTo(p.x, p.y);
@@ -1358,7 +1375,7 @@ System.register("components/submitter-model", ["lib/almaz-api", "lib/elo", "comp
 System.register("lib/color", [], function (exports_14, context_14) {
     "use strict";
     var __moduleName = context_14 && context_14.id;
-    function hcy2rgb(h, c, y, a) {
+    function hcy(h, c, y) {
         var r = .3;
         var g = .59;
         var b = .11;
@@ -1384,7 +1401,11 @@ System.register("lib/color", [], function (exports_14, context_14) {
                         : h < 5 ? [x, 0, c]
                             : [c, 0, x];
         var m = y - (r * rgb[0] + g * rgb[1] + b * rgb[2]);
-        var rgbdata = [rgb[0] + m, rgb[1] + m, rgb[2] + m];
+        return [rgb[0] + m, rgb[1] + m, rgb[2] + m];
+    }
+    exports_14("hcy", hcy);
+    function hcy2rgb(h, c, y, a) {
+        var rgbdata = hcy(h, c, y);
         return 'rgba(' + (rgbdata[0] * 255).toFixed(0) + ',' + (rgbdata[1] * 255).toFixed(0) + ',' + (rgbdata[2] * 255).toFixed(0) + ', ' + (a || 1) + ')';
     }
     exports_14("hcy2rgb", hcy2rgb);

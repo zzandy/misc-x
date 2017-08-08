@@ -133,6 +133,8 @@ export class Plotter implements IPlotter {
                 this.ctx.fillCircle(p.x, p.y, 1.7);
 
                 if (prev !== null) {
+                    this.ctx.lineWidth = prev.x - p.x > 10 ? .5 : 1;
+
                     this.ctx.beginPath();
                     this.ctx.moveTo(prev.x, prev.y);
                     this.ctx.lineTo(p.x, p.y);

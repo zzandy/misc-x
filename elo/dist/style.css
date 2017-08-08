@@ -50,7 +50,7 @@ button:disabled {
   background: #ff1a1a;
 }
 .red.winner.sour {
-  background: #7d6812;
+  background: #91410b;
 }
 .blu {
   background-color: #0055cc;
@@ -70,7 +70,7 @@ button:disabled {
   background: #3388ff;
 }
 .blu.winner.sour {
-  background: #5a793b;
+  background: #386c71;
 }
 .row {
   display: flex;
