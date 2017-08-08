@@ -641,9 +641,10 @@ System.register("components/viewer-model", ["lib/almaz-api", "lib/elo", "compone
         execute: function () {
             exports_10("getViewerModel", getViewerModel = function () {
                 var loading = ko.observable(true);
-                var ctx = canvas_1.fullscreenCanvas(true);
-                ctx.canvas.width -= 10;
-                ctx.canvas.height -= 10;
+                var ctx = canvas_1.fullscreenCanvas(false);
+                ctx.canvas.parentElement.removeChild(ctx.canvas);
+                document.body.insertBefore(ctx.canvas, document.body.firstChild);
+                ctx.canvas.style.zIndex = '-10';
                 var games = ko.observableArray([]);
                 var haveData = ko.computed(function () { return games().length > 0; });
                 var shouldShowData = ko.observable((function () {
@@ -750,7 +751,7 @@ System.register("components/viewer-model", ["lib/almaz-api", "lib/elo", "compone
                 }
                 function render() {
                     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-                    var r = new geometry_2.Rect(5, ctx.canvas.height - 5, ctx.canvas.width - 10, -ctx.canvas.height + 10);
+                    var r = new geometry_2.Rect(5, ctx.canvas.height - 5, ctx.canvas.width - 10, -ctx.canvas.height + 55);
                     var p = new plotter_1.Plotter(ctx, r);
                     var activeAggregator = aggregators.filter(function (a) { return a.window.name == activeView(); })[0];
                     if (activeAggregator !== undefined)

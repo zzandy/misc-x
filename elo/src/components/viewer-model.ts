@@ -27,9 +27,10 @@ interface EloFn {
 
 export const getViewerModel = () => {
     const loading = ko.observable(true);
-    const ctx = fullscreenCanvas(true);
-    ctx.canvas.width -= 10;
-    ctx.canvas.height -= 10;
+    const ctx = fullscreenCanvas(false);
+    (<HTMLElement>ctx.canvas.parentElement).removeChild(ctx.canvas);
+    document.body.insertBefore(ctx.canvas, document.body.firstChild);
+    ctx.canvas.style.zIndex='-10';
 
     const games = ko.observableArray<StatGame>([]);
 
@@ -174,7 +175,7 @@ export const getViewerModel = () => {
 
     function render() {
         ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-        const r = new Rect(5, ctx.canvas.height - 5, ctx.canvas.width - 10, -ctx.canvas.height + 10);
+        const r = new Rect(5, ctx.canvas.height - 5, ctx.canvas.width - 10, -ctx.canvas.height + 55);
         const p = new Plotter(ctx, r);
 
         const activeAggregator = aggregators.filter(a => a.window.name == activeView())[0]
