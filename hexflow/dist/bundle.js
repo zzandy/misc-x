@@ -88,6 +88,9 @@ System.register("hexflow/src/supercell", [], function (exports_2, context_2) {
                     this.i = i;
                     this.j = j;
                 }
+                HexPos.prototype.add = function (i, j) {
+                    return new HexPos(this.i + i, this.j + j);
+                };
                 return HexPos;
             }());
             exports_2("HexPos", HexPos);
@@ -175,20 +178,63 @@ System.register("hexflow/src/cellstore", ["hexflow/src/supercell"], function (ex
                 return new supercell_1.HexPos(-minmax.min.j, -minmax.min.i);
             };
             CellStore = (function () {
-                function CellStore(corners, initFn, cloneFn) {
-                    if (cloneFn === void 0) { cloneFn = TValue; }
-                    this.cloneFn = cloneFn;
-                    this.data = [];
-                    this.storeOrigin = makeArray(corners, this.data, initFn);
+                function CellStore(data, storeOrigin) {
+                    this.storeOrigin = storeOrigin;
+                    this.h = data.length;
+                    this.w = data[0].length;
+                    this.current = data;
+                    this.next = [];
+                    for (var i = 0; i < this.h; ++i) {
+                        var row = [];
+                        for (var j = 0; j < this.w; ++j) {
+                            row.push(data[i][j]);
+                        }
+                        this.next.push(row);
+                    }
                 }
+                CellStore.Create = function (corners, initFn) {
+                    var data = [];
+                    var storeOrigin = makeArray(corners, data, initFn);
+                    return new CellStore(data, storeOrigin);
+                };
                 CellStore.prototype.forEach = function (callback) {
-                    for (var i = 0; i < this.data.length; ++i) {
-                        for (var j = 0; j < this.data[i].length; ++j) {
-                            var d = this.data[i][j];
+                    var data = this.current;
+                    for (var i = 0; i < this.h; ++i) {
+                        for (var j = 0; j < this.w; ++j) {
+                            var d = data[i][j];
                             if (d != null)
                                 callback(new supercell_1.HexPos(i - this.storeOrigin.i, j - this.storeOrigin.j), d);
                         }
                     }
+                };
+                CellStore.prototype.update = function (cloneFn, callback) {
+                    var prev = this.current;
+                    var next = this.next;
+                    for (var i = 0; i < this.h; ++i) {
+                        for (var j = 0; j < this.w; ++j) {
+                            var d = prev[i][j];
+                            next[i][j] = d == null ? null : cloneFn(d);
+                        }
+                    }
+                    for (var i = 0; i < this.h; ++i) {
+                        for (var j = 0; j < this.w; ++j) {
+                            var d = prev[i][j];
+                            if (d != null)
+                                callback(new supercell_1.HexPos(i - this.storeOrigin.i, j - this.storeOrigin.j), prev[i][j], next[i][j], this.prevGetter.bind(this), this.nextGetter.bind(this));
+                        }
+                    }
+                    this.next = prev;
+                    this.current = next;
+                };
+                CellStore.prototype.prevGetter = function (pos) {
+                    var i = pos.i + this.storeOrigin.i;
+                    var j = pos.j + this.storeOrigin.j;
+                    return i >= 0 && j >= 0 && i < this.h && j < this.w ? this.current[i][j] : null;
+                };
+                CellStore.prototype.nextGetter = function (pos) {
+                    var i = pos.i + this.storeOrigin.i;
+                    var j = pos.j + this.storeOrigin.j;
+                    return i >= 0 && j >= 0 && i < this.h && j < this.w ? this.next[i][j] : null;
                 };
                 return CellStore;
             }());
@@ -304,7 +350,35 @@ System.register("gl/src/loop", [], function (exports_5, context_5) {
 System.register("hexflow/src/main", ["elo/src/lib/canvas", "gl/src/loop", "hexflow/src/cellstore", "hexflow/src/supercell", "hexflow/src/cellrender"], function (exports_6, context_6) {
     "use strict";
     var __moduleName = context_6 && context_6.id;
-    var canvas_1, loop_1, cellstore_1, supercell_2, cellrender_1, main, colors, XCellRender;
+    function clone(c) {
+        return { value: c.value };
+    }
+    function update(pos, oldCell, newCell, oldGet, newGet) {
+        var adj = surround(pos, oldGet);
+        var living = adj.reduce(function (a, b) { return a + (b != null && b.value == 1 ? 1 : 0); }, 0);
+        var red = adj.reduce(function (a, b) { return a + (b != null && b.value == 2 ? 1 : 0); }, 0);
+        var isalive = oldCell.value == 1;
+        if (isalive && (living > 4 || living < 2))
+            newCell.value = 2;
+        if (!isalive) {
+            if ((living == 0 && red == 1) || living == 3) {
+                newCell.value = 1;
+            }
+            else
+                newCell.value = 0;
+        }
+    }
+    function surround(pos, getter) {
+        return [
+            getter(pos.add(0, 1)),
+            getter(pos.add(1, 1)),
+            getter(pos.add(1, 0)),
+            getter(pos.add(0, -1)),
+            getter(pos.add(-1, -1)),
+            getter(pos.add(-1, 0)),
+        ];
+    }
+    var canvas_1, loop_1, cellstore_1, supercell_2, cellrender_1, Cell, main, colors, XCellRender;
     return {
         setters: [
             function (canvas_1_1) {
@@ -324,6 +398,11 @@ System.register("hexflow/src/main", ["elo/src/lib/canvas", "gl/src/loop", "hexfl
             }
         ],
         execute: function () {
+            Cell = (function () {
+                function Cell() {
+                }
+                return Cell;
+            }());
             exports_6("main", main = function () {
                 var ctx = canvas_1.fullscreenCanvas();
                 var init = function () {
@@ -331,36 +410,33 @@ System.register("hexflow/src/main", ["elo/src/lib/canvas", "gl/src/loop", "hexfl
                     var makeCell = function (pos) {
                         if (!cell.contains(pos))
                             return null;
-                        if (pos.i == 0 && pos.j == 0)
-                            return 4;
-                        return (pos.i > 0 ? 2 : 0) + (pos.j > 0 ? 1 : 0);
+                        var n = Math.floor(3 * Math.random());
+                        return { value: n };
                     };
-                    var cloneCell = function (pos, cell) {
-                        return cell;
-                    };
-                    var storage = new cellstore_1.CellStore(cell.corners, makeCell, cloneCell);
+                    var storage = cellstore_1.CellStore.Create(cell.corners, makeCell);
                     return {
                         store: storage
                     };
                 };
                 var fixed = function (delta, s) {
+                    s.store.update(clone, update);
                     return s;
                 };
                 var variable = function (delta, s) {
                     var render = new XCellRender(10);
                     render.render(ctx, s.store);
                 };
-                var loop = new loop_1.Loop(1000 / 60, init, fixed, variable);
+                var loop = new loop_1.Loop(1000 / 10, init, fixed, variable);
                 loop.start();
             });
-            colors = ['red', 'green', 'blue', 'silver', 'black'];
+            colors = ['white', 'black', 'red', 'silver', 'black'];
             XCellRender = (function (_super) {
                 __extends(XCellRender, _super);
                 function XCellRender() {
                     return _super !== null && _super.apply(this, arguments) || this;
                 }
-                XCellRender.prototype.getCellColor = function (value) {
-                    return colors[value];
+                XCellRender.prototype.getCellColor = function (cell) {
+                    return colors[cell.value];
                 };
                 return XCellRender;
             }(cellrender_1.CellRender));

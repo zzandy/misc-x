@@ -1,6 +1,10 @@
 
 export class HexPos {
     public constructor(public readonly i: number, public readonly j: number) { }
+
+    public add(i: number, j: number): HexPos {
+        return new HexPos(this.i + i, this.j + j);
+    }
 }
 
 export class Supercell {
