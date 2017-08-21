@@ -39,7 +39,7 @@ export function hcy(h: number, c: number, y: number): [number, number, number] {
     return [rgb[0] + m, rgb[1] + m, rgb[2] + m];
 }
 
-export function hcy2rgb(h: number, c: number, y: number, a: number): rgbastring {
+export function hcy2rgb(h: number, c: number, y: number, a: number = 1): rgbastring {
     const rgbdata = hcy(h, c, y);
     return 'rgba(' + (rgbdata[0] * 255).toFixed(0) + ',' + (rgbdata[1] * 255).toFixed(0) + ',' + (rgbdata[2] * 255).toFixed(0) + ', ' + (a || 1) + ')';
 }

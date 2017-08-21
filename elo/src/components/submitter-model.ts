@@ -311,12 +311,13 @@ export const getSubmitterModel = () => {
     };
 
     api.getPlayers().then((apiPlayers) => {
-        apiPlayers.forEach(player => {
-            m.players.push({
-                nickName: uniqueNickName(player, apiPlayers),
-                apiPlayer: player,
-            })
-        });
+        apiPlayers.filter(player => player._id != '593efed3f36d2806fcd5cd7e' && player._id != '5948ffa87e00b50004cd35ed')
+            .forEach((player, i, players) => {
+                m.players.push({
+                    nickName: uniqueNickName(player, players),
+                    apiPlayer: player,
+                })
+            });
 
         m.playersReady(true);
     });

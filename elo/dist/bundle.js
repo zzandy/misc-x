@@ -1291,9 +1291,10 @@ System.register("components/submitter-model", ["lib/almaz-api", "lib/elo", "comp
                         && currentGame.blu.offence() != player;
                 };
                 api.getPlayers().then(function (apiPlayers) {
-                    apiPlayers.forEach(function (player) {
+                    apiPlayers.filter(function (player) { return player._id != '593efed3f36d2806fcd5cd7e' && player._id != '5948ffa87e00b50004cd35ed'; })
+                        .forEach(function (player, i, players) {
                         m.players.push({
-                            nickName: uniqueNickName(player, apiPlayers),
+                            nickName: uniqueNickName(player, players),
                             apiPlayer: player,
                         });
                     });
@@ -1408,6 +1409,7 @@ System.register("lib/color", [], function (exports_14, context_14) {
     }
     exports_14("hcy", hcy);
     function hcy2rgb(h, c, y, a) {
+        if (a === void 0) { a = 1; }
         var rgbdata = hcy(h, c, y);
         return 'rgba(' + (rgbdata[0] * 255).toFixed(0) + ',' + (rgbdata[1] * 255).toFixed(0) + ',' + (rgbdata[2] * 255).toFixed(0) + ', ' + (a || 1) + ')';
     }

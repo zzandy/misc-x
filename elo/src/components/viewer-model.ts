@@ -30,7 +30,7 @@ export const getViewerModel = () => {
     const ctx = fullscreenCanvas(false);
     (<HTMLElement>ctx.canvas.parentElement).removeChild(ctx.canvas);
     document.body.insertBefore(ctx.canvas, document.body.firstChild);
-    ctx.canvas.style.zIndex='-10';
+    ctx.canvas.style.zIndex = '-10';
 
     const games = ko.observableArray<StatGame>([]);
 
