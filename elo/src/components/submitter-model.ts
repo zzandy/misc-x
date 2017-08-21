@@ -7,6 +7,7 @@ import { GameProcessor, Player, Team, Game } from './game-processor';
 
 interface NickPlayer extends Player {
     nickName: string;
+    hide: boolean;
 }
 
 interface EloTeam extends Team<NickPlayer> {
@@ -92,12 +93,11 @@ export const getSubmitterModel = () => {
     const m: any = {};
     const elo = new Elo();
     const players = m.players = ko.observableArray<NickPlayer>([]);
+    m.visiblePlayers = ko.computed<NickPlayer[]>(() => m.players().filter((p: NickPlayer) => !hidePlayer(p.apiPlayer)));
 
     const newPlayer = (player: Player): NickPlayer => {
 
         const p = players().filter(p => p.apiPlayer._id == player.apiPlayer._id)[0];
-
-        console.log(players().length, player, p)
 
         return p;
     }
@@ -136,6 +136,8 @@ export const getSubmitterModel = () => {
     const playersReady = m.playersReady = ko.observable(false);
     const gamesReady = m.gamesReady = ko.observable(false);
     const numGames = m.numGames = ko.observable(0);
+
+    const submittedGames = m.submittedGames = ko.observableArray<ApiGame>();
 
     const scores = m.scores = getScoreModel();
     const scoresReady = m.scoresReady = ko.computed(() => {
@@ -310,11 +312,16 @@ export const getSubmitterModel = () => {
             && currentGame.blu.offence() != player;
     };
 
+
+
     api.getPlayers().then((apiPlayers) => {
-        apiPlayers.filter(player => player._id != '593efed3f36d2806fcd5cd7e' && player._id != '5948ffa87e00b50004cd35ed')
+        apiPlayers.map(player => {
+            return player;
+        })
             .forEach((player, i, players) => {
                 m.players.push({
                     nickName: uniqueNickName(player, players),
+                    hide: hidePlayer(player),
                     apiPlayer: player,
                 })
             });
@@ -326,15 +333,23 @@ export const getSubmitterModel = () => {
 
         while (pendingUploads.length > 0) {
             const next = pendingUploads.shift();
+            setPendingUploads(pendingUploads);
+
             if (next)
                 uploadGame(next, true);
         }
-
-        setPendingUploads(pendingUploads);
     }
 
     const uploadGame = (game: ApiGame, isDumping: boolean = false) => {
         api.postGame(game, apiSource)
+            .then(gameid => submittedGames.push({
+                _id: gameid,
+                blue: game.blue,
+                red: game.red,
+                endDate: game.endDate,
+                source: game.source,
+                startDate: game.startDate
+            }))
             .then(() => {
                 if (!isDumping)
                     dumpPendingUploads();
@@ -362,14 +377,16 @@ export const getSubmitterModel = () => {
 };
 
 const uniqueNickName = (player: ApiPlayer, players: ApiPlayer[]) => {
+    if (hidePlayer(player)) return player.firstName + ' ' + player.lastName;
+
     let nickName = normalizeName(player.firstName);
 
-    if (!players.some(p => p._id != player._id && normalizeName(p.firstName) == nickName))
+    if (!players.some(p => !hidePlayer(p) && p._id != player._id && normalizeName(p.firstName) == nickName))
         return nickName;
 
     nickName = player.lastName;
 
-    if (!players.some(p => p._id != player._id && p.lastName == nickName))
+    if (!players.some(p => !hidePlayer(p) && p._id != player._id && p.lastName == nickName))
         return nickName;
 
     return player.firstName + ' ' + player.lastName;
@@ -384,6 +401,8 @@ const normalizeName = (name: string) => {
 
     return name;
 }
+
+const hidePlayer = (player: ApiPlayer): boolean => player._id == '593efed3f36d2806fcd5cd7e' || player._id == '5948ffa87e00b50004cd35ed';
 
 const isNullObservable = <T>(o: KnockoutObservable<T>) => {
     const v = o();

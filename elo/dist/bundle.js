@@ -1044,7 +1044,7 @@ System.register("components/score-model", [], function (exports_12, context_12) 
 System.register("components/submitter-model", ["lib/almaz-api", "lib/elo", "components/score-model", "components/game-processor"], function (exports_13, context_13) {
     "use strict";
     var __moduleName = context_13 && context_13.id;
-    var almaz_api_2, elo_2, score_model_1, game_processor_2, getSource, getCurrentTeamModel, getCurrentGameModel, getPendingUploads, setPendingUploads, getSubmitterModel, uniqueNickName, normalizeName, isNullObservable, whenAllNotNull;
+    var almaz_api_2, elo_2, score_model_1, game_processor_2, getSource, getCurrentTeamModel, getCurrentGameModel, getPendingUploads, setPendingUploads, getSubmitterModel, uniqueNickName, normalizeName, hidePlayer, isNullObservable, whenAllNotNull;
     return {
         setters: [
             function (almaz_api_2_1) {
@@ -1124,9 +1124,9 @@ System.register("components/submitter-model", ["lib/almaz-api", "lib/elo", "comp
                 var m = {};
                 var elo = new elo_2.Elo();
                 var players = m.players = ko.observableArray([]);
+                m.visiblePlayers = ko.computed(function () { return m.players().filter(function (p) { return !hidePlayer(p.apiPlayer); }); });
                 var newPlayer = function (player) {
                     var p = players().filter(function (p) { return p.apiPlayer._id == player.apiPlayer._id; })[0];
-                    console.log(players().length, player, p);
                     return p;
                 };
                 var newTeam = function (team) {
@@ -1156,6 +1156,7 @@ System.register("components/submitter-model", ["lib/almaz-api", "lib/elo", "comp
                 var playersReady = m.playersReady = ko.observable(false);
                 var gamesReady = m.gamesReady = ko.observable(false);
                 var numGames = m.numGames = ko.observable(0);
+                var submittedGames = m.submittedGames = ko.observableArray();
                 var scores = m.scores = score_model_1.getScoreModel();
                 var scoresReady = m.scoresReady = ko.computed(function () {
                     return scores.red.score() != null && scores.blu.score() != null && scores.blu.score() != scores.red.score();
@@ -1291,10 +1292,13 @@ System.register("components/submitter-model", ["lib/almaz-api", "lib/elo", "comp
                         && currentGame.blu.offence() != player;
                 };
                 api.getPlayers().then(function (apiPlayers) {
-                    apiPlayers.filter(function (player) { return player._id != '593efed3f36d2806fcd5cd7e' && player._id != '5948ffa87e00b50004cd35ed'; })
+                    apiPlayers.map(function (player) {
+                        return player;
+                    })
                         .forEach(function (player, i, players) {
                         m.players.push({
                             nickName: uniqueNickName(player, players),
+                            hide: hidePlayer(player),
                             apiPlayer: player,
                         });
                     });
@@ -1303,14 +1307,22 @@ System.register("components/submitter-model", ["lib/almaz-api", "lib/elo", "comp
                 var dumpPendingUploads = function () {
                     while (pendingUploads.length > 0) {
                         var next = pendingUploads.shift();
+                        setPendingUploads(pendingUploads);
                         if (next)
                             uploadGame(next, true);
                     }
-                    setPendingUploads(pendingUploads);
                 };
                 var uploadGame = function (game, isDumping) {
                     if (isDumping === void 0) { isDumping = false; }
                     api.postGame(game, apiSource)
+                        .then(function (gameid) { return submittedGames.push({
+                        _id: gameid,
+                        blue: game.blue,
+                        red: game.red,
+                        endDate: game.endDate,
+                        source: game.source,
+                        startDate: game.startDate
+                    }); })
                         .then(function () {
                         if (!isDumping)
                             dumpPendingUploads();
@@ -1331,11 +1343,13 @@ System.register("components/submitter-model", ["lib/almaz-api", "lib/elo", "comp
                 return m;
             });
             uniqueNickName = function (player, players) {
+                if (hidePlayer(player))
+                    return player.firstName + ' ' + player.lastName;
                 var nickName = normalizeName(player.firstName);
-                if (!players.some(function (p) { return p._id != player._id && normalizeName(p.firstName) == nickName; }))
+                if (!players.some(function (p) { return !hidePlayer(p) && p._id != player._id && normalizeName(p.firstName) == nickName; }))
                     return nickName;
                 nickName = player.lastName;
-                if (!players.some(function (p) { return p._id != player._id && p.lastName == nickName; }))
+                if (!players.some(function (p) { return !hidePlayer(p) && p._id != player._id && p.lastName == nickName; }))
                     return nickName;
                 return player.firstName + ' ' + player.lastName;
             };
@@ -1352,6 +1366,7 @@ System.register("components/submitter-model", ["lib/almaz-api", "lib/elo", "comp
                     return 'Vova';
                 return name;
             };
+            hidePlayer = function (player) { return player._id == '593efed3f36d2806fcd5cd7e' || player._id == '5948ffa87e00b50004cd35ed'; };
             isNullObservable = function (o) {
                 var v = o();
                 return typeof (v) == 'boolean' ? v === false : v == null;

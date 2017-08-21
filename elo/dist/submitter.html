@@ -61,7 +61,7 @@
         <button data-bind="enable: scoresReady, click: submitGame">Submit</button>
     </div>
 
-    <div class="picker row" data-bind="foreach: players, visible: !gameReady()">
+    <div class="picker row" data-bind="foreach: visiblePlayers, visible: !gameReady()">
         <button data-bind="text: nickName, click: () => $parent.pick($data), enable: $parent.isNotPicked($data)"></button>
     </div>
 
