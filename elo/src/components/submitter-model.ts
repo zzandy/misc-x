@@ -247,6 +247,19 @@ export const getSubmitterModel = () => {
         scores.blu.score(null);
     };
 
+    m.cancelGame = function (this: ApiGame) {
+        if (this._id === undefined)
+            return;
+
+        const red = this.red.defense.lastName + ' (def) ' + this.red.offense.lastName + ' (off)';
+        const blu = this.blue.offense.lastName + ' (off) ' + this.blue.defense.lastName + ' (def)';
+
+        if (confirm(`About to delete game between\n${red} and ${blu}.\n\nAre you sure?`))
+            api.deleteGame(this._id).then(d => {
+                submittedGames(submittedGames().filter(g => g._id != this._id));
+            });
+    };
+
     m.resetGame = () => {
         consecutiveWins.red = 0;
         consecutiveWins.blu = 0;

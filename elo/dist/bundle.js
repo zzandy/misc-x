@@ -199,6 +199,16 @@ System.register("lib/almaz-api", ["lib/ajax"], function (exports_4, context_4) {
                         });
                     });
                 };
+                AlmazApi.prototype.deleteGame = function (id) {
+                    var api = this;
+                    return new Promise(function (resolve, reject) {
+                        api.scope = api.scope.then(function (ctx) {
+                            return ajax_1.request('DELETE', ctx.url + 'games/' + id)
+                                .then(function (d) { resolve(d); return ctx; })
+                                .catch(function (e) { reject(e); return ctx; });
+                        });
+                    });
+                };
                 AlmazApi.prototype.refreshPlayers = function (ctx) {
                     return ajax_1.getJson(ctx.url + 'players')
                         .then(function (players) { ctx.players = players; return ctx; })
@@ -1236,6 +1246,17 @@ System.register("components/submitter-model", ["lib/almaz-api", "lib/elo", "comp
                 var resetScores = function () {
                     scores.red.score(null);
                     scores.blu.score(null);
+                };
+                m.cancelGame = function () {
+                    var _this = this;
+                    if (this._id === undefined)
+                        return;
+                    var red = this.red.defense.lastName + ' (def) ' + this.red.offense.lastName + ' (off)';
+                    var blu = this.blue.offense.lastName + ' (off) ' + this.blue.defense.lastName + ' (def)';
+                    if (confirm("About to delete game between\n" + red + " and " + blu + ".\n\nAre you sure?"))
+                        api.deleteGame(this._id).then(function (d) {
+                            submittedGames(submittedGames().filter(function (g) { return g._id != _this._id; }));
+                        });
                 };
                 m.resetGame = function () {
                     consecutiveWins.red = 0;

@@ -1,4 +1,4 @@
-import { getJson, postJson } from './ajax';
+import { getJson, postJson, request } from './ajax';
 
 export class ApiPlayer {
     public readonly _id: string;
@@ -48,7 +48,7 @@ export class AlmazApi {
 
                 return getJson(ctx.url + (!!source ? 'games?source=' + encodeURIComponent(source) : 'games'))
                     .catch(function (e) { console.error(e); return ctx; })
-                    .then(function (data:ApiGame[]) {
+                    .then(function (data: ApiGame[]) {
                         resolve(data);
                         return ctx;
                     });
@@ -57,7 +57,7 @@ export class AlmazApi {
         });
     }
 
-    public postGame(game: ApiGame, source: string):Promise<string> {
+    public postGame(game: ApiGame, source: string): Promise<string> {
         const api = this;
 
         if (game == null)
@@ -72,6 +72,17 @@ export class AlmazApi {
                     .then((data: ApiGame) => { resolve(data._id); return ctx })
                     .catch((e) => { reject(e); return ctx });
             });
+        });
+    }
+
+    public deleteGame(id: string): Promise<ApiGame> {
+        const api = this;
+        return new Promise((resolve, reject) => {
+            api.scope = api.scope.then((ctx) => {
+                return request('DELETE', ctx.url + 'games/' + id)
+                    .then((d: ApiGame) => { resolve(d); return ctx })
+                    .catch(e => { reject(e); return ctx })
+            })
         });
     }
 

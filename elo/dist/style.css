@@ -31,6 +31,10 @@ button:disabled {
   color: #404040;
   border-color: #333333;
 }
+.submitted,
+.submitted button {
+  font-size: 60%;
+}
 .red {
   background-color: #b30000;
   color: #ffe5e5;
