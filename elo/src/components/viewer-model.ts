@@ -131,6 +131,8 @@ export const getViewerModel = () => {
         }
 
         const g = {
+            _id: game._id,
+
             red: game.red,
             blu: game.blu,
 

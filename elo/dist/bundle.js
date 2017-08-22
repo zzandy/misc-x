@@ -332,10 +332,15 @@ System.register("components/game-processor", [], function (exports_6, context_6)
                         .filter(removeDuplicates)
                         .forEach(this.logGame.bind(this));
                 };
-                GameProcessor.prototype.logGame = function (game) {
+                GameProcessor.prototype.getGame = function (game, id) {
+                    if (id === void 0) { id = null; }
                     var red = this.findTeam(this.findPlayer(game.red.defense), this.findPlayer(game.red.offense));
                     var blu = this.findTeam(this.findPlayer(game.blue.defense), this.findPlayer(game.blue.offense));
-                    var gameRecord = {
+                    var gameId = (game._id === null || game._id == undefined ? id : game._id);
+                    if (gameId == null)
+                        throw new Error('game._id cannot be left empty');
+                    return {
+                        _id: gameId,
                         red: red,
                         blu: blu,
                         redScore: game.red.score || 0,
@@ -343,7 +348,12 @@ System.register("components/game-processor", [], function (exports_6, context_6)
                         startDate: new Date(game.startDate),
                         endDate: new Date(game.endDate)
                     };
+                };
+                GameProcessor.prototype.logGame = function (game, id) {
+                    if (id === void 0) { id = null; }
+                    var gameRecord = this.getGame(game, id);
                     this.games.push(this.gameAdapter(gameRecord));
+                    return gameRecord;
                 };
                 ;
                 return GameProcessor;
@@ -732,6 +742,7 @@ System.register("components/viewer-model", ["lib/almaz-api", "lib/elo", "compone
                         bluDeltas[name_2] = deltas[1];
                     }
                     var g = {
+                        _id: game._id,
                         red: game.red,
                         blu: game.blu,
                         redScore: game.redScore,
@@ -1149,6 +1160,7 @@ System.register("components/submitter-model", ["lib/almaz-api", "lib/elo", "comp
                 var newGame = function (game) {
                     elo.game(game.red.rating, game.blu.rating, game.redScore, game.bluScore);
                     return {
+                        _id: game._id,
                         red: game.red,
                         blu: game.blu,
                         redScore: game.redScore,
@@ -1249,10 +1261,11 @@ System.register("components/submitter-model", ["lib/almaz-api", "lib/elo", "comp
                 };
                 m.cancelGame = function () {
                     var _this = this;
+                    console.log(this);
                     if (this._id === undefined)
                         return;
-                    var red = this.red.defense.lastName + ' (def) ' + this.red.offense.lastName + ' (off)';
-                    var blu = this.blue.offense.lastName + ' (off) ' + this.blue.defense.lastName + ' (def)';
+                    var red = this.red.defence.nickName + ' (def) ' + this.red.offence.nickName + ' (off)';
+                    var blu = this.blu.offence.nickName + ' (off) ' + this.blu.defence.nickName + ' (def)';
                     if (confirm("About to delete game between\n" + red + " and " + blu + ".\n\nAre you sure?"))
                         api.deleteGame(this._id).then(function (d) {
                             submittedGames(submittedGames().filter(function (g) { return g._id != _this._id; }));
@@ -1280,7 +1293,6 @@ System.register("components/submitter-model", ["lib/almaz-api", "lib/elo", "comp
                             score: scores.blu.score() || 0,
                         }
                     };
-                    gp.logGame(gamePlayed);
                     m.numGames(gp.numGames);
                     uploadGame(gamePlayed);
                     var redScore = scores.red.score();
@@ -1336,14 +1348,15 @@ System.register("components/submitter-model", ["lib/almaz-api", "lib/elo", "comp
                 var uploadGame = function (game, isDumping) {
                     if (isDumping === void 0) { isDumping = false; }
                     api.postGame(game, apiSource)
-                        .then(function (gameid) { return submittedGames.push({
-                        _id: gameid,
-                        blue: game.blue,
-                        red: game.red,
-                        endDate: game.endDate,
-                        source: game.source,
-                        startDate: game.startDate
-                    }); })
+                        .then(function (gameid) {
+                        submittedGames.push(gp.logGame(game, gameid));
+                        var now = new Date().getTime();
+                        var a = submittedGames();
+                        var n = a.length - 5;
+                        submittedGames(a.filter(function (g, i) {
+                            return (now - g.endDate.getTime()) < 1000 * 60 * 5 && i >= n;
+                        }));
+                    })
                         .then(function () {
                         if (!isDumping)
                             dumpPendingUploads();

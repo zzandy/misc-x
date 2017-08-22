@@ -11,6 +11,7 @@ export interface Team<TPlayer> {
 }
 
 export interface Game<TPlayer, TTeam extends Team<TPlayer>> {
+    _id: string;
     red: TTeam;
     blu: TTeam;
     redScore: number;
@@ -71,11 +72,16 @@ export class GameProcessor<TPlayer extends Player, TTeam extends Team<TPlayer>, 
             .forEach(this.logGame.bind(this));
     }
 
-    public logGame(game: ApiGame): void {
+    public getGame(game: ApiGame, id: string | null = null): Game<TPlayer, TTeam> {
         const red = this.findTeam(this.findPlayer(game.red.defense), this.findPlayer(game.red.offense));
         const blu = this.findTeam(this.findPlayer(game.blue.defense), this.findPlayer(game.blue.offense));
 
-        const gameRecord: Game<TPlayer, TTeam> = {
+        const gameId: string = <string>(game._id === null || game._id == undefined ? id : game._id);
+
+        if (gameId == null) throw new Error('game._id cannot be left empty');
+
+        return {
+            _id: gameId,
             red: red,
             blu: blu,
             redScore: game.red.score || 0,
@@ -83,8 +89,13 @@ export class GameProcessor<TPlayer extends Player, TTeam extends Team<TPlayer>, 
             startDate: new Date(game.startDate),
             endDate: new Date(game.endDate)
         };
+    }
 
+    public logGame(game: ApiGame, id: string | null = null): Game<TPlayer, TTeam> {
+        const gameRecord = this.getGame(game, id);
         this.games.push(this.gameAdapter(gameRecord));
+
+        return gameRecord;
     };
 }
 

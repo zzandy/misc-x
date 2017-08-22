@@ -114,6 +114,7 @@ export const getSubmitterModel = () => {
         elo.game(game.red.rating, game.blu.rating, game.redScore, game.bluScore);
 
         return {
+            _id: game._id,
             red: game.red,
             blu: game.blu,
             redScore: game.redScore,
@@ -137,7 +138,7 @@ export const getSubmitterModel = () => {
     const gamesReady = m.gamesReady = ko.observable(false);
     const numGames = m.numGames = ko.observable(0);
 
-    const submittedGames = m.submittedGames = ko.observableArray<ApiGame>();
+    const submittedGames = m.submittedGames = ko.observableArray<EloGame>();
 
     const scores = m.scores = getScoreModel();
     const scoresReady = m.scoresReady = ko.computed(() => {
@@ -247,12 +248,13 @@ export const getSubmitterModel = () => {
         scores.blu.score(null);
     };
 
-    m.cancelGame = function (this: ApiGame) {
+    m.cancelGame = function (this: EloGame) {
+        console.log(this)
         if (this._id === undefined)
             return;
 
-        const red = this.red.defense.lastName + ' (def) ' + this.red.offense.lastName + ' (off)';
-        const blu = this.blue.offense.lastName + ' (off) ' + this.blue.defense.lastName + ' (def)';
+        const red = this.red.defence.nickName + ' (def) ' + this.red.offence.nickName + ' (off)';
+        const blu = this.blu.offence.nickName + ' (off) ' + this.blu.defence.nickName + ' (def)';
 
         if (confirm(`About to delete game between\n${red} and ${blu}.\n\nAre you sure?`))
             api.deleteGame(this._id).then(d => {
@@ -286,7 +288,6 @@ export const getSubmitterModel = () => {
             }
         };
 
-        gp.logGame(gamePlayed);
         m.numGames(gp.numGames);
         uploadGame(gamePlayed);
 
@@ -325,8 +326,6 @@ export const getSubmitterModel = () => {
             && currentGame.blu.offence() != player;
     };
 
-
-
     api.getPlayers().then((apiPlayers) => {
         apiPlayers.map(player => {
             return player;
@@ -355,14 +354,15 @@ export const getSubmitterModel = () => {
 
     const uploadGame = (game: ApiGame, isDumping: boolean = false) => {
         api.postGame(game, apiSource)
-            .then(gameid => submittedGames.push({
-                _id: gameid,
-                blue: game.blue,
-                red: game.red,
-                endDate: game.endDate,
-                source: game.source,
-                startDate: game.startDate
-            }))
+            .then(gameid => {
+                submittedGames.push(gp.logGame(game, gameid))
+                const now = new Date().getTime();
+                const a = submittedGames();
+                const n = a.length - 5
+                submittedGames(a.filter((g, i) => {
+                    return (now - g.endDate.getTime()) < 1000 * 60 * 5 && i >= n;
+                }));
+            })
             .then(() => {
                 if (!isDumping)
                     dumpPendingUploads();
