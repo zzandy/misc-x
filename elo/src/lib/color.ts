@@ -1,7 +1,9 @@
 type rgbastring = string;
+type rgbtuple = [number, number, number];
+type rgbatuple = [number, number, number];
 
 // hue Chroma luma
-export function hcy(h: number, c: number, y: number): [number, number, number] {
+export function hcy(h: number, c: number, y: number): rgbtuple {
 
     // 601
     const r = .3;
@@ -39,7 +41,21 @@ export function hcy(h: number, c: number, y: number): [number, number, number] {
     return [rgb[0] + m, rgb[1] + m, rgb[2] + m];
 }
 
+function tuple2rgb(r: number, g: number, b: number, a: number): rgbastring {
+    return 'rgba(' + (r * 255).toFixed(0) + ',' + (g * 255).toFixed(0) + ',' + (b * 255).toFixed(0) + ', ' + a + ')';
+}
+
 export function hcy2rgb(h: number, c: number, y: number, a: number = 1): rgbastring {
     const rgbdata = hcy(h, c, y);
-    return 'rgba(' + (rgbdata[0] * 255).toFixed(0) + ',' + (rgbdata[1] * 255).toFixed(0) + ',' + (rgbdata[2] * 255).toFixed(0) + ', ' + (a || 1) + ')';
+    return tuple2rgb(rgbdata[0], rgbdata[1], rgbdata[2], a || 1);
+}
+
+export function rgbdata2rgb(data: rgbtuple): rgbastring;
+export function rgbdata2rgb(data: rgbtuple, a: number): rgbastring;
+export function rgbdata2rgb(data: rgbatuple): rgbastring;
+export function rgbdata2rgb(t: rgbatuple, a?: number): rgbastring {
+    if (t.length == 3)
+        return tuple2rgb(t[0], t[1], t[2], a === undefined ? 1 : a);
+
+    return tuple2rgb(t[0], t[1], t[2], t[3]);
 }
