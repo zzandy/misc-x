@@ -1,9 +1,5 @@
 import { HexPos } from "./supercell";
 
-class Cell<TValue>{
-    constructor(public value: TValue) { }
-}
-
 const makeArray = <TValue>(corners: HexPos[], array: (TValue | null)[][], initFn: (p: HexPos) => TValue | null): HexPos => {
     const min = Math.min;
     const max = Math.max;
