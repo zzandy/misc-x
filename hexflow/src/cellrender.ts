@@ -1,13 +1,8 @@
 import { ICanvasRenderingContext2D } from '../../elo/src/lib/canvas';
-import { HexPos, Supercell } from "./supercell";
+import { Point, HexPos, Supercell } from "./supercell";
 import { CellStore } from "./cellstore";
 
-export class Point {
-    constructor(public readonly x: number, public readonly y: number) { }
-}
-
 const q = 1 / Math.sqrt(3);
-const sq32 = Math.sqrt(3) / 2;
 
 export abstract class CellRender<TValue> {
     constructor(private readonly cellsize: number) { }
@@ -31,7 +26,7 @@ export abstract class CellRender<TValue> {
         const s = this.cellsize;
         const q = .95;
 
-        return new Point(ctx.canvas.width/2+q * s * pos.j * sq32, ctx.canvas.height/2+q * -s * (pos.i - pos.j / 2))
+        return pos.toPoint().times(s * q, -s * q).plus(ctx.canvas.width / 2, ctx.canvas.height / 2);
     }
 
     private fillHex(ctx: ICanvasRenderingContext2D, x: number, y: number, s: number): void {
