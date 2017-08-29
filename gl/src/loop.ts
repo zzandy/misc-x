@@ -18,14 +18,14 @@ export class Loop<TState>{
 
         this.isRunning = true;
 
-        this.update(state, 0);
+        this.update(0, state, true);
     }
 
     public stop() {
         this.isRunning = false;
     }
 
-    private update(state: TState, delta: number) {
+    private update(delta: number, state: TState, force: boolean = false) {
         if (!this.isRunning) return;
 
         const time = new Date().getTime();
@@ -34,14 +34,21 @@ export class Loop<TState>{
 
         this.fixedAccum += delta;
 
-        while (this.fixedAccum > this.fixedDelta) {
+        let upd = false;
+        if (force) {
+            newState = this.fixed(this.fixedDelta, newState);
+            upd = true;
+        }
+        else while (this.fixedAccum > this.fixedDelta) {
             this.fixedAccum -= this.fixedDelta;
             newState = this.fixed(this.fixedDelta, newState);
+            upd = true;
         }
 
-        this.variable(delta, newState);
+        if (upd)
+            this.variable(delta, newState);
 
-        requestAnimationFrame(() => this.update(newState, new Date().getTime() - time));
+        requestAnimationFrame(() => this.update(new Date().getTime() - time, newState));
     }
 }
 
