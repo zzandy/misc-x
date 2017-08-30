@@ -41,6 +41,16 @@ export function hcy(h: number, c: number, y: number): rgbtuple {
     return [rgb[0] + m, rgb[1] + m, rgb[2] + m];
 }
 
+export function wheelHcy(h: number, c: number, y: number): rgbatuple {
+    const h2 = h < 180 ? 2 * h / 3 : 120 + (h - 180) * 4 / 3;
+    return hcy(h2, c, y);
+}
+
+export function wheel2rgb(h: number, c: number, y: number, a: number = 1): rgbastring {
+    const rgbdata = wheelHcy(h, c, y);
+    return tuple2rgb(rgbdata[0], rgbdata[1], rgbdata[2], a || 1);
+}
+
 function tuple2rgb(r: number, g: number, b: number, a: number): rgbastring {
     return 'rgba(' + (r * 255).toFixed(0) + ',' + (g * 255).toFixed(0) + ',' + (b * 255).toFixed(0) + ', ' + a + ')';
 }
