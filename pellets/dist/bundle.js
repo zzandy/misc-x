@@ -1,10 +1,11 @@
 System.register("elo/src/lib/canvas", [], function (exports_1, context_1) {
     "use strict";
     var __moduleName = context_1 && context_1.id;
-    function fullscreenCanvas(relative) {
+    function fullscreenCanvas(relative, noAlpha) {
         if (relative === void 0) { relative = false; }
+        if (noAlpha === void 0) { noAlpha = false; }
         var can = getCanvas(relative);
-        var ctx = can.getContext('2d');
+        var ctx = can.getContext('2d', { alpha: !noAlpha });
         if (ctx == null)
             throw new Error('failed to get \'2d\' context');
         ctx.clear = function () {
@@ -66,9 +67,125 @@ System.register("elo/src/lib/canvas", [], function (exports_1, context_1) {
         }
     };
 });
-System.register("gl/src/loop", [], function (exports_2, context_2) {
+System.register("elo/src/lib/color", [], function (exports_2, context_2) {
     "use strict";
     var __moduleName = context_2 && context_2.id;
+    function hcy(h, c, y) {
+        var r = .3;
+        var g = .59;
+        var b = .11;
+        h /= 60;
+        var k = (1 - Math.abs((h % 2) - 1));
+        var K = h < 1 ? r + k * g
+            : h < 2 ? g + k * r
+                : h < 3 ? g + k * b
+                    : h < 4 ? b + k * g
+                        : h < 5 ? b + k * r
+                            : r + k * b;
+        var cmax = 1;
+        if (y <= 0 || y >= 1)
+            cmax = 0;
+        else
+            cmax *= K < y ? (y - 1) / (K - 1) : K > y ? y / K : 1;
+        c = Math.min(c, cmax);
+        var x = c * k;
+        var rgb = h < 1 ? [c, x, 0]
+            : h < 2 ? [x, c, 0]
+                : h < 3 ? [0, c, x]
+                    : h < 4 ? [0, x, c]
+                        : h < 5 ? [x, 0, c]
+                            : [c, 0, x];
+        var m = y - (r * rgb[0] + g * rgb[1] + b * rgb[2]);
+        return [rgb[0] + m, rgb[1] + m, rgb[2] + m];
+    }
+    exports_2("hcy", hcy);
+    function wheelHcy(h, c, y) {
+        var h2 = h < 180 ? 2 * h / 3 : 120 + (h - 180) * 4 / 3;
+        return hcy(h2, c, y);
+    }
+    exports_2("wheelHcy", wheelHcy);
+    function wheel2rgb(h, c, y, a) {
+        if (a === void 0) { a = 1; }
+        var rgbdata = wheelHcy(h, c, y);
+        return tuple2rgb(rgbdata[0], rgbdata[1], rgbdata[2], a || 1);
+    }
+    exports_2("wheel2rgb", wheel2rgb);
+    function tuple2rgb(r, g, b, a) {
+        return 'rgba(' + (r * 255).toFixed(0) + ',' + (g * 255).toFixed(0) + ',' + (b * 255).toFixed(0) + ', ' + a + ')';
+    }
+    function hcy2rgb(h, c, y, a) {
+        if (a === void 0) { a = 1; }
+        var rgbdata = hcy(h, c, y);
+        return tuple2rgb(rgbdata[0], rgbdata[1], rgbdata[2], a || 1);
+    }
+    exports_2("hcy2rgb", hcy2rgb);
+    function rgbdata2rgb(t, a) {
+        if (t.length == 3)
+            return tuple2rgb(t[0], t[1], t[2], a === undefined ? 1 : a);
+        return tuple2rgb(t[0], t[1], t[2], t[3]);
+    }
+    exports_2("rgbdata2rgb", rgbdata2rgb);
+    return {
+        setters: [],
+        execute: function () {
+        }
+    };
+});
+System.register("pellets/src/color", ["elo/src/lib/canvas", "elo/src/lib/color"], function (exports_3, context_3) {
+    "use strict";
+    var __moduleName = context_3 && context_3.id;
+    function renderWheel(ctx, r, t, colorFn) {
+        var steps = 360;
+        var tau = Math.PI * 2;
+        var _a = [Math.sin, Math.cos], sin = _a[0], cos = _a[1];
+        for (var i = 0; i < steps; ++i) {
+            var a = tau * i / steps;
+            var b = tau * (i + 1) / steps;
+            ctx.beginPath();
+            ctx.closePath();
+            ctx.moveTo(r * cos(a), -r * sin(a));
+            ctx.lineTo((1 + t) * r * cos(a), -(1 + t) * r * sin(a));
+            ctx.lineTo((1 + t) * r * cos(b), -(1 + t) * r * sin(b));
+            ctx.lineTo(r * cos(b), -r * sin(b));
+            ctx.fillStyle = colorFn(i * 360 / steps, 1, .5);
+            ctx.fill();
+        }
+    }
+    function wheelColor(h, c, y, a) {
+        var h2 = h < 180 ? 2 * h / 3 : 120 + (h - 180) * 4 / 3;
+        return color_1.hcy2rgb(h2, c, y, a);
+    }
+    function wheelHsl(h, s, l) {
+        var h2 = h < 180 ? 2 * h / 3 : 120 + (h - 180) * 4 / 3;
+        return 'hsl(' + h2 + ', ' + s * 100 + '%, ' + l * 100 + '%)';
+    }
+    var canvas_1, color_1, main;
+    return {
+        setters: [
+            function (canvas_1_1) {
+                canvas_1 = canvas_1_1;
+            },
+            function (color_1_1) {
+                color_1 = color_1_1;
+            }
+        ],
+        execute: function () {
+            exports_3("main", main = function () {
+                var ctx = canvas_1.fullscreenCanvas();
+                document.body.style.backgroundColor = 'black';
+                ctx.translate(ctx.canvas.width / 2, ctx.canvas.height / 2);
+                var r = 200;
+                var t = .2;
+                renderWheel(ctx, r, t, color_1.hcy2rgb);
+                renderWheel(ctx, r * .7, t * 2, wheelColor);
+                renderWheel(ctx, r * .4, t * 3, wheelHsl);
+            });
+        }
+    };
+});
+System.register("gl/src/loop", [], function (exports_4, context_4) {
+    "use strict";
+    var __moduleName = context_4 && context_4.id;
     var Loop;
     return {
         setters: [],
@@ -117,13 +234,13 @@ System.register("gl/src/loop", [], function (exports_2, context_2) {
                 };
                 return Loop;
             }());
-            exports_2("Loop", Loop);
+            exports_4("Loop", Loop);
         }
     };
 });
-System.register("hexflow/src/supercell", [], function (exports_3, context_3) {
+System.register("hexflow/src/supercell", [], function (exports_5, context_5) {
     "use strict";
-    var __moduleName = context_3 && context_3.id;
+    var __moduleName = context_5 && context_5.id;
     var Point, sq, HexPos, Supercell;
     return {
         setters: [],
@@ -145,7 +262,7 @@ System.register("hexflow/src/supercell", [], function (exports_3, context_3) {
                 };
                 return Point;
             }());
-            exports_3("Point", Point);
+            exports_5("Point", Point);
             sq = Math.sqrt(3) / 2;
             HexPos = (function () {
                 function HexPos(i, j) {
@@ -158,9 +275,13 @@ System.register("hexflow/src/supercell", [], function (exports_3, context_3) {
                 HexPos.prototype.toPoint = function () {
                     return new Point(this.j * sq, this.i - this.j / 2);
                 };
+                HexPos.fromPoint = function (p) {
+                    var j = (p.x / sq) | 0;
+                    return new HexPos((p.y + (j / 2) | 0) | 0, j);
+                };
                 return HexPos;
             }());
-            exports_3("HexPos", HexPos);
+            exports_5("HexPos", HexPos);
             Supercell = (function () {
                 function Supercell(pos, rank) {
                     this.pos = pos;
@@ -202,13 +323,13 @@ System.register("hexflow/src/supercell", [], function (exports_3, context_3) {
                 };
                 return Supercell;
             }());
-            exports_3("Supercell", Supercell);
+            exports_5("Supercell", Supercell);
         }
     };
 });
-System.register("hexflow/src/cellstore", ["hexflow/src/supercell"], function (exports_4, context_4) {
+System.register("hexflow/src/cellstore", ["hexflow/src/supercell"], function (exports_6, context_6) {
     "use strict";
-    var __moduleName = context_4 && context_4.id;
+    var __moduleName = context_6 && context_6.id;
     var supercell_1, makeArray, CellStore;
     return {
         setters: [
@@ -281,13 +402,13 @@ System.register("hexflow/src/cellstore", ["hexflow/src/supercell"], function (ex
                         for (var j = 0; j < this.w; ++j) {
                             var d = prev[i][j];
                             if (d != null)
-                                callback(new supercell_1.HexPos(i - this.storeOrigin.i, j - this.storeOrigin.j), prev[i][j], next[i][j], this.prevGetter.bind(this), this.nextGetter.bind(this));
+                                callback(new supercell_1.HexPos(i - this.storeOrigin.i, j - this.storeOrigin.j), prev[i][j], next[i][j], this.get.bind(this), this.nextGetter.bind(this));
                         }
                     }
                     this.next = prev;
                     this.current = next;
                 };
-                CellStore.prototype.prevGetter = function (pos) {
+                CellStore.prototype.get = function (pos) {
                     var i = pos.i + this.storeOrigin.i;
                     var j = pos.j + this.storeOrigin.j;
                     return i >= 0 && j >= 0 && i < this.h && j < this.w ? this.current[i][j] : null;
@@ -299,13 +420,13 @@ System.register("hexflow/src/cellstore", ["hexflow/src/supercell"], function (ex
                 };
                 return CellStore;
             }());
-            exports_4("CellStore", CellStore);
+            exports_6("CellStore", CellStore);
         }
     };
 });
-System.register("pellets/src/util", [], function (exports_5, context_5) {
+System.register("pellets/src/util", [], function (exports_7, context_7) {
     "use strict";
-    var __moduleName = context_5 && context_5.id;
+    var __moduleName = context_7 && context_7.id;
     function rnd(min, max) {
         if (typeof max === 'number' && typeof min === 'number')
             return Math.floor(min + Math.random() * (max - min));
@@ -315,69 +436,16 @@ System.register("pellets/src/util", [], function (exports_5, context_5) {
             return min[Math.floor(min.length * Math.random())];
         throw new Error('invalid set of arguments to rnd');
     }
-    exports_5("rnd", rnd);
+    exports_7("rnd", rnd);
     return {
         setters: [],
         execute: function () {
         }
     };
 });
-System.register("elo/src/lib/color", [], function (exports_6, context_6) {
+System.register("pellets/src/world", ["hexflow/src/cellstore", "hexflow/src/supercell", "pellets/src/util", "elo/src/lib/color"], function (exports_8, context_8) {
     "use strict";
-    var __moduleName = context_6 && context_6.id;
-    function hcy(h, c, y) {
-        var r = .3;
-        var g = .59;
-        var b = .11;
-        h /= 60;
-        var k = (1 - Math.abs((h % 2) - 1));
-        var K = h < 1 ? r + k * g
-            : h < 2 ? g + k * r
-                : h < 3 ? g + k * b
-                    : h < 4 ? b + k * g
-                        : h < 5 ? b + k * r
-                            : r + k * b;
-        var cmax = 1;
-        if (y <= 0 || y >= 1)
-            cmax = 0;
-        else
-            cmax *= K < y ? (y - 1) / (K - 1) : K > y ? y / K : 1;
-        c = Math.min(c, cmax);
-        var x = c * k;
-        var rgb = h < 1 ? [c, x, 0]
-            : h < 2 ? [x, c, 0]
-                : h < 3 ? [0, c, x]
-                    : h < 4 ? [0, x, c]
-                        : h < 5 ? [x, 0, c]
-                            : [c, 0, x];
-        var m = y - (r * rgb[0] + g * rgb[1] + b * rgb[2]);
-        return [rgb[0] + m, rgb[1] + m, rgb[2] + m];
-    }
-    exports_6("hcy", hcy);
-    function tuple2rgb(r, g, b, a) {
-        return 'rgba(' + (r * 255).toFixed(0) + ',' + (g * 255).toFixed(0) + ',' + (b * 255).toFixed(0) + ', ' + a + ')';
-    }
-    function hcy2rgb(h, c, y, a) {
-        if (a === void 0) { a = 1; }
-        var rgbdata = hcy(h, c, y);
-        return tuple2rgb(rgbdata[0], rgbdata[1], rgbdata[2], a || 1);
-    }
-    exports_6("hcy2rgb", hcy2rgb);
-    function rgbdata2rgb(t, a) {
-        if (t.length == 3)
-            return tuple2rgb(t[0], t[1], t[2], a === undefined ? 1 : a);
-        return tuple2rgb(t[0], t[1], t[2], t[3]);
-    }
-    exports_6("rgbdata2rgb", rgbdata2rgb);
-    return {
-        setters: [],
-        execute: function () {
-        }
-    };
-});
-System.register("pellets/src/world", ["hexflow/src/cellstore", "hexflow/src/supercell", "pellets/src/util", "elo/src/lib/color"], function (exports_7, context_7) {
-    "use strict";
-    var __moduleName = context_7 && context_7.id;
+    var __moduleName = context_8 && context_8.id;
     function bucketData(w, h) {
         var a = [];
         var ox = (w / 2) | 0;
@@ -395,7 +463,7 @@ System.register("pellets/src/world", ["hexflow/src/cellstore", "hexflow/src/supe
         }
         return new cellstore_1.CellStore(a, new supercell_2.HexPos(oy, ox));
     }
-    var cellstore_1, supercell_2, util_1, color_1, red, blue, green, yellow, orange, silver, types, Cell, World;
+    var cellstore_1, supercell_2, util_1, color_2, red, blue, green, yellow, orange, silver, violet, types, Cell, World;
     return {
         setters: [
             function (cellstore_1_1) {
@@ -407,97 +475,155 @@ System.register("pellets/src/world", ["hexflow/src/cellstore", "hexflow/src/supe
             function (util_1_1) {
                 util_1 = util_1_1;
             },
-            function (color_1_1) {
-                color_1 = color_1_1;
+            function (color_2_1) {
+                color_2 = color_2_1;
             }
         ],
         execute: function () {
-            exports_7("red", red = { color: color_1.hcy(0, 1, .3) });
-            exports_7("blue", blue = { color: color_1.hcy(230, 1, .4) });
-            exports_7("green", green = { color: color_1.hcy(130, 1, .5) });
-            exports_7("yellow", yellow = { color: color_1.hcy(35, 1, .7) });
-            exports_7("orange", orange = { color: color_1.hcy(50, 1, .8) });
-            exports_7("silver", silver = { color: color_1.hcy(130, 0, .8) });
-            exports_7("types", types = [red, blue, green, yellow, orange, silver]);
+            exports_8("red", red = { color: color_2.wheelHcy(0, 1, .25) });
+            exports_8("blue", blue = { color: color_2.wheelHcy(240, 1, .35) });
+            exports_8("green", green = { color: color_2.wheelHcy(180, 1, .45) });
+            exports_8("yellow", yellow = { color: color_2.wheelHcy(90, 1, .8) });
+            exports_8("orange", orange = { color: color_2.wheelHcy(45, 1, .5) });
+            exports_8("silver", silver = { color: color_2.wheelHcy(90, .1, .9) });
+            exports_8("violet", violet = { color: color_2.wheelHcy(305, 1, .5) });
+            exports_8("types", types = [red, blue, green, yellow, orange, silver, violet]);
             Cell = (function () {
                 function Cell(type) {
                     this.type = type;
                 }
                 return Cell;
             }());
-            exports_7("Cell", Cell);
+            exports_8("Cell", Cell);
             World = (function () {
-                function World() {
-                    var w = 9;
-                    var h = 5;
+                function World(w, h) {
                     this.store = bucketData(w, h);
                 }
+                World.prototype.beginDrag = function (point) {
+                    var pos = supercell_2.HexPos.fromPoint(point);
+                    console.log(pos, this.store.get(pos));
+                    if (this.store.get(pos) != null)
+                        this.dragStart = pos;
+                    else
+                        this.dragStart = this.dragEnd = null;
+                };
+                World.prototype.endDrag = function (point) {
+                    var pos = supercell_2.HexPos.fromPoint(point);
+                    if (this.store.get(pos) != null)
+                        this.dragEnd = pos;
+                    else
+                        this.dragStart = this.dragEnd = null;
+                };
+                World.prototype.update = function (delta) {
+                };
                 return World;
             }());
-            exports_7("World", World);
+            exports_8("World", World);
         }
     };
 });
-System.register("pellets/src/render", ["elo/src/lib/color"], function (exports_8, context_8) {
+System.register("pellets/src/render", ["elo/src/lib/color"], function (exports_9, context_9) {
     "use strict";
-    var __moduleName = context_8 && context_8.id;
-    var color_2, Renderer;
+    var __moduleName = context_9 && context_9.id;
+    var color_3, Renderer;
     return {
         setters: [
-            function (color_2_1) {
-                color_2 = color_2_1;
+            function (color_3_1) {
+                color_3 = color_3_1;
             }
         ],
         execute: function () {
             Renderer = (function () {
-                function Renderer(ctx) {
+                function Renderer(ctx, size) {
                     this.ctx = ctx;
+                    this.size = size;
                 }
                 Renderer.prototype.clear = function () {
                     this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
                 };
-                Renderer.prototype.render = function (world) {
+                Renderer.prototype.mapPoint = function (p) {
                     var ctx = this.ctx;
-                    var s = 10;
+                    var s = this.size;
+                    return p.plus(-ctx.canvas.width / 2, -ctx.canvas.height / 2).times(1 / s, -1 / s);
+                };
+                Renderer.prototype.render = function (world, cursor) {
+                    var ctx = this.ctx;
+                    var s = this.size;
                     world.store.forEach(function (pos, cell) {
                         var point = pos.toPoint().times(s, -s).plus(ctx.canvas.width / 2, ctx.canvas.height / 2);
-                        ctx.fillStyle = color_2.rgbdata2rgb(cell.type.color);
+                        ctx.fillStyle = color_3.rgbdata2rgb(cell.type.color);
+                        if (world.dragStart != null && world.dragStart.i == pos.i && world.dragStart.j == pos.j)
+                            ctx.fillStyle = 'grey';
                         ctx.fillCircle(point.x, point.y, s / 2);
+                        if (cursor != null) {
+                            ctx.fillStyle = 'rgba(255, 255, 255, .3)';
+                            var dx = cursor.x - point.x;
+                            var dy = cursor.y - point.y;
+                            var d = Math.sqrt(dx * dx + dy * dy);
+                            var q = d / (d + 101);
+                            ctx.fillCircle(point.x + q * dx / d * s / 2, point.y + q * dy / d * s / 2, s / 10);
+                        }
                     });
-                    ctx.fillStyle = 'black';
-                    ctx.save();
-                    ctx.translate(ctx.canvas.width / 2, ctx.canvas.height / 2);
-                    ctx.fillRect(-100, 0, 200, 1);
-                    ctx.fillRect(0, -100, 1, 200);
-                    ctx.restore();
+                    if (cursor != null) {
+                        ctx.fillStyle = 'white';
+                        ctx.fillRect(cursor.x - 10, cursor.y, 20, 1);
+                        ctx.fillRect(cursor.x, cursor.y - 10, 1, 20);
+                    }
                 };
                 return Renderer;
             }());
-            exports_8("Renderer", Renderer);
+            exports_9("Renderer", Renderer);
         }
     };
 });
-System.register("pellets/src/main", ["elo/src/lib/canvas", "gl/src/loop", "pellets/src/render", "pellets/src/world"], function (exports_9, context_9) {
+System.register("pellets/src/main", ["elo/src/lib/canvas", "gl/src/loop", "pellets/src/render", "pellets/src/world", "hexflow/src/supercell"], function (exports_10, context_10) {
     "use strict";
-    var __moduleName = context_9 && context_9.id;
+    var __moduleName = context_10 && context_10.id;
     function init() {
-        return {
-            renderer: new render_1.Renderer(canvas_1.fullscreenCanvas()),
-            world: new world_1.World()
+        var ctx = canvas_2.fullscreenCanvas(false, true);
+        var cursor = {
+            position: null,
+            updated: false,
+            down: null,
+            up: null
         };
+        var state = {
+            renderer: new render_1.Renderer(ctx, 50),
+            world: new world_1.World(9, 9),
+            cursor: cursor,
+        };
+        ctx.canvas.addEventListener('mousemove', function (e) {
+            cursor.position = new supercell_3.Point(e.clientX, e.clientY);
+            cursor.down = new supercell_3.Point(e.clientX, e.clientY);
+        });
+        ctx.canvas.addEventListener('mousedown', function (e) {
+            cursor.down = new supercell_3.Point(e.clientX, e.clientY);
+        });
+        ctx.canvas.addEventListener('mouseup', function (e) {
+            cursor.up = new supercell_3.Point(e.clientX, e.clientY);
+        });
+        return state;
     }
     function fixedUpdate(delta, state) {
+        if (state.cursor.down != null)
+            state.world.beginDrag(state.renderer.mapPoint(state.cursor.down));
+        if (state.cursor.up != null)
+            state.world.endDrag(state.renderer.mapPoint(state.cursor.up));
+        state.world.update(delta);
+        state.cursor.updated = false;
+        state.cursor.down = null;
+        state.cursor.up = null;
         return state;
     }
     function variableUpdate(delta, state) {
         state.renderer.clear();
-        state.renderer.render(state.world);
+        state.renderer.render(state.world, state.cursor.position);
     }
-    var canvas_1, loop_1, render_1, world_1, main;
+    var canvas_2, loop_1, render_1, world_1, supercell_3, main;
     return {
         setters: [
-            function (canvas_1_1) {
-                canvas_1 = canvas_1_1;
+            function (canvas_2_1) {
+                canvas_2 = canvas_2_1;
             },
             function (loop_1_1) {
                 loop_1 = loop_1_1;
@@ -507,11 +633,14 @@ System.register("pellets/src/main", ["elo/src/lib/canvas", "gl/src/loop", "pelle
             },
             function (world_1_1) {
                 world_1 = world_1_1;
+            },
+            function (supercell_3_1) {
+                supercell_3 = supercell_3_1;
             }
         ],
         execute: function () {
-            exports_9("main", main = function () {
-                var loop = new loop_1.Loop(200, init, fixedUpdate, variableUpdate);
+            exports_10("main", main = function () {
+                var loop = new loop_1.Loop(16, init, fixedUpdate, variableUpdate);
                 loop.start();
             });
         }
