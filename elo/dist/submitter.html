@@ -110,7 +110,7 @@
     </table>
 
     <script type="text/javascript">
-        System.import('components/submitter-model').then(function (model) {
+        System.import('elo/src/components/submitter-model').then(function (model) {
             ko.applyBindings(model.getSubmitterModel(), document.getElementById('doc'));
         }).catch(function (e) { console.log(e) });
     </script>

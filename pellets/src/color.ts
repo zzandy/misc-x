@@ -1,5 +1,5 @@
-import { fullscreenCanvas, ICanvasRenderingContext2D } from '../../elo/src/lib/canvas';
-import { hcy2rgb } from '../../elo/src/lib/color';
+import { fullscreenCanvas, ICanvasRenderingContext2D } from '../../lib/canvas';
+import { hcy2rgb } from '../../lib/color';
 
 export const main = () => {
     const ctx = fullscreenCanvas();

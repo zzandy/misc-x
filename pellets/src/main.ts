@@ -1,9 +1,9 @@
 
-import { fullscreenCanvas } from '../../elo/src/lib/canvas';
-import { Loop } from '../../gl/src/loop';
+import { fullscreenCanvas } from '../../lib/canvas';
+import { Loop } from '../../lib/loop';
 import { Renderer } from './render';
 import { World } from "./world";
-import { Point } from "../../hexflow/src/supercell";
+import { Point } from "../../lib/geometry";
 
 
 type IState = {

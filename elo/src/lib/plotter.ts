@@ -1,5 +1,5 @@
-import { ICanvasRenderingContext2D } from 'canvas';
-import { Point, Range, Rect } from 'geometry';
+import { ICanvasRenderingContext2D } from '../../../lib/canvas';
+import { Point, Range, Rect } from '../../../lib/geometry';
 import { IPlotter, IDataWindow, IPlotData, ISeries, Break } from 'plot-data';
 
 type LabelInfo = { text: string, pos: number, color: string };

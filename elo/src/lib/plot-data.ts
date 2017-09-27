@@ -1,4 +1,4 @@
-import { Point, Rect } from 'geometry';
+import { Point, Rect } from '../../../lib/geometry';
 
 export class Break { constructor(public readonly label: string, public readonly coord: number) { } }
 

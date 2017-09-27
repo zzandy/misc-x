@@ -4,9 +4,9 @@ import { AlmazApi, ApiPlayer, ApiTeam, ApiGame } from '../lib/almaz-api';
 import { Elo, EloPlayer } from '../lib/elo';
 import { GameProcessor, Player, Team, Game } from './game-processor';
 import { IAggregator, ScorewiseAggregator, BinaryAggregator, WinrateAggregator, RecentWinrateAggregator } from './aggregators';
-import { Rect } from '../lib/geometry';
+import { Rect } from '../../../lib/geometry';
 import { Plotter } from '../lib/plotter';
-import { fullscreenCanvas } from '../lib/canvas';
+import { fullscreenCanvas } from '../../../lib/canvas';
 import { addDays } from './date';
 
 export interface StatPlayer extends Player {

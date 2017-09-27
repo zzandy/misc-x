@@ -1,26 +1,4 @@
-
-export class Point {
-    constructor(public readonly x: number, public readonly y: number) { }
-
-    times(x: number, y: number): Point;
-    times(p: Point): Point;
-    times(a: number | Point, b?: number): Point {
-        if (typeof (a) === 'number')
-            return new Point(this.x * a, this.y * <number>b);
-
-        return new Point(this.x * a.x, this.y * a.y);
-    }
-
-    plus(x: number, y: number): Point;
-    plus(p: Point): Point;
-    plus(a: number | Point, b?: number): Point {
-        if (typeof (a) === 'number')
-            return new Point(this.x + a, this.y + <number>b);
-
-        return new Point(this.x + a.x, this.y + a.y);
-    }
-}
-
+import { Point } from './geometry';
 
 const sq = Math.sqrt(3) / 2;
 
@@ -31,8 +9,13 @@ export class HexPos {
         return new HexPos(this.i + i, this.j + j);
     }
 
-    toPoint(): Point {
+    public toPoint(): Point {
         return new Point(this.j * sq, this.i - this.j / 2);
+    }
+
+    public static fromPoint(p: Point): HexPos {
+        const j = (p.x / sq) | 0
+        return new HexPos((p.y + (j / 2) | 0) | 0, j);
     }
 }
 

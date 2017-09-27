@@ -1,56 +1,11 @@
-System.register("gl/src/loop", [], function (exports_1, context_1) {
+System.register("lib/canvas", [], function (exports_1, context_1) {
     "use strict";
     var __moduleName = context_1 && context_1.id;
-    var Loop;
-    return {
-        setters: [],
-        execute: function () {
-            Loop = (function () {
-                function Loop(fixedDelta, init, fixed, variable) {
-                    this.fixedDelta = fixedDelta;
-                    this.init = init;
-                    this.fixed = fixed;
-                    this.variable = variable;
-                    this.isRunning = false;
-                    this.fixedAccum = 0;
-                }
-                Loop.prototype.start = function () {
-                    if (this.isRunning)
-                        return;
-                    var state = this.init();
-                    this.isRunning = true;
-                    this.update(state, 0);
-                };
-                Loop.prototype.stop = function () {
-                    this.isRunning = false;
-                };
-                Loop.prototype.update = function (state, delta) {
-                    var _this = this;
-                    if (!this.isRunning)
-                        return;
-                    var time = new Date().getTime();
-                    var newState = state;
-                    this.fixedAccum += delta;
-                    while (this.fixedAccum > this.fixedDelta) {
-                        this.fixedAccum -= this.fixedDelta;
-                        newState = this.fixed(this.fixedDelta, newState);
-                    }
-                    this.variable(delta, newState);
-                    requestAnimationFrame(function () { return _this.update(newState, new Date().getTime() - time); });
-                };
-                return Loop;
-            }());
-            exports_1("Loop", Loop);
-        }
-    };
-});
-System.register("elo/src/lib/canvas", [], function (exports_2, context_2) {
-    "use strict";
-    var __moduleName = context_2 && context_2.id;
-    function fullscreenCanvas(relative) {
+    function fullscreenCanvas(relative, noAlpha) {
         if (relative === void 0) { relative = false; }
+        if (noAlpha === void 0) { noAlpha = false; }
         var can = getCanvas(relative);
-        var ctx = can.getContext('2d');
+        var ctx = can.getContext('2d', { alpha: !noAlpha });
         if (ctx == null)
             throw new Error('failed to get \'2d\' context');
         ctx.clear = function () {
@@ -83,12 +38,12 @@ System.register("elo/src/lib/canvas", [], function (exports_2, context_2) {
         document.body.appendChild(can);
         return ctx;
     }
-    exports_2("fullscreenCanvas", fullscreenCanvas);
+    exports_1("fullscreenCanvas", fullscreenCanvas);
     var getCanvas, fullscreenCanvas3d;
     return {
         setters: [],
         execute: function () {
-            exports_2("getCanvas", getCanvas = function (isRelative) {
+            exports_1("getCanvas", getCanvas = function (isRelative) {
                 if (isRelative === void 0) { isRelative = false; }
                 var can = document.createElement('canvas');
                 can.width = window.innerWidth;
@@ -100,8 +55,9 @@ System.register("elo/src/lib/canvas", [], function (exports_2, context_2) {
                 }
                 return can;
             });
-            exports_2("fullscreenCanvas3d", fullscreenCanvas3d = function () {
-                var can = getCanvas();
+            exports_1("fullscreenCanvas3d", fullscreenCanvas3d = function (relative) {
+                if (relative === void 0) { relative = false; }
+                var can = getCanvas(relative);
                 var gl = can.getContext('webgl');
                 if (gl == null)
                     throw new Error('failed to get \'webgl\' context');
@@ -111,25 +67,25 @@ System.register("elo/src/lib/canvas", [], function (exports_2, context_2) {
         }
     };
 });
-System.register("gl/src/types", [], function (exports_3, context_3) {
+System.register("gl/src/types", [], function (exports_2, context_2) {
     "use strict";
-    var __moduleName = context_3 && context_3.id;
+    var __moduleName = context_2 && context_2.id;
     return {
         setters: [],
         execute: function () {
         }
     };
 });
-System.register("gl/src/matrix", [], function (exports_4, context_4) {
+System.register("gl/src/matrix", [], function (exports_3, context_3) {
     "use strict";
-    var __moduleName = context_4 && context_4.id;
+    var __moduleName = context_3 && context_3.id;
     var iden3, iden4, mul33, mul44v, mul44, inverse;
     return {
         setters: [],
         execute: function () {
             iden3 = [1, 0, 0, 0, 1, 0, 0, 0, 1];
             iden4 = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
-            exports_4("mul33", mul33 = function (a, b) {
+            exports_3("mul33", mul33 = function (a, b) {
                 return [
                     a[0] * b[0] + a[1] * b[3] + a[2] * b[6],
                     a[0] * b[1] + a[1] * b[4] + a[2] * b[7],
@@ -142,7 +98,7 @@ System.register("gl/src/matrix", [], function (exports_4, context_4) {
                     a[6] * b[2] + a[7] * b[5] + a[8] * b[8],
                 ];
             });
-            exports_4("mul44v", mul44v = function (m, v) {
+            exports_3("mul44v", mul44v = function (m, v) {
                 return [
                     m[0] * v[0] + m[1] * v[1] + m[2] * v[2] + m[3] * v[3],
                     m[4] * v[0] + m[5] * v[1] + m[6] * v[2] + m[7] * v[3],
@@ -150,7 +106,7 @@ System.register("gl/src/matrix", [], function (exports_4, context_4) {
                     m[12] * v[0] + m[13] * v[1] + m[14] * v[2] + m[15] * v[3]
                 ];
             });
-            exports_4("mul44", mul44 = function (a, b) {
+            exports_3("mul44", mul44 = function (a, b) {
                 return [
                     a[0] * b[0] + a[1] * b[4] + a[2] * b[8] + a[3] * b[12],
                     a[0] * b[1] + a[1] * b[5] + a[2] * b[9] + a[3] * b[13],
@@ -170,7 +126,7 @@ System.register("gl/src/matrix", [], function (exports_4, context_4) {
                     a[12] * b[3] + a[13] * b[7] + a[14] * b[11] + a[15] * b[15],
                 ];
             });
-            exports_4("inverse", inverse = function (m) {
+            exports_3("inverse", inverse = function (m) {
                 var m00 = m[0 * 4 + 0];
                 var m01 = m[0 * 4 + 1];
                 var m02 = m[0 * 4 + 2];
@@ -254,9 +210,9 @@ System.register("gl/src/matrix", [], function (exports_4, context_4) {
         }
     };
 });
-System.register("gl/src/transform", ["gl/src/matrix"], function (exports_5, context_5) {
+System.register("gl/src/transform", ["gl/src/matrix"], function (exports_4, context_4) {
     "use strict";
-    var __moduleName = context_5 && context_5.id;
+    var __moduleName = context_4 && context_4.id;
     var matrix_1, Camera, translate3d, scale3d, diff, vectorAngleQuaternion, rotateAArroundB, rotate3d, makePerspective, mul, makeProjection3d, projection, cross, epsilon, tau, deg, length, substract, norm, lookAt;
     return {
         setters: [
@@ -275,8 +231,8 @@ System.register("gl/src/transform", ["gl/src/matrix"], function (exports_5, cont
                 }
                 return Camera;
             }());
-            exports_5("Camera", Camera);
-            exports_5("translate3d", translate3d = function (trans) {
+            exports_4("Camera", Camera);
+            exports_4("translate3d", translate3d = function (trans) {
                 return [
                     1, 0, 0, 0,
                     0, 1, 0, 0,
@@ -284,7 +240,7 @@ System.register("gl/src/transform", ["gl/src/matrix"], function (exports_5, cont
                     trans[0], trans[1], trans[2], 1
                 ];
             });
-            exports_5("scale3d", scale3d = function (scale) {
+            exports_4("scale3d", scale3d = function (scale) {
                 return [
                     scale[0], 0, 0, 0,
                     0, scale[1], 0, 0,
@@ -292,19 +248,19 @@ System.register("gl/src/transform", ["gl/src/matrix"], function (exports_5, cont
                     0, 0, 0, 1
                 ];
             });
-            exports_5("diff", diff = function (a, b) {
+            exports_4("diff", diff = function (a, b) {
                 return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
             });
-            exports_5("vectorAngleQuaternion", vectorAngleQuaternion = function (v, a) {
+            exports_4("vectorAngleQuaternion", vectorAngleQuaternion = function (v, a) {
                 var s = Math.sin(a / 2);
                 return [s * v[0], s * v[1], s * v[2], Math.cos(a / 2)];
             });
-            exports_5("rotateAArroundB", rotateAArroundB = function (a, b, angle, axis) {
+            exports_4("rotateAArroundB", rotateAArroundB = function (a, b, angle, axis) {
                 var relative = [a[0] - b[0], a[1] - b[1], a[2] - b[2], 1];
                 var r = matrix_1.mul44v(rotate3d(vectorAngleQuaternion(axis, angle)), relative);
                 return [b[0] + r[0], b[1] + r[1], b[2] + r[2]];
             });
-            exports_5("rotate3d", rotate3d = function (q) {
+            exports_4("rotate3d", rotate3d = function (q) {
                 var x = q[0];
                 var y = q[1];
                 var z = q[2];
@@ -316,7 +272,7 @@ System.register("gl/src/transform", ["gl/src/matrix"], function (exports_5, cont
                     0, 0, 0, 1
                 ];
             });
-            exports_5("makePerspective", makePerspective = function (fov, aspect, near, far) {
+            exports_4("makePerspective", makePerspective = function (fov, aspect, near, far) {
                 var f = Math.tan((Math.PI - fov) / 2);
                 var r = 1 / (near - far);
                 return [
@@ -326,7 +282,7 @@ System.register("gl/src/transform", ["gl/src/matrix"], function (exports_5, cont
                     0, 0, near * far * r * 2, 0
                 ];
             });
-            exports_5("mul", mul = function () {
+            exports_4("mul", mul = function () {
                 var matrices = [];
                 for (var _i = 0; _i < arguments.length; _i++) {
                     matrices[_i] = arguments[_i];
@@ -335,36 +291,36 @@ System.register("gl/src/transform", ["gl/src/matrix"], function (exports_5, cont
                     return matrices[0];
                 return matrices.reverse().reduce(function (a, b) { return matrix_1.mul44(a, b); });
             });
-            exports_5("makeProjection3d", makeProjection3d = function (view, proj, origin, rv, ra, scales) {
+            exports_4("makeProjection3d", makeProjection3d = function (view, proj, origin, rv, ra, scales) {
                 var scale = scale3d(scales);
                 var rot = rotate3d(vectorAngleQuaternion(rv, ra));
                 var translate = translate3d(origin);
                 return mul(proj, view, rot, scale, translate);
             });
-            exports_5("projection", projection = function (cam, pos, rot, scale) {
+            exports_4("projection", projection = function (cam, pos, rot, scale) {
                 return mul(cam, translate3d(pos), rotate3d(rot), scale3d(scale));
             });
-            exports_5("cross", cross = function (a, b) {
+            exports_4("cross", cross = function (a, b) {
                 return [a[1] * b[2] - a[2] * b[1],
                     a[2] * b[0] - a[0] * b[2],
                     a[0] * b[1] - a[1] * b[0]];
             });
             epsilon = 1e-10;
-            exports_5("tau", tau = 2 * Math.PI);
-            exports_5("deg", deg = tau / 360);
-            exports_5("length", length = function (a) {
+            exports_4("tau", tau = 2 * Math.PI);
+            exports_4("deg", deg = tau / 360);
+            exports_4("length", length = function (a) {
                 return Math.sqrt(a[0] * a[0] + a[1] * a[1] + a[2] * a[2]);
             });
-            exports_5("substract", substract = function (a, b) {
+            exports_4("substract", substract = function (a, b) {
                 return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
             });
-            exports_5("norm", norm = function (a) {
+            exports_4("norm", norm = function (a) {
                 var len = length(a);
                 return len > epsilon
                     ? [a[0] / len, a[1] / len, a[2] / len]
                     : [0, 0, 0];
             });
-            exports_5("lookAt", lookAt = function (pos, target, up) {
+            exports_4("lookAt", lookAt = function (pos, target, up) {
                 var z = norm(substract(pos, target));
                 var x = norm(cross(up, z));
                 var y = norm(cross(z, x));
@@ -378,9 +334,9 @@ System.register("gl/src/transform", ["gl/src/matrix"], function (exports_5, cont
         }
     };
 });
-System.register("gl/src/shader", [], function (exports_6, context_6) {
+System.register("gl/src/shader", [], function (exports_5, context_5) {
     "use strict";
-    var __moduleName = context_6 && context_6.id;
+    var __moduleName = context_5 && context_5.id;
     function compileShader(gl, shaderSource, shaderType) {
         var shader = gl.createShader(shaderType);
         if (shader == null)
@@ -391,7 +347,7 @@ System.register("gl/src/shader", [], function (exports_6, context_6) {
             throw new Error(gl.getShaderInfoLog(shader) + ':\n' + shaderSource || 'failed to compile shader');
         return shader;
     }
-    exports_6("compileShader", compileShader);
+    exports_5("compileShader", compileShader);
     function createShader(gl, shaderId) {
         var tag = document.getElementById(shaderId);
         if (!tag)
@@ -405,7 +361,7 @@ System.register("gl/src/shader", [], function (exports_6, context_6) {
             throw new Error('Unknown shader type, expected "' + mimeVertexShader + '" or "' + mimeFragmentShader + '", got "' + tag.type + '"');
         return compileShader(gl, tag.text, type);
     }
-    exports_6("createShader", createShader);
+    exports_5("createShader", createShader);
     function createProgram(gl, vertex, fragment) {
         var program = gl.createProgram();
         if (program == null)
@@ -417,13 +373,13 @@ System.register("gl/src/shader", [], function (exports_6, context_6) {
             throw new Error(gl.getProgramInfoLog(program) || 'failed to link program');
         return program;
     }
-    exports_6("createProgram", createProgram);
+    exports_5("createProgram", createProgram);
     function createProgramFromScripts(gl, vertexId, fragmentId) {
         var vertex = createShader(gl, vertexId);
         var fragment = createShader(gl, fragmentId);
         return createProgram(gl, vertex, fragment);
     }
-    exports_6("createProgramFromScripts", createProgramFromScripts);
+    exports_5("createProgramFromScripts", createProgramFromScripts);
     var mimeFragmentShader, mimeVertexShader;
     return {
         setters: [],
@@ -433,9 +389,9 @@ System.register("gl/src/shader", [], function (exports_6, context_6) {
         }
     };
 });
-System.register("gl/src/mesh", ["gl/src/transform", "gl/src/shader"], function (exports_7, context_7) {
+System.register("gl/src/mesh", ["gl/src/transform", "gl/src/shader"], function (exports_6, context_6) {
     "use strict";
-    var __moduleName = context_7 && context_7.id;
+    var __moduleName = context_6 && context_6.id;
     var transform_1, shader_1, SimpleProgram, Mesh;
     return {
         setters: [
@@ -468,7 +424,7 @@ System.register("gl/src/mesh", ["gl/src/transform", "gl/src/shader"], function (
                 }
                 return SimpleProgram;
             }());
-            exports_7("SimpleProgram", SimpleProgram);
+            exports_6("SimpleProgram", SimpleProgram);
             Mesh = (function () {
                 function Mesh(gl, program, geometry, colors, pos, rotv, rota, scale) {
                     if (pos === void 0) { pos = [0, 0, 0]; }
@@ -508,13 +464,13 @@ System.register("gl/src/mesh", ["gl/src/transform", "gl/src/shader"], function (
                 };
                 return Mesh;
             }());
-            exports_7("Mesh", Mesh);
+            exports_6("Mesh", Mesh);
         }
     };
 });
-System.register("elo/src/lib/color", [], function (exports_8, context_8) {
+System.register("lib/color", [], function (exports_7, context_7) {
     "use strict";
-    var __moduleName = context_8 && context_8.id;
+    var __moduleName = context_7 && context_7.id;
     function hcy(h, c, y) {
         var r = .3;
         var g = .59;
@@ -543,21 +499,42 @@ System.register("elo/src/lib/color", [], function (exports_8, context_8) {
         var m = y - (r * rgb[0] + g * rgb[1] + b * rgb[2]);
         return [rgb[0] + m, rgb[1] + m, rgb[2] + m];
     }
-    exports_8("hcy", hcy);
-    function hcy2rgb(h, c, y, a) {
-        var rgbdata = hcy(h, c, y);
-        return 'rgba(' + (rgbdata[0] * 255).toFixed(0) + ',' + (rgbdata[1] * 255).toFixed(0) + ',' + (rgbdata[2] * 255).toFixed(0) + ', ' + (a || 1) + ')';
+    exports_7("hcy", hcy);
+    function wheelHcy(h, c, y) {
+        var h2 = h < 180 ? 2 * h / 3 : 120 + (h - 180) * 4 / 3;
+        return hcy(h2, c, y);
     }
-    exports_8("hcy2rgb", hcy2rgb);
+    exports_7("wheelHcy", wheelHcy);
+    function wheel2rgb(h, c, y, a) {
+        if (a === void 0) { a = 1; }
+        var rgbdata = wheelHcy(h, c, y);
+        return tuple2rgb(rgbdata[0], rgbdata[1], rgbdata[2], a || 1);
+    }
+    exports_7("wheel2rgb", wheel2rgb);
+    function tuple2rgb(r, g, b, a) {
+        return 'rgba(' + (r * 255).toFixed(0) + ',' + (g * 255).toFixed(0) + ',' + (b * 255).toFixed(0) + ', ' + a + ')';
+    }
+    function hcy2rgb(h, c, y, a) {
+        if (a === void 0) { a = 1; }
+        var rgbdata = hcy(h, c, y);
+        return tuple2rgb(rgbdata[0], rgbdata[1], rgbdata[2], a || 1);
+    }
+    exports_7("hcy2rgb", hcy2rgb);
+    function rgbdata2rgb(t, a) {
+        if (t.length == 3)
+            return tuple2rgb(t[0], t[1], t[2], a === undefined ? 1 : a);
+        return tuple2rgb(t[0], t[1], t[2], t[3]);
+    }
+    exports_7("rgbdata2rgb", rgbdata2rgb);
     return {
         setters: [],
         execute: function () {
         }
     };
 });
-System.register("gl/src/scene-helpers", ["gl/src/mesh", "elo/src/lib/color"], function (exports_9, context_9) {
+System.register("gl/src/scene-helpers", ["gl/src/mesh", "lib/color"], function (exports_8, context_8) {
     "use strict";
-    var __moduleName = context_9 && context_9.id;
+    var __moduleName = context_8 && context_8.id;
     function tri(a, b, c) {
         return a.concat(b, c);
     }
@@ -580,7 +557,7 @@ System.register("gl/src/scene-helpers", ["gl/src/mesh", "elo/src/lib/color"], fu
             rnd = function (x) {
                 return Math.random() * x;
             };
-            exports_9("makeCube", makeCube = function (gl, pos) {
+            exports_8("makeCube", makeCube = function (gl, pos) {
                 if (pos === void 0) { pos = [0, 0, 0]; }
                 var p = new mesh_1.SimpleProgram(gl, 'vertex', 'fragment');
                 var geometry = makeCubeMesh(0, 0, 0, 5, 5, 5);
@@ -595,7 +572,7 @@ System.register("gl/src/scene-helpers", ["gl/src/mesh", "elo/src/lib/color"], fu
                         res.push(a[j]);
                 return res;
             };
-            exports_9("makeGrid", makeGrid = function (gl, n, m, d, color) {
+            exports_8("makeGrid", makeGrid = function (gl, n, m, d, color) {
                 var mesh = makeCubeMesh(0, 0, 0, .1, .1, .1);
                 var p = new mesh_1.SimpleProgram(gl, 'vertex', 'fragment');
                 var colors = new Float32Array(repeat(color, mesh.length));
@@ -606,7 +583,7 @@ System.register("gl/src/scene-helpers", ["gl/src/mesh", "elo/src/lib/color"], fu
                     }
                 return res;
             });
-            exports_9("makeDodecahedronMesh", makeDodecahedronMesh = function (a) {
+            exports_8("makeDodecahedronMesh", makeDodecahedronMesh = function (a) {
                 var z = a * 3 / 2 / s6;
                 var x = a / 2;
                 var y = a / s3;
@@ -634,7 +611,7 @@ System.register("gl/src/scene-helpers", ["gl/src/mesh", "elo/src/lib/color"], fu
                 };
                 return new Float32Array(iquad(0, 3, 2, 1).concat(iquad(0, 5, 4, 3), iquad(0, 1, 6, 5), iquad(2, 8, 7, 1), iquad(2, 3, 9, 8), iquad(4, 10, 9, 3), iquad(4, 5, 11, 10), iquad(6, 12, 11, 5), iquad(6, 1, 7, 12), iquad(7, 8, 13, 12), iquad(9, 10, 13, 8), iquad(11, 12, 13, 10)));
             });
-            exports_9("makeDodecahedrons", makeDodecahedrons = function (gl, a, cols, rows, layers, o) {
+            exports_8("makeDodecahedrons", makeDodecahedrons = function (gl, a, cols, rows, layers, o) {
                 if (o === void 0) { o = [0, 0, 0]; }
                 var mesh = makeDodecahedronMesh(a);
                 var p = new mesh_1.SimpleProgram(gl, 'vertex', 'fragment');
@@ -680,6 +657,68 @@ System.register("gl/src/scene-helpers", ["gl/src/mesh", "elo/src/lib/color"], fu
                 }
                 return colors;
             };
+        }
+    };
+});
+System.register("lib/loop", [], function (exports_9, context_9) {
+    "use strict";
+    var __moduleName = context_9 && context_9.id;
+    var Loop;
+    return {
+        setters: [],
+        execute: function () {
+            Loop = (function () {
+                function Loop(fixedDelta, init, fixed, variable) {
+                    this.fixedDelta = fixedDelta;
+                    this.init = init;
+                    this.fixed = fixed;
+                    this.variable = variable;
+                    this.isRunning = false;
+                    this.fixedAccum = 0;
+                }
+                Loop.prototype.start = function () {
+                    var _this = this;
+                    if (this.isRunning)
+                        return;
+                    var state = this.init();
+                    this.isRunning = true;
+                    var time = 0;
+                    var frame = function (ts) {
+                        var force = time == 0;
+                        var delta = ts - time;
+                        time = ts;
+                        state = _this.update(delta, state, force);
+                        if (_this.isRunning)
+                            requestAnimationFrame(frame);
+                    };
+                    requestAnimationFrame(frame);
+                };
+                Loop.prototype.stop = function () {
+                    this.isRunning = false;
+                };
+                Loop.prototype.update = function (delta, state, force) {
+                    if (force === void 0) { force = false; }
+                    var time = new Date().getTime();
+                    var newState = state;
+                    this.fixedAccum += delta;
+                    var upd = false;
+                    if (force) {
+                        newState = this.fixed(this.fixedDelta, newState);
+                        upd = true;
+                    }
+                    else
+                        while (this.fixedAccum > this.fixedDelta) {
+                            this.fixedAccum -= this.fixedDelta;
+                            newState = this.fixed(this.fixedDelta, newState);
+                            upd = true;
+                        }
+                    if (upd)
+                        this.variable(delta, newState);
+                    return newState;
+                };
+                return Loop;
+            }());
+            exports_9("Loop", Loop);
         }
     };
 });
@@ -752,7 +791,7 @@ System.register("gl/src/mouse", ["gl/src/transform"], function (exports_10, cont
         }
     };
 });
-System.register("gl/src/main", ["elo/src/lib/canvas", "gl/src/scene-helpers", "gl/src/matrix", "gl/src/transform", "gl/src/loop", "gl/src/mouse"], function (exports_11, context_11) {
+System.register("gl/src/main", ["lib/canvas", "gl/src/scene-helpers", "gl/src/matrix", "gl/src/transform", "lib/loop", "gl/src/mouse"], function (exports_11, context_11) {
     "use strict";
     var __moduleName = context_11 && context_11.id;
     var canvas_1, scene_helpers_1, matrix_2, transform_3, loop_1, mouse_1, run, init, fixed, render;

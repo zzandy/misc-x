@@ -1,6 +1,6 @@
 import { Mesh, SimpleProgram } from './mesh';
 import { Vec3, Matrix4 } from './types';
-import { hcy } from '../../elo/src/lib/color';
+import { hcy } from '../../lib/color';
 
 const s3 = Math.sqrt(3);
 const s6 = Math.sqrt(6);

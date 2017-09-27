@@ -1,8 +1,8 @@
-import { ICanvasRenderingContext2D } from '../../elo/src/lib/canvas';
+import { ICanvasRenderingContext2D } from '../../lib/canvas';
 import { World, Cell } from "./world";
-import { HexPos, Point } from "../../hexflow/src/supercell";
-import { rgbdata2rgb } from '../../elo/src/lib/color';
-
+import { HexPos } from "../../lib/supercell";
+import { Point } from '../../lib/geometry';
+import { rgbdata2rgb } from '../../lib/color';
 
 export class Renderer {
     constructor(private readonly ctx: ICanvasRenderingContext2D, private readonly size: number) {

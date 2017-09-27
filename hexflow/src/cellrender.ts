@@ -1,6 +1,7 @@
-import { ICanvasRenderingContext2D } from '../../elo/src/lib/canvas';
-import { Point, HexPos, Supercell } from "./supercell";
-import { CellStore } from "./cellstore";
+import { ICanvasRenderingContext2D } from '../../lib/canvas';
+import { Point } from '../../lib/geometry';
+import { HexPos, Supercell } from "../../lib/supercell";
+import { CellStore } from "../../lib/cellstore";
 
 const q = 1 / Math.sqrt(3);
 

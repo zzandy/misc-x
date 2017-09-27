@@ -16,4 +16,15 @@ function rnd<T>(min?: number | T[], max?: number): number | T {
     throw new Error('invalid set of arguments to rnd');
 }
 
-export { rnd };
+function array<TValue>(w: number, h: number, fn: (i: number, j: number) => TValue): TValue[][] {
+    const res = [];
+    for (let i = 0; i < h; ++i) {
+        const row = [];
+        for (let j = 0; j < w; ++j)
+            row.push(fn(i, j));
+        res.push(row);
+    }
+    return res;
+}
+
+export { rnd, array };

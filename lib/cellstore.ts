@@ -96,7 +96,7 @@ export class CellStore<TValue>{
             for (let j = 0; j < this.w; ++j) {
                 const d = prev[i][j];
                 if (d != null)
-                    callback(new HexPos(i - this.storeOrigin.i, j - this.storeOrigin.j), <TValue>prev[i][j], <TValue>next[i][j], this.prevGetter.bind(this), this.nextGetter.bind(this));
+                    callback(new HexPos(i - this.storeOrigin.i, j - this.storeOrigin.j), <TValue>prev[i][j], <TValue>next[i][j], this.get.bind(this), this.nextGetter.bind(this));
             }
         }
 
@@ -104,12 +104,13 @@ export class CellStore<TValue>{
         this.current = next;
     }
 
-    private prevGetter(pos: HexPos): TValue | null {
+    public get(pos: HexPos): TValue | null {
         const i = pos.i + this.storeOrigin.i;
         const j = pos.j + this.storeOrigin.j;
 
         return i >= 0 && j >= 0 && i < this.h && j < this.w ? this.current[i][j] : null;
     }
+
     private nextGetter(pos: HexPos): TValue | null {
         const i = pos.i + this.storeOrigin.i;
         const j = pos.j + this.storeOrigin.j;

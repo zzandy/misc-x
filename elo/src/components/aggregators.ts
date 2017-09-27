@@ -1,4 +1,4 @@
-import { Point, Rect } from '../lib/geometry';
+import { Point, Rect } from '../../../lib/geometry';
 import { IDataWindow, IPlotData, ISeries, Break } from '../lib/plot-data';
 import { StatGame, StatTeam, StatPlayer } from './viewer-model';
 

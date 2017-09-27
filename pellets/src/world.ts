@@ -1,10 +1,10 @@
-import { CellStore } from '../../hexflow/src/cellstore';
-import { HexPos, Point } from '../../hexflow/src/supercell';
-import { rnd } from "./util";
-import { wheelHcy } from '../../elo/src/lib/color';
+import { CellStore } from '../../lib/cellstore';
+import { HexPos } from '../../lib/supercell';
+import { Point } from '../../lib/geometry';
+import { rnd } from "../../lib/util";
+import { wheelHcy } from '../../lib/color';
 
 type CellType = { color: [number, number, number] };
-
 
 export const red: CellType = { color: wheelHcy(0, 1, .25) };
 export const blue: CellType = { color: wheelHcy(240, 1, .35) };

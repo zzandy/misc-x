@@ -1,4 +1,4 @@
-import { getJson, postJson, request } from './ajax';
+import { getJson, postJson, request } from '../../../lib/ajax';
 
 export class ApiPlayer {
     public readonly _id: string;

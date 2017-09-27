@@ -1,5 +1,3 @@
-
-
 export class Loop<TState>{
     private isRunning: boolean = false;
     private fixedAccum: number = 0;
@@ -14,22 +12,32 @@ export class Loop<TState>{
     public start() {
         if (this.isRunning) return;
 
-        const state = this.init();
+        let state = this.init();
 
         this.isRunning = true;
 
-        this.update(0, state, true);
+        let time = 0;
+
+        const frame = (ts: number) => {
+            const force = time == 0;
+
+            const delta = force ? 0 : ts - time;
+            time = ts;
+
+            state = this.update(delta, state, force);
+
+            if (this.isRunning)
+                requestAnimationFrame(frame);
+        }
+
+        requestAnimationFrame(frame);
     }
 
     public stop() {
         this.isRunning = false;
     }
 
-    private update(delta: number, state: TState, force: boolean = false) {
-        if (!this.isRunning) return;
-
-        const time = new Date().getTime();
-
+    private update(delta: number, state: TState, force: boolean = false): TState {
         let newState = state;
 
         this.fixedAccum += delta;
@@ -48,7 +56,7 @@ export class Loop<TState>{
         if (upd)
             this.variable(delta, newState);
 
-        requestAnimationFrame(() => this.update(new Date().getTime() - time, newState));
+        return newState;
     }
 }
 

@@ -66,7 +66,7 @@ System.register("lib/geometry", [], function (exports_1, context_1) {
         }
     };
 });
-System.register("lib/plot-data", [], function (exports_2, context_2) {
+System.register("elo/src/lib/plot-data", [], function (exports_2, context_2) {
     "use strict";
     var __moduleName = context_2 && context_2.id;
     var Break, IDataWindow;
@@ -130,7 +130,7 @@ System.register("lib/ajax", [], function (exports_3, context_3) {
         }
     };
 });
-System.register("lib/almaz-api", ["lib/ajax"], function (exports_4, context_4) {
+System.register("elo/src/lib/almaz-api", ["lib/ajax"], function (exports_4, context_4) {
     "use strict";
     var __moduleName = context_4 && context_4.id;
     var ajax_1, ApiPlayer, ApiTeam, ApiGame, AlmazApi;
@@ -223,7 +223,7 @@ System.register("lib/almaz-api", ["lib/ajax"], function (exports_4, context_4) {
         }
     };
 });
-System.register("lib/elo", [], function (exports_5, context_5) {
+System.register("elo/src/lib/elo", [], function (exports_5, context_5) {
     "use strict";
     var __moduleName = context_5 && context_5.id;
     var EloPlayer, Elo;
@@ -273,7 +273,7 @@ System.register("lib/elo", [], function (exports_5, context_5) {
         }
     };
 });
-System.register("components/game-processor", [], function (exports_6, context_6) {
+System.register("elo/src/components/game-processor", [], function (exports_6, context_6) {
     "use strict";
     var __moduleName = context_6 && context_6.id;
     var GameProcessor, byEndDate, removeDuplicates, areDuplicates, teamEqual, removeStagingData;
@@ -381,10 +381,11 @@ System.register("components/game-processor", [], function (exports_6, context_6)
 System.register("lib/canvas", [], function (exports_7, context_7) {
     "use strict";
     var __moduleName = context_7 && context_7.id;
-    function fullscreenCanvas(relative) {
+    function fullscreenCanvas(relative, noAlpha) {
         if (relative === void 0) { relative = false; }
+        if (noAlpha === void 0) { noAlpha = false; }
         var can = getCanvas(relative);
-        var ctx = can.getContext('2d');
+        var ctx = can.getContext('2d', { alpha: !noAlpha });
         if (ctx == null)
             throw new Error('failed to get \'2d\' context');
         ctx.clear = function () {
@@ -446,7 +447,7 @@ System.register("lib/canvas", [], function (exports_7, context_7) {
         }
     };
 });
-System.register("lib/plotter", ["lib/geometry"], function (exports_8, context_8) {
+System.register("elo/src/lib/plotter", ["lib/geometry"], function (exports_8, context_8) {
     "use strict";
     var __moduleName = context_8 && context_8.id;
     function last(array) {
@@ -578,7 +579,7 @@ System.register("lib/plotter", ["lib/geometry"], function (exports_8, context_8)
         }
     };
 });
-System.register("components/date", [], function (exports_9, context_9) {
+System.register("elo/src/components/date", [], function (exports_9, context_9) {
     "use strict";
     var __moduleName = context_9 && context_9.id;
     var formatTimespan, formatDate, zf, getMonday, addDays;
@@ -627,7 +628,7 @@ System.register("components/date", [], function (exports_9, context_9) {
         }
     };
 });
-System.register("components/viewer-model", ["lib/almaz-api", "lib/elo", "components/game-processor", "components/aggregators", "lib/geometry", "lib/plotter", "lib/canvas", "components/date"], function (exports_10, context_10) {
+System.register("elo/src/components/viewer-model", ["elo/src/lib/almaz-api", "elo/src/lib/elo", "elo/src/components/game-processor", "elo/src/components/aggregators", "lib/geometry", "elo/src/lib/plotter", "lib/canvas", "elo/src/components/date"], function (exports_10, context_10) {
     "use strict";
     var __moduleName = context_10 && context_10.id;
     var almaz_api_1, elo_1, game_processor_1, aggregators_1, geometry_2, plotter_1, canvas_1, date_1, getViewerModel;
@@ -796,7 +797,7 @@ System.register("components/viewer-model", ["lib/almaz-api", "lib/elo", "compone
         }
     };
 });
-System.register("components/aggregators", ["lib/geometry", "lib/plot-data"], function (exports_11, context_11) {
+System.register("elo/src/components/aggregators", ["lib/geometry", "elo/src/lib/plot-data"], function (exports_11, context_11) {
     "use strict";
     var __moduleName = context_11 && context_11.id;
     var geometry_3, plot_data_1, Aggregator, RatingAggregator, ScorewiseAggregator, BinaryAggregator, WinrateAggregator, RecentWinrateAggregator, sum, avg;
@@ -1024,7 +1025,7 @@ System.register("components/aggregators", ["lib/geometry", "lib/plot-data"], fun
         }
     };
 });
-System.register("components/score-model", [], function (exports_12, context_12) {
+System.register("elo/src/components/score-model", [], function (exports_12, context_12) {
     "use strict";
     var __moduleName = context_12 && context_12.id;
     var getScoreSideModel, getScoreModel;
@@ -1062,7 +1063,7 @@ System.register("components/score-model", [], function (exports_12, context_12) 
         }
     };
 });
-System.register("components/submitter-model", ["lib/almaz-api", "lib/elo", "components/score-model", "components/game-processor"], function (exports_13, context_13) {
+System.register("elo/src/components/submitter-model", ["elo/src/lib/almaz-api", "elo/src/lib/elo", "elo/src/components/score-model", "elo/src/components/game-processor"], function (exports_13, context_13) {
     "use strict";
     var __moduleName = context_13 && context_13.id;
     var almaz_api_2, elo_2, score_model_1, game_processor_2, getSource, getCurrentTeamModel, getCurrentGameModel, getPendingUploads, setPendingUploads, getSubmitterModel, uniqueNickName, normalizeName, hidePlayer, isNullObservable, whenAllNotNull;
@@ -1425,53 +1426,9 @@ System.register("components/submitter-model", ["lib/almaz-api", "lib/elo", "comp
         }
     };
 });
-System.register("lib/color", [], function (exports_14, context_14) {
+System.register("elo/src/lib/view-selector", [], function (exports_14, context_14) {
     "use strict";
     var __moduleName = context_14 && context_14.id;
-    function hcy(h, c, y) {
-        var r = .3;
-        var g = .59;
-        var b = .11;
-        h /= 60;
-        var k = (1 - Math.abs((h % 2) - 1));
-        var K = h < 1 ? r + k * g
-            : h < 2 ? g + k * r
-                : h < 3 ? g + k * b
-                    : h < 4 ? b + k * g
-                        : h < 5 ? b + k * r
-                            : r + k * b;
-        var cmax = 1;
-        if (y <= 0 || y >= 1)
-            cmax = 0;
-        else
-            cmax *= K < y ? (y - 1) / (K - 1) : K > y ? y / K : 1;
-        c = Math.min(c, cmax);
-        var x = c * k;
-        var rgb = h < 1 ? [c, x, 0]
-            : h < 2 ? [x, c, 0]
-                : h < 3 ? [0, c, x]
-                    : h < 4 ? [0, x, c]
-                        : h < 5 ? [x, 0, c]
-                            : [c, 0, x];
-        var m = y - (r * rgb[0] + g * rgb[1] + b * rgb[2]);
-        return [rgb[0] + m, rgb[1] + m, rgb[2] + m];
-    }
-    exports_14("hcy", hcy);
-    function hcy2rgb(h, c, y, a) {
-        if (a === void 0) { a = 1; }
-        var rgbdata = hcy(h, c, y);
-        return 'rgba(' + (rgbdata[0] * 255).toFixed(0) + ',' + (rgbdata[1] * 255).toFixed(0) + ',' + (rgbdata[2] * 255).toFixed(0) + ', ' + (a || 1) + ')';
-    }
-    exports_14("hcy2rgb", hcy2rgb);
-    return {
-        setters: [],
-        execute: function () {
-        }
-    };
-});
-System.register("lib/view-selector", [], function (exports_15, context_15) {
-    "use strict";
-    var __moduleName = context_15 && context_15.id;
     return {
         setters: [],
         execute: function () {
