@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>paint</title>
+    <style type="text/css">
+        canvas {
+            background-color: black;
+        }
+    </style>
+</head>
+
+<body>
+    <script type="text/javascript">
+        (function () {
+            document.createElement('canvas');
+            var c = document.createElement('canvas');
+            ctx = c.getContext('2d');
+
+            ctx.w = ctx.canvas.width = window.innerWidth - 1;
+            ctx.h = ctx.canvas.height = window.innerHeight - 1;
+            ctx.canvas.style.position = 'absolute';
+            ctx.canvas.style.top = 0;
+            ctx.canvas.style.left = 0;
+
+            ctx.clear = function () {
+                ctx.clearRect(-ctx.canvas.width / 2, -ctx.canvas.height / 2, ctx.canvas.width, ctx.canvas.height);
+            };
+
+            document.body.appendChild(c);
+        })();
+    </script>
+
+    <script type="text/javascript">
+        // hue Chroma luma
+        function hcy2rgb(h, c, y, a) {
+            // 601
+            var r = .3;
+            var g = .59;
+            var b = .11;
+
+            var h0 = h;
+            h /= 60;
+
+            var k = (1 - Math.abs((h % 2) - 1));
+
+            var K = h < 1 ? r + k * g
+                : h < 2 ? g + k * r
+                    : h < 3 ? g + k * b
+                        : h < 4 ? b + k * g
+                            : h < 5 ? b + k * r
+                                : r + k * b;
+
+            var cmax = 1;
+
+            if (y <= 0 || y >= 1) cmax = 0;
+            else cmax *= K < y ? (y - 1) / (K - 1) : K > y ? y / K : 1;
+            //c *= cmax;
+            c = Math.min(c, cmax);
+
+            var x = c * k;
+            var rgb = h < 1 ? [c, x, 0]
+                : h < 2 ? [x, c, 0]
+                    : h < 3 ? [0, c, x]
+                        : h < 4 ? [0, x, c]
+                            : h < 5 ? [x, 0, c]
+                                : [c, 0, x];
+
+            var m = y - (r * rgb[0] + g * rgb[1] + b * rgb[2]);
+
+            var rgbdata = [rgb[0] + m, rgb[1] + m, rgb[2] + m];
+            return 'rgba(' + (rgbdata[0] * 255).toFixed(0) + ',' + (rgbdata[1] * 255).toFixed(0) + ',' + (rgbdata[2] * 255).toFixed(0) + ', ' + (a || 1) + ')';
+        }
+
+        function wheel2rgb(h, c, y, a) {
+            var h2 = h < 180 ? 2 * h / 3 : 120 + (h - 180) * 4 / 3;
+
+            return hcy2rgb(h, c, y, a)
+        }
+    </script>
+
+    <script type="text/javascript">
+        "use strict";
+
+        function rnd(a) {
+            return Math.floor(Math.random() * a) | 0;
+        }
+
+        String.prototype.zerofill = function (w) {
+            return this.length < w
+                ? new Array(w - this.length + 1).join('0') + this
+                : this
+        }
+
+        const tau = Math.PI * 2;
+
+        CanvasRenderingContext2D.prototype.fillCircle = function (x, y, r) {
+            this.beginPath();
+            this.arc(x, y, r, 0, tau, false)
+            this.closePath();
+            this.fill();
+        }
+
+        CanvasRenderingContext2D.prototype.strokeCircle = function (x, y, r) {
+            this.beginPath();
+            this.arc(x, y, r, 0, tau, false)
+            this.closePath();
+            this.stroke();
+        }
+    </script>
+
+    <script type="text/javascript">
+        var r = 2.5;
+        var border = .2;
+        var h = rnd(360);
+
+        ctx.fillStyle = 'black';
+        ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+        ctx.fillStyle = ctx.strokeStyle = wheel2rgb(r, 1, .6);
+        ctx.lineWidth = r * 2;
+        ctx.lineCap = 'round';
+
+        ctx.canvas.addEventListener('mousedown', mousedown);
+        ctx.canvas.addEventListener('mouseup', mouseup);
+        ctx.canvas.addEventListener('mousemove', mousemove);
+
+        var isDown = false;
+        var cursorX = 0;
+        var cursorY = 0;
+
+        var transforms = [identity, mirror];
+        transforms = rays(20);
+
+        function updateColor(delta) {
+            h = (h + delta * .5) % 360;
+            ctx.fillStyle = ctx.strokeStyle = wheel2rgb(h, 1, .6);
+        }
+
+        var prevTime = 0;
+        function cycleUpdate(time) {
+            var delta = time - prevTime;
+            prevTime = time;
+
+            updateColor(delta);
+
+
+            requestAnimationFrame(cycleUpdate);
+        }
+
+        cycleUpdate(0);
+
+        function mousedown(e) {
+
+            isDown = true;
+            cursorX = e.clientX
+            cursorY = e.clientY;
+
+            drawpoints(cursorX, cursorY);
+        }
+        function mouseup(e) {
+            isDown = false
+        }
+
+        function mousemove(e) {
+            if (isDown) {
+
+                drawsegments(cursorX, cursorY, e.clientX, e.clientY)
+
+                cursorX = e.clientX
+                cursorY = e.clientY;
+            }
+        }
+
+        function drawpoint(x, y) {
+            ctx.fillCircle(x, y, r);
+        }
+
+        function drawsegment(x1, y1, x2, y2) {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+
+            ctx.stroke();
+        }
+
+        function drawpoints(x, y) {
+
+            transforms.forEach(function (t) {
+                var point = t(x, y);
+                drawpoint(point[0], point[1]);
+            })
+        }
+
+        function drawsegments(x1, y1, x2, y2) {
+            transforms.forEach(function (t) {
+                var point0 = t(x1, y1);
+                var point1 = t(x2, y2);
+
+                drawsegment(point0[0], point0[1], point1[0], point1[1]);
+            })
+        }
+
+        function identity(x, y) {
+            return [x, y]
+        }
+
+        function mirror(x, y) {
+            return [ctx.canvas.width - x, ctx.canvas.height - y]
+        }
+
+        function rays(n) {
+            const ox = ctx.canvas.width / 2;
+            const oy = ctx.canvas.height / 2;
+            const fns = [];
+            for (var i = 0; i < n; ++i) {
+                const a = i * Math.PI * 2 / n;
+                fns.push(function (x, y) {
+                    const vec = rvec(x - ox, y - oy, a);
+                    return [vec[0] + ox, vec[1] + oy];
+                });
+            }
+
+            return fns;
+        }
+
+        function rvec(x, y, a) {
+            return [
+                x * Math.cos(a) - y * Math.sin(a),
+                x * Math.sin(a) + y * Math.cos(a),
+            ];
+        }
+    </script>
+</body>
+
+</html>
