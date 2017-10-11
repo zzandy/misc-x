@@ -107,8 +107,43 @@
     </script>
 
     <script type="text/javascript">
+        function Snake(len) {
+            this.start = 0;
+            this.len = 0;
+            this.maxlen = len;
+            this.data = new Array(len);
+        }
+
+        Snake.prototype.push = function (v) {
+            if (this.len < this.maxlen) {
+                this.data[(this.start + this.len++) % this.maxlen] = v;
+            }
+            else {
+                this.data[(this.start++ + this.len) % this.maxlen] = v;
+            }
+        }
+
+        Snake.prototype.map = function (callback) {
+            const res = []
+            for (var i = 0; i < this.len; ++i) {
+                res.push(callback(this.data[(this.start + i) % this.maxlen], i));
+            }
+
+            return res;
+        }
+
+        Snake.prototype.forEach = function (callback) {
+            for (var i = 0; i < this.len; ++i) {
+                callback(this.data[(this.start + i) % this.maxlen], i);
+            }
+        }
+    </script>
+
+    <script type="text/javascript">
         var r = 2.5;
         var h = rnd(360);
+        const snake = new Snake(1000);
+        const decaySteps = 100;
 
         ctx.fillStyle = 'black';
         ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
@@ -127,33 +162,17 @@
 
         var transforms = [identity, mirror];
         transforms = rays(24);
-        var defaultClearAlpha = .01;
-        var clearAlpha = defaultClearAlpha;
-
-        var acc = 0;
-
-        function clear() {
-            ctx.save();
-            ctx.globalAlpha = 0.01;
-            ctx.globalCompositeOperation = 'darken';
-            ctx.fillStyle = 'black';
-            ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-            ctx.restore();
-
-            cleanupTimeout = setTimeout(clear, subsequentClearDelay);
-        }
 
         function updateColor(delta) {
-            ctx.save();
-            ctx.globalAlpha = clearAlpha;
-            ctx.globalCompositeOperation = 'darken';
-            ctx.fillStyle = 'black';
-            ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-
-            ctx.restore();
-
             h = (h + delta * .5) % 360;
             ctx.fillStyle = ctx.strokeStyle = wheel2rgb(h, 1, .6);
+        }
+
+        function ageSegments() {
+            snake.map(function (segment) {
+                if (segment.age < decaySteps)
+                    segment.age += 1;
+            });
         }
 
         var prevTime = 0;
@@ -161,12 +180,8 @@
             var delta = time - prevTime;
             prevTime = time;
 
-            updateColor(delta);
-
-            if (!isDown && clearAlpha < .1) {
-                clearAlpha *= 1.05;
-            }
-
+            renderSegments();
+            ageSegments();
 
             requestAnimationFrame(cycleUpdate);
         }
@@ -175,18 +190,27 @@
 
         function mousedown(e) {
             isDown = true;
-            clearAlpha = defaultClearAlpha;
             cursorX = e.clientX
             cursorY = e.clientY;
 
             drawpoints(cursorX, cursorY);
         }
+
         function mouseup(e) {
             isDown = false;
         }
 
         function mousemove(e) {
             if (isDown) {
+                updateColor(2);
+
+                snake.push({
+                    hue: h,
+                    age: 0,
+                    start: { x: cursorX, y: cursorY },
+                    end: { x: e.clientX, y: e.clientY }
+                })
+
                 drawsegments(cursorX, cursorY, e.clientX, e.clientY)
 
                 cursorX = e.clientX
@@ -198,28 +222,40 @@
             ctx.fillCircle(x, y, r);
         }
 
-        function drawsegment(x1, y1, x2, y2) {
+        function drawsegment(h, c, y, x1, y1, x2, y2) {
             ctx.beginPath();
             ctx.moveTo(x1, y1);
             ctx.lineTo(x2, y2);
 
+            ctx.strokeStyle = wheel2rgb(h, c, y);
             ctx.stroke();
         }
 
         function drawpoints(x, y) {
-
             transforms.forEach(function (t) {
                 var point = t(x, y);
                 drawpoint(point[0], point[1]);
             })
         }
 
-        function drawsegments(x1, y1, x2, y2) {
-            transforms.forEach(function (t) {
+        function renderSegments() {
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+            snake.forEach(function (segment) {
+                if(segment.age < decaySteps)
+                drawsegments(segment.hue, 1, .6 * (decaySteps - segment.age) / decaySteps, segment.start.x, segment.start.y, segment.end.x, segment.end.y);
+            });
+        }
+
+        function drawsegments(h, c, y, x1, y1, x2, y2) {
+            transforms.forEach(function (t, i, trnsfrms) {
                 var point0 = t(x1, y1);
                 var point1 = t(x2, y2);
 
-                drawsegment(point0[0], point0[1], point1[0], point1[1]);
+                h = (h + i * 360 / trnsfrms.length) % 360;
+
+                drawsegment(h, c, y, point0[0], point0[1], point1[0], point1[1]);
             })
         }
 
