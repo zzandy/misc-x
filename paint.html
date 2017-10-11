@@ -179,10 +179,8 @@
         function cycleUpdate(time) {
             var delta = time - prevTime;
             prevTime = time;
-
             renderSegments();
             ageSegments();
-            console.log(snake.len)
 
             requestAnimationFrame(cycleUpdate);
         }
@@ -242,8 +240,8 @@
             ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
             snake.forEach(function (segment) {
-                if(segment.age < decaySteps)
-                drawsegments(segment.hue, 1, .6 * (decaySteps - segment.age) / decaySteps, segment.start.x, segment.start.y, segment.end.x, segment.end.y);
+                if (segment.age < decaySteps)
+                    drawsegments(segment.hue, 1, .6 * (decaySteps - segment.age) / decaySteps, segment.start.x, segment.start.y, segment.end.x, segment.end.y);
             });
         }
 
@@ -252,9 +250,8 @@
                 var point0 = t(x1, y1);
                 var point1 = t(x2, y2);
 
-                h = (h + i * 360 / trnsfrms.length) % 360;
 
-                drawsegment(h, c, y, point0[0], point0[1], point1[0], point1[1]);
+                drawsegment((h + i * 360 / trnsfrms.length) % 360, c, y * (1 - (i % 2) * .5), point0[0], point0[1], point1[0], point1[1]);
             })
         }
 
