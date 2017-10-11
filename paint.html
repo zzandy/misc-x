@@ -5,11 +5,6 @@
 <head>
     <meta charset="utf-8" />
     <title>paint</title>
-    <style type="text/css">
-        canvas {
-            background-color: black;
-        }
-    </style>
 </head>
 
 <body>
@@ -17,7 +12,7 @@
         (function () {
             document.createElement('canvas');
             var c = document.createElement('canvas');
-            ctx = c.getContext('2d');
+            ctx = c.getContext('2d', { alpha: false });
 
             ctx.w = ctx.canvas.width = window.innerWidth - 1;
             ctx.h = ctx.canvas.height = window.innerHeight - 1;
@@ -113,7 +108,6 @@
 
     <script type="text/javascript">
         var r = 2.5;
-        var border = .2;
         var h = rnd(360);
 
         ctx.fillStyle = 'black';
@@ -132,9 +126,32 @@
         var cursorY = 0;
 
         var transforms = [identity, mirror];
-        transforms = rays(20);
+        transforms = rays(24);
+        var defaultClearAlpha = .01;
+        var clearAlpha = defaultClearAlpha;
+
+        var acc = 0;
+
+        function clear() {
+            ctx.save();
+            ctx.globalAlpha = 0.01;
+            ctx.globalCompositeOperation = 'darken';
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+            ctx.restore();
+
+            cleanupTimeout = setTimeout(clear, subsequentClearDelay);
+        }
 
         function updateColor(delta) {
+            ctx.save();
+            ctx.globalAlpha = clearAlpha;
+            ctx.globalCompositeOperation = 'darken';
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+            ctx.restore();
+
             h = (h + delta * .5) % 360;
             ctx.fillStyle = ctx.strokeStyle = wheel2rgb(h, 1, .6);
         }
@@ -146,6 +163,10 @@
 
             updateColor(delta);
 
+            if (!isDown && clearAlpha < .1) {
+                clearAlpha *= 1.05;
+            }
+
 
             requestAnimationFrame(cycleUpdate);
         }
@@ -153,20 +174,19 @@
         cycleUpdate(0);
 
         function mousedown(e) {
-
             isDown = true;
+            clearAlpha = defaultClearAlpha;
             cursorX = e.clientX
             cursorY = e.clientY;
 
             drawpoints(cursorX, cursorY);
         }
         function mouseup(e) {
-            isDown = false
+            isDown = false;
         }
 
         function mousemove(e) {
             if (isDown) {
-
                 drawsegments(cursorX, cursorY, e.clientX, e.clientY)
 
                 cursorX = e.clientX
