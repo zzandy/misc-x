@@ -142,8 +142,8 @@
     <script type="text/javascript">
         var r = 2.5;
         var h = rnd(360);
-        const snake = new Snake(1000);
-        const decaySteps = 100;
+        const snake = new Snake(256);
+        const decaySteps = 150;
 
         ctx.fillStyle = 'black';
         ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
@@ -182,6 +182,7 @@
 
             renderSegments();
             ageSegments();
+            console.log(snake.len)
 
             requestAnimationFrame(cycleUpdate);
         }
@@ -210,8 +211,6 @@
                     start: { x: cursorX, y: cursorY },
                     end: { x: e.clientX, y: e.clientY }
                 })
-
-                drawsegments(cursorX, cursorY, e.clientX, e.clientY)
 
                 cursorX = e.clientX
                 cursorY = e.clientY;
