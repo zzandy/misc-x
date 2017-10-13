@@ -1,6 +1,5 @@
 type rgbastring = string;
 type rgbtuple = [number, number, number];
-type rgbatuple = [number, number, number];
 
 // hue Chroma luma
 export function hcy(h: number, c: number, y: number): rgbtuple {
@@ -41,7 +40,7 @@ export function hcy(h: number, c: number, y: number): rgbtuple {
     return [rgb[0] + m, rgb[1] + m, rgb[2] + m];
 }
 
-export function wheelHcy(h: number, c: number, y: number): rgbatuple {
+export function wheelHcy(h: number, c: number, y: number): rgbtuple {
     const h2 = h < 180 ? 2 * h / 3 : 120 + (h - 180) * 4 / 3;
     return hcy(h2, c, y);
 }
@@ -62,8 +61,8 @@ export function hcy2rgb(h: number, c: number, y: number, a: number = 1): rgbastr
 
 export function rgbdata2rgb(data: rgbtuple): rgbastring;
 export function rgbdata2rgb(data: rgbtuple, a: number): rgbastring;
-export function rgbdata2rgb(data: rgbatuple): rgbastring;
-export function rgbdata2rgb(t: rgbatuple, a?: number): rgbastring {
+export function rgbdata2rgb(data: rgbtuple): rgbastring;
+export function rgbdata2rgb(t: rgbtuple, a?: number): rgbastring {
     if (t.length == 3)
         return tuple2rgb(t[0], t[1], t[2], a === undefined ? 1 : a);
 

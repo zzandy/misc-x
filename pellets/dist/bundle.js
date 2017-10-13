@@ -141,9 +141,191 @@ System.register("lib/color", [], function (exports_2, context_2) {
         }
     };
 });
-System.register("pellets/src/color", ["lib/canvas", "lib/color"], function (exports_3, context_3) {
+System.register("lib/random", [], function (exports_3, context_3) {
     "use strict";
     var __moduleName = context_3 && context_3.id;
+    var Random;
+    return {
+        setters: [],
+        execute: function () {
+            Random = (function () {
+                function Random(seed) {
+                    if (seed === void 0) { seed = (new Date()).getTime(); }
+                    this.seed = seed;
+                }
+                Random.prototype.next = function () {
+                    return this.seed = +('0.' + Math.sin(this.seed).toString().substr(6));
+                };
+                Random.prototype.inext = function (min, max) {
+                    return (min + (max - min) * this.next()) | 0;
+                };
+                Random.prototype.shuffle = function (array) {
+                    var currentIndex = array.length, temporaryValue, randomIndex;
+                    while (0 !== currentIndex) {
+                        randomIndex = this.inext(0, currentIndex);
+                        currentIndex -= 1;
+                        temporaryValue = array[currentIndex];
+                        array[currentIndex] = array[randomIndex];
+                        array[randomIndex] = temporaryValue;
+                    }
+                    return array;
+                };
+                return Random;
+            }());
+            exports_3("Random", Random);
+        }
+    };
+});
+System.register("lib/simplex", ["lib/random"], function (exports_4, context_4) {
+    "use strict";
+    var __moduleName = context_4 && context_4.id;
+    function generateShuffledArray(n, seed) {
+        var a = new Array(n);
+        for (var i = 0; i < n; ++i)
+            a[i] = i;
+        var r = new random_1.Random(seed);
+        r.shuffle(a);
+        return a;
+    }
+    function dot2d(x1, y1, x2, y2) {
+        return x1 * x2 + y1 * y2;
+    }
+    var random_1, grad3, F2, G2, SimplexNoise2d, SimplexNoiseOctave;
+    return {
+        setters: [
+            function (random_1_1) {
+                random_1 = random_1_1;
+            }
+        ],
+        execute: function () {
+            grad3 = [
+                1, 1, 0, -1, 1, 0, 1, -1, 0, -1, -1, 0,
+                1, 0, 1, -1, 0, 1, 1, 0, -1, -1, 0, -1,
+                0, 1, 1, 0, -1, 1, 0, 1, -1, 0, -1, -1
+            ];
+            F2 = 0.5 * (Math.sqrt(3.0) - 1.0);
+            G2 = (3.0 - Math.sqrt(3.0)) / 6.0;
+            SimplexNoise2d = (function () {
+                function SimplexNoise2d(persistence, num_octaves, seed) {
+                    if (seed === void 0) { seed = (new Date).getTime(); }
+                    var r = new random_1.Random(seed);
+                    this.octaves = new Array(num_octaves);
+                    for (var i = 0; i < num_octaves; ++i) {
+                        this.octaves.push({
+                            octave: new SimplexNoiseOctave(r.inext(0, 9007199254740991)),
+                            frequency: Math.pow(2, i),
+                            amplitude: Math.pow(persistence, num_octaves - i)
+                        });
+                    }
+                }
+                SimplexNoise2d.prototype.getNoise2d = function (x, y) {
+                    return this.octaves.reduce(function (res, o) { return res + o.amplitude * o.octave.getNoise2d(x / o.frequency, y / o.frequency); }, 0);
+                };
+                return SimplexNoise2d;
+            }());
+            exports_4("SimplexNoise2d", SimplexNoise2d);
+            SimplexNoiseOctave = (function () {
+                function SimplexNoiseOctave(seed) {
+                    if (seed === void 0) { seed = 0; }
+                    this.perm = generateShuffledArray(256, seed);
+                    this.perm12 = this.perm.map(function (n) { return n % 12; });
+                }
+                SimplexNoiseOctave.prototype.getNoise2d = function (xin, yin) {
+                    var p = this.perm;
+                    var p12 = this.perm12;
+                    var s = (xin + yin) * F2;
+                    var i = (xin + s) | 0;
+                    var j = (yin + s) | 0;
+                    var t = (i + j) * G2;
+                    var X0 = i - t;
+                    var Y0 = j - t;
+                    var x0 = xin - X0;
+                    var y0 = yin - Y0;
+                    var _a = (x0 > y0)
+                        ? [1, 0]
+                        : [0, 1], i1 = _a[0], j1 = _a[1];
+                    var x1 = x0 - i1 + G2;
+                    var y1 = y0 - j1 + G2;
+                    var x2 = x0 - 1.0 + 2.0 * G2;
+                    var y2 = y0 - 1.0 + 2.0 * G2;
+                    var ii = i & 255;
+                    var jj = j & 255;
+                    var gi0 = p12[(ii + p[jj]) & 255];
+                    var gi1 = p12[(ii + i1 + p[(jj + j1) & 255]) & 255];
+                    var gi2 = p12[(ii + 1 + p[(jj + 1) & 255]) & 255];
+                    var n0, n1, n2;
+                    var t0 = 0.5 - x0 * x0 - y0 * y0;
+                    if (t0 < 0)
+                        n0 = 0.0;
+                    else {
+                        t0 *= t0;
+                        n0 = t0 * t0 * dot2d(grad3[gi0 * 3], grad3[gi0 * 3 + 1], x0, y0);
+                    }
+                    var t1 = 0.5 - x1 * x1 - y1 * y1;
+                    if (t1 < 0)
+                        n1 = 0.0;
+                    else {
+                        t1 *= t1;
+                        n1 = t1 * t1 * dot2d(grad3[gi1 * 3], grad3[gi1 * 3 + 1], x1, y1);
+                    }
+                    var t2 = 0.5 - x2 * x2 - y2 * y2;
+                    if (t2 < 0)
+                        n2 = 0.0;
+                    else {
+                        t2 *= t2;
+                        n2 = t2 * t2 * dot2d(grad3[gi2 * 3], grad3[gi2 * 3 + 1], x2, y2);
+                    }
+                    return 70.0 * (n0 + n1 + n2);
+                };
+                return SimplexNoiseOctave;
+            }());
+            exports_4("SimplexNoiseOctave", SimplexNoiseOctave);
+        }
+    };
+});
+System.register("pellets/src/color", ["lib/canvas", "lib/color", "lib/simplex"], function (exports_5, context_5) {
+    "use strict";
+    var __moduleName = context_5 && context_5.id;
+    function renderNoise(ctx) {
+        var noise = new simplex_1.SimplexNoise2d(.7, 10);
+        var _a = ctx.canvas, w = _a.width, h = _a.height;
+        var imgData = ctx.createImageData(w, h);
+        var data = imgData.data;
+        for (var i = 0; i < h; ++i) {
+            for (var j = 0; j < w; ++j) {
+                var v = noise.getNoise2d(j / 1, i / 1);
+                var va = ease((v + 1) / 2);
+                var borderdist = Math.min(i, j, h - i, w - j);
+                var vignette = borderdist < 200 ? ease(borderdist / 200) : 1;
+                var _b = mapColor(va * vignette), r = _b[0], g = _b[1], b = _b[2];
+                var idx = (i * w + j) * 4;
+                data[idx] = (r * 255) & 255;
+                data[idx + 1] = (g * 255) & 255;
+                data[idx + 2] = (b * 255) & 255;
+                data[idx + 3] = 150;
+            }
+        }
+        ctx.putImageData(imgData, 0, 0);
+    }
+    function ease(x) {
+        return x * x * x * (x * (6 * x - 15) + 10);
+    }
+    function mapColor(v) {
+        return mapGrad(v, grad);
+    }
+    function mapGrad(v, grad) {
+        var prev = grad[0];
+        for (var i = 1; i < grad.length; ++i) {
+            var _a = grad[i], lvl = _a[0], color = _a[1];
+            if (v < lvl) {
+                var lvl0 = prev[0], color0 = prev[1];
+                var k = 1 - (v - lvl0) / (lvl - lvl0);
+                return [color0[0] * k + color[0] * (1 - k), color0[1] * k + color[1] * (1 - k), color0[2] * k + color[2] * (1 - k)];
+            }
+            prev = grad[i];
+        }
+        return grad[grad.length - 1][1];
+    }
     function renderWheel(ctx, r, t, colorFn) {
         var steps = 360;
         var tau = Math.PI * 2;
@@ -169,7 +351,7 @@ System.register("pellets/src/color", ["lib/canvas", "lib/color"], function (expo
         var h2 = h < 180 ? 2 * h / 3 : 120 + (h - 180) * 4 / 3;
         return 'hsl(' + h2 + ', ' + s * 100 + '%, ' + l * 100 + '%)';
     }
-    var canvas_1, color_1, main;
+    var canvas_1, color_1, simplex_1, main, waterlevel, sandlevel, greenslevel, grad;
     return {
         setters: [
             function (canvas_1_1) {
@@ -177,25 +359,42 @@ System.register("pellets/src/color", ["lib/canvas", "lib/color"], function (expo
             },
             function (color_1_1) {
                 color_1 = color_1_1;
+            },
+            function (simplex_1_1) {
+                simplex_1 = simplex_1_1;
             }
         ],
         execute: function () {
-            exports_3("main", main = function () {
+            exports_5("main", main = function () {
                 var ctx = canvas_1.fullscreenCanvas();
                 document.body.style.backgroundColor = 'black';
-                ctx.translate(ctx.canvas.width / 2, ctx.canvas.height / 2);
                 var r = 200;
                 var t = .2;
-                renderWheel(ctx, r, t, color_1.hcy2rgb);
-                renderWheel(ctx, r * .7, t * 2, wheelColor);
-                renderWheel(ctx, r * .4, t * 3, wheelHsl);
+                var before = (new Date).getTime();
+                renderNoise(ctx);
+                var after = (new Date).getTime();
+                console.log('fullscreen in ', after - before);
+                ctx.translate(ctx.canvas.width / 2, ctx.canvas.height / 2);
             });
+            waterlevel = .3;
+            sandlevel = .33;
+            greenslevel = .90;
+            grad = [
+                [0, color_1.wheelHcy(270, 1, .05)],
+                [waterlevel, color_1.wheelHcy(270, 1, .4)],
+                [waterlevel + .01, color_1.wheelHcy(60, 1, .8)],
+                [sandlevel, color_1.wheelHcy(60, 1, .6)],
+                [sandlevel + .01, color_1.wheelHcy(180, 1, .4)],
+                [greenslevel, color_1.wheelHcy(100, 1, .4)],
+                [greenslevel + .01, color_1.wheelHcy(170, 1, 1)],
+                [1, color_1.wheelHcy(170, 1, .95)]
+            ];
         }
     };
 });
-System.register("lib/loop", [], function (exports_4, context_4) {
+System.register("lib/loop", [], function (exports_6, context_6) {
     "use strict";
-    var __moduleName = context_4 && context_4.id;
+    var __moduleName = context_6 && context_6.id;
     var Loop;
     return {
         setters: [],
@@ -250,13 +449,13 @@ System.register("lib/loop", [], function (exports_4, context_4) {
                 };
                 return Loop;
             }());
-            exports_4("Loop", Loop);
+            exports_6("Loop", Loop);
         }
     };
 });
-System.register("lib/geometry", [], function (exports_5, context_5) {
+System.register("lib/geometry", [], function (exports_7, context_7) {
     "use strict";
-    var __moduleName = context_5 && context_5.id;
+    var __moduleName = context_7 && context_7.id;
     var Point, Rect, Range;
     return {
         setters: [],
@@ -278,7 +477,7 @@ System.register("lib/geometry", [], function (exports_5, context_5) {
                 };
                 return Point;
             }());
-            exports_5("Point", Point);
+            exports_7("Point", Point);
             Rect = (function (_super) {
                 __extends(Rect, _super);
                 function Rect(x, y, w, h) {
@@ -303,7 +502,7 @@ System.register("lib/geometry", [], function (exports_5, context_5) {
                 });
                 return Rect;
             }(Point));
-            exports_5("Rect", Rect);
+            exports_7("Rect", Rect);
             Range = (function () {
                 function Range(start, length) {
                     this.start = start;
@@ -318,13 +517,13 @@ System.register("lib/geometry", [], function (exports_5, context_5) {
                 });
                 return Range;
             }());
-            exports_5("Range", Range);
+            exports_7("Range", Range);
         }
     };
 });
-System.register("lib/supercell", ["lib/geometry"], function (exports_6, context_6) {
+System.register("lib/supercell", ["lib/geometry"], function (exports_8, context_8) {
     "use strict";
-    var __moduleName = context_6 && context_6.id;
+    var __moduleName = context_8 && context_8.id;
     var geometry_1, sq, HexPos, Supercell;
     return {
         setters: [
@@ -351,7 +550,7 @@ System.register("lib/supercell", ["lib/geometry"], function (exports_6, context_
                 };
                 return HexPos;
             }());
-            exports_6("HexPos", HexPos);
+            exports_8("HexPos", HexPos);
             Supercell = (function () {
                 function Supercell(pos, rank) {
                     this.pos = pos;
@@ -393,13 +592,13 @@ System.register("lib/supercell", ["lib/geometry"], function (exports_6, context_
                 };
                 return Supercell;
             }());
-            exports_6("Supercell", Supercell);
+            exports_8("Supercell", Supercell);
         }
     };
 });
-System.register("lib/cellstore", ["lib/supercell"], function (exports_7, context_7) {
+System.register("lib/cellstore", ["lib/supercell"], function (exports_9, context_9) {
     "use strict";
-    var __moduleName = context_7 && context_7.id;
+    var __moduleName = context_9 && context_9.id;
     var supercell_1, makeArray, CellStore;
     return {
         setters: [
@@ -490,13 +689,13 @@ System.register("lib/cellstore", ["lib/supercell"], function (exports_7, context
                 };
                 return CellStore;
             }());
-            exports_7("CellStore", CellStore);
+            exports_9("CellStore", CellStore);
         }
     };
 });
-System.register("lib/util", [], function (exports_8, context_8) {
+System.register("lib/util", [], function (exports_10, context_10) {
     "use strict";
-    var __moduleName = context_8 && context_8.id;
+    var __moduleName = context_10 && context_10.id;
     function rnd(min, max) {
         if (typeof max === 'number' && typeof min === 'number')
             return Math.floor(min + Math.random() * (max - min));
@@ -506,7 +705,7 @@ System.register("lib/util", [], function (exports_8, context_8) {
             return min[Math.floor(min.length * Math.random())];
         throw new Error('invalid set of arguments to rnd');
     }
-    exports_8("rnd", rnd);
+    exports_10("rnd", rnd);
     function array(w, h, fn) {
         var res = [];
         for (var i = 0; i < h; ++i) {
@@ -517,16 +716,16 @@ System.register("lib/util", [], function (exports_8, context_8) {
         }
         return res;
     }
-    exports_8("array", array);
+    exports_10("array", array);
     return {
         setters: [],
         execute: function () {
         }
     };
 });
-System.register("pellets/src/world", ["lib/cellstore", "lib/supercell", "lib/util", "lib/color"], function (exports_9, context_9) {
+System.register("pellets/src/world", ["lib/cellstore", "lib/supercell", "lib/util", "lib/color"], function (exports_11, context_11) {
     "use strict";
-    var __moduleName = context_9 && context_9.id;
+    var __moduleName = context_11 && context_11.id;
     function bucketData(w, h) {
         var a = [];
         var ox = (w / 2) | 0;
@@ -561,21 +760,21 @@ System.register("pellets/src/world", ["lib/cellstore", "lib/supercell", "lib/uti
             }
         ],
         execute: function () {
-            exports_9("red", red = { color: color_2.wheelHcy(0, 1, .25) });
-            exports_9("blue", blue = { color: color_2.wheelHcy(240, 1, .35) });
-            exports_9("green", green = { color: color_2.wheelHcy(180, 1, .45) });
-            exports_9("yellow", yellow = { color: color_2.wheelHcy(90, 1, .8) });
-            exports_9("orange", orange = { color: color_2.wheelHcy(45, 1, .5) });
-            exports_9("silver", silver = { color: color_2.wheelHcy(90, .1, .9) });
-            exports_9("violet", violet = { color: color_2.wheelHcy(305, 1, .5) });
-            exports_9("types", types = [red, blue, green, yellow, orange, silver, violet]);
+            exports_11("red", red = { color: color_2.wheelHcy(0, 1, .25) });
+            exports_11("blue", blue = { color: color_2.wheelHcy(240, 1, .35) });
+            exports_11("green", green = { color: color_2.wheelHcy(180, 1, .45) });
+            exports_11("yellow", yellow = { color: color_2.wheelHcy(90, 1, .8) });
+            exports_11("orange", orange = { color: color_2.wheelHcy(45, 1, .5) });
+            exports_11("silver", silver = { color: color_2.wheelHcy(90, .1, .9) });
+            exports_11("violet", violet = { color: color_2.wheelHcy(305, 1, .5) });
+            exports_11("types", types = [red, blue, green, yellow, orange, silver, violet]);
             Cell = (function () {
                 function Cell(type) {
                     this.type = type;
                 }
                 return Cell;
             }());
-            exports_9("Cell", Cell);
+            exports_11("Cell", Cell);
             World = (function () {
                 function World(w, h) {
                     this.store = bucketData(w, h);
@@ -599,13 +798,13 @@ System.register("pellets/src/world", ["lib/cellstore", "lib/supercell", "lib/uti
                 };
                 return World;
             }());
-            exports_9("World", World);
+            exports_11("World", World);
         }
     };
 });
-System.register("pellets/src/render", ["lib/color"], function (exports_10, context_10) {
+System.register("pellets/src/render", ["lib/color"], function (exports_12, context_12) {
     "use strict";
-    var __moduleName = context_10 && context_10.id;
+    var __moduleName = context_12 && context_12.id;
     var color_3, Renderer;
     return {
         setters: [
@@ -653,13 +852,13 @@ System.register("pellets/src/render", ["lib/color"], function (exports_10, conte
                 };
                 return Renderer;
             }());
-            exports_10("Renderer", Renderer);
+            exports_12("Renderer", Renderer);
         }
     };
 });
-System.register("pellets/src/main", ["lib/canvas", "lib/loop", "pellets/src/render", "pellets/src/world", "lib/geometry"], function (exports_11, context_11) {
+System.register("pellets/src/main", ["lib/canvas", "lib/loop", "pellets/src/render", "pellets/src/world", "lib/geometry"], function (exports_13, context_13) {
     "use strict";
-    var __moduleName = context_11 && context_11.id;
+    var __moduleName = context_13 && context_13.id;
     function init() {
         var ctx = canvas_2.fullscreenCanvas(false, true);
         var cursor = {
@@ -720,7 +919,7 @@ System.register("pellets/src/main", ["lib/canvas", "lib/loop", "pellets/src/rend
             }
         ],
         execute: function () {
-            exports_11("main", main = function () {
+            exports_13("main", main = function () {
                 var loop = new loop_1.Loop(16, init, fixedUpdate, variableUpdate);
                 loop.start();
             });
