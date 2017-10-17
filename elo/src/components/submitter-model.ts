@@ -415,7 +415,7 @@ const normalizeName = (name: string) => {
     return name;
 }
 
-const hidePlayer = (player: ApiPlayer): boolean => player._id == '593efed3f36d2806fcd5cd7e' || player._id == '5948ffa87e00b50004cd35ed';
+const hidePlayer = (player: ApiPlayer): boolean => player._id == '593efed3f36d2806fcd5cd7e' // player._id == '5948ffa87e00b50004cd35ed';
 
 const isNullObservable = <T>(o: KnockoutObservable<T>) => {
     const v = o();

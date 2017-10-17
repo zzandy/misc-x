@@ -20,6 +20,16 @@ System.register("lib/geometry", [], function (exports_1, context_1) {
                     this.x = x;
                     this.y = y;
                 }
+                Point.prototype.times = function (a, b) {
+                    if (typeof (a) === 'number')
+                        return new Point(this.x * a, this.y * b);
+                    return new Point(this.x * a.x, this.y * a.y);
+                };
+                Point.prototype.plus = function (a, b) {
+                    if (typeof (a) === 'number')
+                        return new Point(this.x + a, this.y + b);
+                    return new Point(this.x + a.x, this.y + a.y);
+                };
                 return Point;
             }());
             exports_1("Point", Point);
@@ -1401,7 +1411,7 @@ System.register("elo/src/components/submitter-model", ["elo/src/lib/almaz-api", 
                     return 'Vova';
                 return name;
             };
-            hidePlayer = function (player) { return player._id == '593efed3f36d2806fcd5cd7e' || player._id == '5948ffa87e00b50004cd35ed'; };
+            hidePlayer = function (player) { return player._id == '593efed3f36d2806fcd5cd7e'; };
             isNullObservable = function (o) {
                 var v = o();
                 return typeof (v) == 'boolean' ? v === false : v == null;
