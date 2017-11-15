@@ -327,16 +327,14 @@ export const getSubmitterModel = () => {
     };
 
     api.getPlayers().then((apiPlayers) => {
-        apiPlayers.map(player => {
-            return player;
-        })
-            .forEach((player, i, players) => {
-                m.players.push({
-                    nickName: uniqueNickName(player, players),
-                    hide: hidePlayer(player),
-                    apiPlayer: player,
-                })
-            });
+        const uniqueName = getUniqueNames(apiPlayers.filter(showPlayer));
+        apiPlayers.forEach((player, i, players) => {
+            m.players.push({
+                nickName: uniqueName[player._id] || player.firstName + ' ' + player.lastName,
+                hide: hidePlayer(player),
+                apiPlayer: player,
+            })
+        });
 
         m.playersReady(true);
     });
@@ -388,33 +386,47 @@ export const getSubmitterModel = () => {
 
     return m;
 };
+const getUniqueNames = (players: ApiPlayer[]) => {
+    const names: { [key: string]: ApiPlayer[] } = {};
+    for (const player of players) {
+        const name = normalizeName(player.firstName);
 
-const uniqueNickName = (player: ApiPlayer, players: ApiPlayer[]) => {
-    if (hidePlayer(player)) return player.firstName + ' ' + player.lastName;
+        if (!(name in names)) names[name] = [];
+        names[name].push(player);
+    }
 
-    let nickName = normalizeName(player.firstName);
+    const res: { [key: string]: string } = {};
 
-    if (!players.some(p => !hidePlayer(p) && p._id != player._id && normalizeName(p.firstName) == nickName))
-        return nickName;
+    for (const name in names) {
+        const player = names[name];
 
-    nickName = player.lastName;
+        if(player.length == 1)res[player[0]._id] = name;
+        else for(const p of player){
+            res[p._id] = name + ' ' + p.lastName[0];
+        }
+    }
 
-    if (!players.some(p => !hidePlayer(p) && p._id != player._id && p.lastName == nickName))
-        return nickName;
-
-    return player.firstName + ' ' + player.lastName;
+    return res;
 }
 
+const nameMapping: { [key: string]: string } = {
+    'Mykyta': 'Nikita',
+    'Dmytro,Dmitrii,Dmitriy': 'Dima',
+    'Andrii,Andrey': 'Andriy',
+    'Sergei,Serhii': 'Sergii',
+    'Volodymyr,Vladimir': 'Vova',
+    'Alexander,Oleksandr': 'Sasha'
+};
+
 const normalizeName = (name: string) => {
-    if ('Mykyta'.indexOf(name) >= 0) return 'Nikita';
-    if ('Dmytro'.indexOf(name) >= 0) return 'Dima';
-    if ('Andriy;Andrii;Andrey'.indexOf(name) >= 0) return 'Andriy';
-    if ('Sergei;Sergii;Serhii;Serge'.indexOf(name) >= 0) return 'Sergii';
-    if ('Vova;Volodymyr;Vladimir'.indexOf(name) >= 0) return 'Vova';
+    for (let key in nameMapping) {
+        if (key.indexOf(name) != -1) return nameMapping[key];
+    }
 
     return name;
 }
 
+const showPlayer = (player: ApiPlayer): boolean => !hidePlayer(player);
 const hidePlayer = (player: ApiPlayer): boolean => player._id == '593efed3f36d2806fcd5cd7e' // player._id == '5948ffa87e00b50004cd35ed';
 
 const isNullObservable = <T>(o: KnockoutObservable<T>) => {

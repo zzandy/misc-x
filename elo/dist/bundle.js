@@ -1076,7 +1076,7 @@ System.register("elo/src/components/score-model", [], function (exports_12, cont
 System.register("elo/src/components/submitter-model", ["elo/src/lib/almaz-api", "elo/src/lib/elo", "elo/src/components/score-model", "elo/src/components/game-processor"], function (exports_13, context_13) {
     "use strict";
     var __moduleName = context_13 && context_13.id;
-    var almaz_api_2, elo_2, score_model_1, game_processor_2, getSource, getCurrentTeamModel, getCurrentGameModel, getPendingUploads, setPendingUploads, getSubmitterModel, uniqueNickName, normalizeName, hidePlayer, isNullObservable, whenAllNotNull;
+    var almaz_api_2, elo_2, score_model_1, game_processor_2, getSource, getCurrentTeamModel, getCurrentGameModel, getPendingUploads, setPendingUploads, getSubmitterModel, getUniqueNames, nameMapping, normalizeName, showPlayer, hidePlayer, isNullObservable, whenAllNotNull;
     return {
         setters: [
             function (almaz_api_2_1) {
@@ -1336,12 +1336,10 @@ System.register("elo/src/components/submitter-model", ["elo/src/lib/almaz-api", 
                         && currentGame.blu.offence() != player;
                 };
                 api.getPlayers().then(function (apiPlayers) {
-                    apiPlayers.map(function (player) {
-                        return player;
-                    })
-                        .forEach(function (player, i, players) {
+                    var uniqueName = getUniqueNames(apiPlayers.filter(showPlayer));
+                    apiPlayers.forEach(function (player, i, players) {
                         m.players.push({
-                            nickName: uniqueNickName(player, players),
+                            nickName: uniqueName[player._id] || player.firstName + ' ' + player.lastName,
                             hide: hidePlayer(player),
                             apiPlayer: player,
                         });
@@ -1387,30 +1385,44 @@ System.register("elo/src/components/submitter-model", ["elo/src/lib/almaz-api", 
                 resetPicking();
                 return m;
             });
-            uniqueNickName = function (player, players) {
-                if (hidePlayer(player))
-                    return player.firstName + ' ' + player.lastName;
-                var nickName = normalizeName(player.firstName);
-                if (!players.some(function (p) { return !hidePlayer(p) && p._id != player._id && normalizeName(p.firstName) == nickName; }))
-                    return nickName;
-                nickName = player.lastName;
-                if (!players.some(function (p) { return !hidePlayer(p) && p._id != player._id && p.lastName == nickName; }))
-                    return nickName;
-                return player.firstName + ' ' + player.lastName;
+            getUniqueNames = function (players) {
+                var names = {};
+                for (var _i = 0, players_1 = players; _i < players_1.length; _i++) {
+                    var player = players_1[_i];
+                    var name_5 = normalizeName(player.firstName);
+                    if (!(name_5 in names))
+                        names[name_5] = [];
+                    names[name_5].push(player);
+                }
+                var res = {};
+                for (var name_6 in names) {
+                    var player = names[name_6];
+                    if (player.length == 1)
+                        res[player[0]._id] = name_6;
+                    else
+                        for (var _a = 0, player_1 = player; _a < player_1.length; _a++) {
+                            var p = player_1[_a];
+                            res[p._id] = name_6 + ' ' + p.lastName[0];
+                        }
+                }
+                return res;
+            };
+            nameMapping = {
+                'Mykyta': 'Nikita',
+                'Dmytro,Dmitrii,Dmitriy': 'Dima',
+                'Andrii,Andrey': 'Andriy',
+                'Sergei,Serhii': 'Sergii',
+                'Volodymyr,Vladimir': 'Vova',
+                'Alexander,Oleksandr': 'Sasha'
             };
             normalizeName = function (name) {
-                if ('Mykyta'.indexOf(name) >= 0)
-                    return 'Nikita';
-                if ('Dmytro'.indexOf(name) >= 0)
-                    return 'Dima';
-                if ('Andriy;Andrii;Andrey'.indexOf(name) >= 0)
-                    return 'Andriy';
-                if ('Sergei;Sergii;Serhii;Serge'.indexOf(name) >= 0)
-                    return 'Sergii';
-                if ('Vova;Volodymyr;Vladimir'.indexOf(name) >= 0)
-                    return 'Vova';
+                for (var key in nameMapping) {
+                    if (key.indexOf(name) != -1)
+                        return nameMapping[key];
+                }
                 return name;
             };
+            showPlayer = function (player) { return !hidePlayer(player); };
             hidePlayer = function (player) { return player._id == '593efed3f36d2806fcd5cd7e'; };
             isNullObservable = function (o) {
                 var v = o();
