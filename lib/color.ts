@@ -3,12 +3,12 @@ type rgbtuple = [number, number, number];
 
 // hue Chroma luma
 export function hcy(h: number, c: number, y: number): rgbtuple {
-
     // 601
     const r = .3;
     const g = .59;
     const b = .11;
 
+    h %= 360;
     h /= 60;
 
     const k = (1 - Math.abs((h % 2) - 1));
@@ -41,6 +41,7 @@ export function hcy(h: number, c: number, y: number): rgbtuple {
 }
 
 export function wheelHcy(h: number, c: number, y: number): rgbtuple {
+    h %= 360;
     const h2 = h < 180 ? 2 * h / 3 : 120 + (h - 180) * 4 / 3;
     return hcy(h2, c, y);
 }
