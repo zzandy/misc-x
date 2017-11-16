@@ -378,10 +378,10 @@ System.register("ironbow/src/main", ["lib/canvas", "lib/color"], function (expor
                         ctx.fillStyle = 'rgb(' + color.join(',') + ')';
                         ctx.fillCircle(current * size + size / 2, data.height * 2 + 10 + size / 2, size / 2);
                         var _a = hcycolors[current], h = _a[0], c = _a[1], y = _a[2];
-                        ctx.fillStyle = color_1.wheel2rgb(h, c, y);
+                        ctx.fillStyle = color_1.wheel2rgb(h, 1, .4);
                         ctx.fillRect(current * size, data.height * 2 + 10 + size + 1, size - 1, size);
-                        _b = [(280 + 160 * ease(q) + .1 * q) % 360, q * 6 / (q * 6 + 1), Math.pow(q, 1.3) + .015 * (1 - q)], h = _b[0], c = _b[1], y = _b[2];
-                        ctx.fillStyle = color_1.wheel2rgb(h, c, y);
+                        _b = [(275 + 80 * (1 - Math.cos((q * 1.1 - 0.01) * Math.PI))), q * 6 / (q * 6 + 1), Math.pow(q, 1.3) + .03 * (1 - q)], h = _b[0], c = _b[1], y = _b[2];
+                        ctx.fillStyle = color_1.wheel2rgb(h, 1, .4);
                         ctx.fillRect(current * size, data.height * 2 + 10 + 2 * (size + 1), size - 1, size);
                         _c = previousAttempt(q), h = _c[0], c = _c[1], y = _c[2];
                         ctx.fillStyle = color_1.hcy2rgb(h, c, y);

@@ -29,17 +29,16 @@ export const main = function () {
             ctx.fillCircle(current * size + size / 2, data.height * 2 + 10 + size / 2, size / 2);
 
             let [h, c, y] = hcycolors[current];//guess(color);
-            ctx.fillStyle = wheel2rgb(h, c, y);
+            ctx.fillStyle = wheel2rgb(h, 1,.4);
             ctx.fillRect(current * size, data.height * 2 + 10 + size + 1, size - 1, size);
 
-            [h, c, y] = [(280 + 160 * ease(q) + .1 * q) % 360, q * 6 / (q * 6 + 1), Math.pow(q, 1.3) + .015 * (1 - q)];
-            ctx.fillStyle = wheel2rgb(h, c, y);
+            [h, c, y] = [(275 +80*(1-Math.cos((q*1.1-0.01)*Math.PI))), q * 6 / (q * 6 + 1), Math.pow(q, 1.3) + .03 * (1 - q)];
+            ctx.fillStyle = wheel2rgb(h, 1, .4);
             ctx.fillRect(current * size, data.height * 2 + 10 + 2 * (size + 1), size - 1, size);
 
             [h, c, y] = previousAttempt(q);
             ctx.fillStyle = hcy2rgb(h, c, y);
             ctx.fillRect(current * size, data.height * 2 + 10 + 3 * (size + 1), size - 1, size);
-
 
             if (++current < colors.length)
                 requestAnimationFrame(guessNext);
