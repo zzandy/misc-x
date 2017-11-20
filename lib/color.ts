@@ -40,9 +40,30 @@ export function hcy(h: number, c: number, y: number): rgbtuple {
     return [rgb[0] + m, rgb[1] + m, rgb[2] + m];
 }
 
+const breaks = [
+    [39, 60],
+    [60, 120],
+    [120, 180],
+    [240, 240],
+    [290, 300],
+    [360, 360]
+];
+
 export function wheelHcy(h: number, c: number, y: number): rgbtuple {
     h %= 360;
-    const h2 = h < 180 ? 2 * h / 3 : 120 + (h - 180) * 4 / 3;
+
+    let h2 = h;
+    let [s0, t0] = [0, 0];
+
+    for (const [t, s] of breaks) {
+        if (h < s) {
+            h2 = t0 + (h - s0) * (t - t0) / (s - s0);
+            break;
+        }
+
+        [s0, t0] = [s, t];
+    }
+
     return hcy(h2, c, y);
 }
 
