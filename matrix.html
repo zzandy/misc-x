@@ -1,0 +1,188 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <style type="text/css">
+        body {
+            overflow: hidden
+        }
+    </style>
+</head>
+
+<body>
+    <script type="text/javascript">
+        (function () {
+            document.createElement('canvas');
+            var c = document.createElement('canvas');
+            ctx = c.getContext('2d', { alpha: false });
+
+            ctx.w = ctx.canvas.width = window.innerWidth;
+            ctx.h = ctx.canvas.height = window.innerHeight;
+            ctx.canvas.style.position = 'absolute';
+            ctx.canvas.style.top = 0;
+            ctx.canvas.style.left = 0;
+
+            ctx.clear = function () {
+                ctx.clearRect(-ctx.canvas.width / 2, -ctx.canvas.height / 2, ctx.canvas.width, ctx.canvas.height);
+            };
+
+            document.body.appendChild(c);
+        })();
+    </script>
+
+    <script type="text/javascript">
+        function rnd(a, b) {
+            switch (arguments.length) {
+                case 0: return Math.random();
+                case 1: if (a instanceof Array)
+                    return a[a.length * Math.random() | 0];
+                else return a * Math.random() | 0;
+                case 2: return a + (b - a) * Math.random() | 0;
+            }
+        }
+    </script>
+
+    <script type="text/javascript">
+        function Glyph(char, cooldown, life) {
+            this.char = char;
+            this.cooldown = cooldown;
+            this.maxcooldown = cooldown;
+            this.life = life;
+            this.isUpdated = true;
+        }
+
+        Glyph.prototype.getColor = function () {
+            this.isUpdated = false;
+            if (this.life < 0) return 'tranparent';
+            return 'hsl(120, ' + 100 + '%,' + (20 + 80 * (this.cooldown / this.maxcooldown)) + '%)';
+        }
+
+        Glyph.prototype.update = function (sub) {
+            if (this.cooldown > sub) {
+                this.cooldown -= sub;
+                sub = 0;
+                this.isUpdated = true;
+            }
+            else if (this.cooldown > 0) {
+                sub -= this.cooldown;
+                this.cooldown = 0;
+                this.isUpdated = true;
+            }
+
+            if (sub > 0 && this.life > 0) {
+                this.life -= sub;
+                this.isUpdated = true;
+            }
+        }
+    </script>
+
+    <script type="text/javascript">
+        const chars = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヰヱヲ'.split('');
+
+        function Snek(col, row, speed, length) {
+            this.col = col;
+            this.row = row;
+            this.speed = speed;
+            this.length = length;
+            this.agg = 0;
+        }
+
+        Snek.prototype.update = function (delta, matrix) {
+            this.agg += delta;
+            while (this.agg > this.speed) {
+                if (++this.row >= 0 && this.row < matrix.length) {
+                    matrix[this.row][this.col] = new Glyph(rnd(chars), 250, this.length);
+                }
+
+                this.agg -= this.speed;
+            }
+
+            if (this.row >= matrix.length) {
+                this.row = -1;
+                this.col = rnd(matrix[0].length);
+            }
+        }
+    </script>
+
+    <script type="text/javascript">
+        ctx.font = ctx.font.replace(/^(\d+)/, function (x) { return 10 });
+
+        const size = chars.reduce(function (w, c) {
+            const wc = ctx.measureText(c).width;
+            return wc > w ? wc : w;
+        }, 0);
+
+        const cols = ctx.canvas.width / size | 0;
+        const rows = ctx.canvas.height / size | 0;
+
+        const matrix = [];
+        const sneks = [];
+        const ksneks = 1.2;
+
+        for (var i = 0; i < rows; ++i) {
+            const row = [];
+            for (var j = 0; j < cols; ++j) {
+                row.push(null);
+            }
+            matrix.push(row);
+        }
+
+        for (var j = 0; j < cols * ksneks; ++j) {
+            const speed = rnd(30, 300);
+            const life = rows * speed * (.2 + .8 * rnd());
+            sneks.push(new Snek(rnd(cols), rnd(rows), speed, life));
+        }
+
+        function update(delta, matrix) {
+            for (var snek of sneks)
+                snek.update(delta, matrix);
+
+            for (var row of matrix)
+                for (var glyph of row)
+                    if (glyph != null)
+                        glyph.update(delta);
+        }
+
+        function render(ctx, matrix) {
+            for (var i = 0; i < matrix.length; ++i) {
+                const row = matrix[i];
+                for (var j = 0; j < row.length; ++j) {
+                    const glyph = matrix[i][j];
+
+                    if (glyph != null && glyph.isUpdated) {
+                        ctx.fillStyle = 'black';
+                        ctx.fillRect(size * j, size * i, size, size);
+                        const c = glyph.getColor();
+                        if (c != null) {
+                            ctx.fillStyle = c;
+                            ctx.fillText(glyph.char, size * j, size * i + size);
+                        }
+                        else
+                            matrix[i][j] = null;
+                    }
+                }
+            }
+        }
+
+        ctx.fillStyle = 'black';
+        ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        var t0 = null;
+        function frame(ts) {
+            const delta = t0 == null ? 0 : (ts - t0);
+            t0 = ts;
+
+            update(delta, matrix);
+            render(ctx, matrix);
+
+            requestAnimationFrame(frame);
+        }
+
+        requestAnimationFrame(frame);
+
+
+
+    </script>
+</body>
+
+</html>
