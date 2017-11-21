@@ -92,7 +92,7 @@
             this.agg += delta;
             while (this.agg > this.speed) {
                 if (++this.row >= 0 && this.row < matrix.length) {
-                    matrix[this.row][this.col] = new Glyph(rnd(chars), 250, this.length);
+                    matrix[this.row][this.col] = new Glyph(rnd(chars), 300, this.length);
                 }
 
                 this.agg -= this.speed;
@@ -129,8 +129,8 @@
         }
 
         for (var j = 0; j < cols * ksneks; ++j) {
-            const speed = rnd(30, 300);
-            const life = rows * speed * (.2 + .8 * rnd());
+            const speed = rnd(50, 300);
+            const life = rows * speed * (.3 + .7 * rnd());
             sneks.push(new Snek(rnd(cols), rnd(rows), speed, life));
         }
 
