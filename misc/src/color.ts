@@ -1,5 +1,5 @@
 import { fullscreenCanvas, ICanvasRenderingContext2D } from '../../lib/canvas';
-import { wheel2rgb , hcy2rgb} from '../../lib/color';
+import { wheel2rgb } from '../../lib/color';
 
 export const main = () => {
     const ctx = fullscreenCanvas();
@@ -16,11 +16,11 @@ export const main = () => {
     ctx.globalCompositeOperation = 'difference';
     ctx.translate(ctx.canvas.width / 2, ctx.canvas.height / 2);
 
-    ctx.translate(-r*1.1, 0)
+    ctx.translate(-r * 1.1, 0)
     renderWheel(ctx, r * .8, t * 2, wheel2rgb, 90);
     renderWheel(ctx, r * .7, t * 2, wheel2rgb, 270);
 
-    ctx.translate(2.2*r, 0)
+    ctx.translate(2.2 * r, 0)
     renderWheel(ctx, r * .8, t * 2, hsl, 90);
     renderWheel(ctx, r * .7, t * 2, hsl, 270);
 }
