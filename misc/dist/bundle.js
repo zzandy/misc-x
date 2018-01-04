@@ -1,3 +1,13 @@
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 System.register("lib/canvas", [], function (exports_1, context_1) {
     "use strict";
     var __moduleName = context_1 && context_1.id;
@@ -35,6 +45,7 @@ System.register("lib/canvas", [], function (exports_1, context_1) {
             ctx.fill();
             return ctx;
         };
+        document.body.style.margin = '0';
         document.body.appendChild(can);
         return ctx;
     }
@@ -442,9 +453,207 @@ System.register("misc/src/map", [], function (exports_4, context_4) {
         }
     };
 });
-System.register("lib/random", [], function (exports_5, context_5) {
+System.register("lib/rnd", [], function (exports_5, context_5) {
     "use strict";
     var __moduleName = context_5 && context_5.id;
+    function rnd(a, b) {
+        if (a !== undefined && b !== undefined) {
+            return (b + (a - b) * Math.random()) | 0;
+        }
+        else if (a !== undefined && b === undefined) {
+            if (a instanceof Array)
+                return a[(Math.random() * a.length) | 0];
+            else
+                return (a * Math.random()) | 0;
+        }
+        else
+            return Math.random();
+    }
+    exports_5("rnd", rnd);
+    return {
+        setters: [],
+        execute: function () {
+        }
+    };
+});
+System.register("lib/geometry", [], function (exports_6, context_6) {
+    "use strict";
+    var __moduleName = context_6 && context_6.id;
+    var Point, Rect, Range;
+    return {
+        setters: [],
+        execute: function () {
+            Point = (function () {
+                function Point(x, y) {
+                    this.x = x;
+                    this.y = y;
+                }
+                Point.prototype.times = function (a, b) {
+                    if (typeof (a) === 'number')
+                        return new Point(this.x * a, this.y * b);
+                    return new Point(this.x * a.x, this.y * a.y);
+                };
+                Point.prototype.plus = function (a, b) {
+                    if (typeof (a) === 'number')
+                        return new Point(this.x + a, this.y + b);
+                    return new Point(this.x + a.x, this.y + a.y);
+                };
+                return Point;
+            }());
+            exports_6("Point", Point);
+            Rect = (function (_super) {
+                __extends(Rect, _super);
+                function Rect(x, y, w, h) {
+                    var _this = _super.call(this, x, y) || this;
+                    _this.w = w;
+                    _this.h = h;
+                    return _this;
+                }
+                Object.defineProperty(Rect.prototype, "horizontal", {
+                    get: function () {
+                        return new Range(this.x, this.w);
+                    },
+                    enumerable: true,
+                    configurable: true
+                });
+                Object.defineProperty(Rect.prototype, "vertical", {
+                    get: function () {
+                        return new Range(this.y, this.h);
+                    },
+                    enumerable: true,
+                    configurable: true
+                });
+                return Rect;
+            }(Point));
+            exports_6("Rect", Rect);
+            Range = (function () {
+                function Range(start, length) {
+                    this.start = start;
+                    this.length = length;
+                }
+                Object.defineProperty(Range.prototype, "end", {
+                    get: function () {
+                        return this.start + this.length;
+                    },
+                    enumerable: true,
+                    configurable: true
+                });
+                return Range;
+            }());
+            exports_6("Range", Range);
+        }
+    };
+});
+System.register("misc/src/settle", ["lib/geometry", "lib/canvas"], function (exports_7, context_7) {
+    "use strict";
+    var __moduleName = context_7 && context_7.id;
+    function blocks(width, height, size) {
+        return [height / size, width / size];
+    }
+    function render(ctx, world) {
+        for (var i = 0; i < world.nodes.length; ++i) {
+            var node = world.nodes[i];
+            ctx.fillRect(node.pos.x - 5, node.pos.y - 5, 10, 10);
+            ctx.fillText(node.name, node.pos.x, node.pos.y);
+            var j = world.dists.closest(i);
+            var other = world.nodes[j];
+            ctx.beginPath();
+            ctx.moveTo(node.pos.x, node.pos.y);
+            ctx.lineTo(other.pos.x, other.pos.y);
+            ctx.stroke();
+        }
+    }
+    var geometry_1, canvas_2, Node, World, DistMap, main;
+    return {
+        setters: [
+            function (geometry_1_1) {
+                geometry_1 = geometry_1_1;
+            },
+            function (canvas_2_1) {
+                canvas_2 = canvas_2_1;
+            }
+        ],
+        execute: function () {
+            Node = (function () {
+                function Node(name, pos) {
+                    this.name = name;
+                    this.pos = pos;
+                }
+                return Node;
+            }());
+            World = (function () {
+                function World(nodes) {
+                    this.nodes = nodes;
+                    this.dists = new DistMap(nodes.map(function (n) { return n.pos; }));
+                }
+                return World;
+            }());
+            DistMap = (function () {
+                function DistMap(points) {
+                    this.dists = [];
+                    this.length = points.length;
+                    for (var i = 1; i < points.length; ++i)
+                        for (var j = 0; j < i; ++j) {
+                            var _a = points[i], x0 = _a.x, y0 = _a.y;
+                            var _b = points[j], x1 = _b.x, y1 = _b.y;
+                            var d = Math.sqrt((x0 - x1) * (x0 - x1) + (y0 - y1) * (y0 - y1));
+                            this.dists.push(d);
+                        }
+                }
+                DistMap.prototype.dist = function (i0, i1) {
+                    return i0 == i1
+                        ? 0
+                        : i1 > i0
+                            ? this.dists[(i1 - 1) * i1 / 2 + i0]
+                            : this.dists[(i0 - 1) * i0 / 2 + i1];
+                };
+                DistMap.prototype.closest = function (idx) {
+                    var dist = Infinity;
+                    var ix = -1;
+                    for (var j = 0; j < idx; ++j) {
+                        var d = this.dist(idx, j);
+                        if (d < dist) {
+                            dist = d;
+                            ix = j;
+                        }
+                    }
+                    for (var i = idx + 1; i < this.length; ++i) {
+                        var d = this.dist(i, idx);
+                        if (d < dist) {
+                            dist = d;
+                            ix = i;
+                        }
+                    }
+                    return ix;
+                };
+                return DistMap;
+            }());
+            exports_7("main", main = function () {
+                var q = Math.sqrt(3) / 2;
+                var size = 100;
+                var ctx = canvas_2.fullscreenCanvas();
+                var _a = blocks(ctx.canvas.width, ctx.canvas.height / q, size), rows = _a[0], cols = _a[1];
+                var _b = [ctx.canvas.width / cols, ctx.canvas.height / rows * q], bw = _b[0], bh = _b[1];
+                var nodes = [];
+                for (var i = 1; i < rows - 1; ++i)
+                    for (var j = 1; j < cols - 1; ++j) {
+                        var x = (j + i % 2 / 2) * bw;
+                        var y = (i + .5) * bh;
+                        var a = Math.random() * 2 * Math.PI;
+                        var d = Math.random() * size * q * 2 / 3 * .8;
+                        x += d * Math.cos(a);
+                        y += d * Math.sin(a);
+                        nodes.push(new Node(i + "x" + j, new geometry_1.Point(x, y)));
+                    }
+                var world = new World(nodes);
+                render(ctx, world);
+            });
+        }
+    };
+});
+System.register("lib/random", [], function (exports_8, context_8) {
+    "use strict";
+    var __moduleName = context_8 && context_8.id;
     var Random;
     return {
         setters: [],
@@ -473,13 +682,13 @@ System.register("lib/random", [], function (exports_5, context_5) {
                 };
                 return Random;
             }());
-            exports_5("Random", Random);
+            exports_8("Random", Random);
         }
     };
 });
-System.register("lib/simplex", ["lib/random"], function (exports_6, context_6) {
+System.register("lib/simplex", ["lib/random"], function (exports_9, context_9) {
     "use strict";
-    var __moduleName = context_6 && context_6.id;
+    var __moduleName = context_9 && context_9.id;
     function generateShuffledArray(n, seed) {
         var a = new Array(n);
         for (var i = 0; i < n; ++i)
@@ -524,7 +733,7 @@ System.register("lib/simplex", ["lib/random"], function (exports_6, context_6) {
                 };
                 return SimplexNoise2d;
             }());
-            exports_6("SimplexNoise2d", SimplexNoise2d);
+            exports_9("SimplexNoise2d", SimplexNoise2d);
             SimplexNoiseOctave = (function () {
                 function SimplexNoiseOctave(seed) {
                     if (seed === void 0) { seed = 0; }
@@ -580,13 +789,13 @@ System.register("lib/simplex", ["lib/random"], function (exports_6, context_6) {
                 };
                 return SimplexNoiseOctave;
             }());
-            exports_6("SimplexNoiseOctave", SimplexNoiseOctave);
+            exports_9("SimplexNoiseOctave", SimplexNoiseOctave);
         }
     };
 });
-System.register("misc/src/simplex", ["lib/canvas", "lib/color", "lib/simplex"], function (exports_7, context_7) {
+System.register("misc/src/simplex", ["lib/canvas", "lib/color", "lib/simplex"], function (exports_10, context_10) {
     "use strict";
-    var __moduleName = context_7 && context_7.id;
+    var __moduleName = context_10 && context_10.id;
     function renderNoise(ctx) {
         var noise = new simplex_1.SimplexNoise2d(.7, 10);
         var _a = ctx.canvas, w = _a.width, h = _a.height;
@@ -627,11 +836,11 @@ System.register("misc/src/simplex", ["lib/canvas", "lib/color", "lib/simplex"], 
         }
         return grad[grad.length - 1][1];
     }
-    var canvas_2, color_2, simplex_1, main, waterlevel, sandlevel, greenslevel, grad;
+    var canvas_3, color_2, simplex_1, main, waterlevel, sandlevel, greenslevel, grad;
     return {
         setters: [
-            function (canvas_2_1) {
-                canvas_2 = canvas_2_1;
+            function (canvas_3_1) {
+                canvas_3 = canvas_3_1;
             },
             function (color_2_1) {
                 color_2 = color_2_1;
@@ -641,8 +850,8 @@ System.register("misc/src/simplex", ["lib/canvas", "lib/color", "lib/simplex"], 
             }
         ],
         execute: function () {
-            exports_7("main", main = function () {
-                var ctx = canvas_2.fullscreenCanvas();
+            exports_10("main", main = function () {
+                var ctx = canvas_3.fullscreenCanvas();
                 document.body.style.backgroundColor = 'black';
                 var before = (new Date).getTime();
                 renderNoise(ctx);

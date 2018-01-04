@@ -71,6 +71,7 @@ export function fullscreenCanvas(relative: boolean = false, noAlpha: boolean = f
         return ctx;
     }
 
+    document.body.style.margin='0';
     document.body.appendChild(can);
     return ctx;
 }
