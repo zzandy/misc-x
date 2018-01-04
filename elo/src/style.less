@@ -4,9 +4,10 @@
 
 @blu-background: hsla(215, 100%, 40%, 1);
 @blu-foreground: hsla(215, 100%, 95%, 1);
+@background: #131200;
 
 html {
-    background-color: #131200;
+    background-color: @background;
     color: grey;
 }
 
@@ -38,6 +39,14 @@ button, select {
 button:disabled {
     color: hsl(0, 0%, 25%);
     border-color:  hsl(0, 0%, 20%);
+}
+
+.selector {
+    display: inline-block;
+    border-radius: .4em;
+    background-color: lighten(@background, 5%);
+    min-height: 1em;
+    padding: 0 .4em;
 }
 
 .large-shadow(@color) {

@@ -31,6 +31,13 @@ button:disabled {
   color: #404040;
   border-color: #333333;
 }
+.selector {
+  display: inline-block;
+  border-radius: .4em;
+  background-color: #2d2a00;
+  min-height: 1em;
+  padding: 0 .4em;
+}
 .submitted,
 .submitted button {
   font-size: 60%;

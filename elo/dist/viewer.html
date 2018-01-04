@@ -17,21 +17,33 @@
         <div class="cssload-item cssload-moon"></div>
     </div>
 
-    <div data-bind="visible: !loading()">Game records total: <span data-bind="text: numGamesTotal"></span>, Good game records: <span data-bind="text: numGames"></span> 
-        <label><input type="checkbox" data-bind="checked: shouldShowData"/>Show Data</label>
-        <select data-bind="value: activeView, options: activeViews"></select>
-        <select data-bind="value: activeSubview, options: activeSubviews"></select>
+    <div data-bind="visible: !loading()">Game records total:
+        <span data-bind="text: numGamesTotal"></span>, Good game records:
+        <span data-bind="text: numGames"></span>
+
+        <div class="selector">
+            <input type="radio" name="view" value="graph" data-bind="checked: selectedView">Graph</input>
+            <input type="radio" name="view" value="teams" data-bind="checked: selectedView">Teams</input>
+            <input type="radio" name="view" value="games" data-bind="checked: selectedView">Games</input>
+        </div>
+
+        <div class="selector" data-bind="visible: showCanvas">
+            <select data-bind="value: activeView, options: activeViews, disable: "></select>
+            <select data-bind="value: activeSubview, options: activeSubviews"></select>
+        </div>
     </div>
 
-    <table data-bind="visible: showData">
+    <table data-bind="visible: showGames">
         <thead></thead>
         <tbody data-bind="foreach: games">
             <tr>
                 <td class="red" data-bind="css: {winner: redScore > bluScore, sour: redDeltas.scorewise < bluDeltas.scorewise}">
-                    <span data-bind="text: red.defence.apiPlayer.firstName"></span>&nbsp;<span data-bind="text: red.defence.apiPlayer.lastName"></span>
+                    <span data-bind="text: red.defence.apiPlayer.firstName"></span>&nbsp;
+                    <span data-bind="text: red.defence.apiPlayer.lastName"></span>
                 </td>
                 <td class="red" data-bind="css: {winner: redScore > bluScore, sour: redDeltas.scorewise < bluDeltas.scorewise}">
-                    <span data-bind="text: red.offence.apiPlayer.firstName"></span>&nbsp;<span data-bind="text: red.offence.apiPlayer.lastName"></span>
+                    <span data-bind="text: red.offence.apiPlayer.firstName"></span>&nbsp;
+                    <span data-bind="text: red.offence.apiPlayer.lastName"></span>
                 </td>
 
                 <td class="red score" data-bind="text: redScore, css: {winner: redScore > bluScore}"></td>
@@ -39,11 +51,41 @@
                 <td class="blu score" data-bind="text: bluScore, css: {winner: redScore < bluScore}"></td>
 
                 <td class="blu" data-bind="css: {winner: redScore < bluScore, sour: redDeltas.scorewise > bluDeltas.scorewise}">
-                    <span data-bind="text: blu.offence.apiPlayer.firstName"></span>&nbsp;<span data-bind="text: blu.offence.apiPlayer.lastName"></span>
+                    <span data-bind="text: blu.offence.apiPlayer.firstName"></span>&nbsp;
+                    <span data-bind="text: blu.offence.apiPlayer.lastName"></span>
                 </td>
                 <td class="blu" data-bind="css: {winner: redScore < bluScore, sour: redDeltas.scorewise > bluDeltas.scorewise}">
-                    <span data-bind="text: blu.defence.apiPlayer.firstName"></span>&nbsp;<span data-bind="text: blu.defence.apiPlayer.lastName"></span>
+                    <span data-bind="text: blu.defence.apiPlayer.firstName"></span>&nbsp;
+                    <span data-bind="text: blu.defence.apiPlayer.lastName"></span>
                 </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <table data-bind="visible: showTeams">
+        <thead>
+            <tr>
+                <th>Score</th>
+                <th>Wins</th>
+                <th>Defence</th>
+                <th>Offence</th>
+
+                <th>Min</th>
+                <th>Max</th>
+                <th>Avg</th>
+            </tr>
+        </thead>
+        <tbody data-bind="foreach: teams">
+            <tr>
+                <td data-bind="text: ratings.scorewise.score.toFixed(0)"></td>
+                <td data-bind="text: ratings.binary.score.toFixed(0)"></td>
+
+                <td data-bind="text: defence.apiPlayer.firstName + ' ' + defence.apiPlayer.lastName"></td>
+                <td data-bind="text: offence.apiPlayer.firstName + ' ' + offence.apiPlayer.lastName"></td>
+
+                <td data-bind="text: Math.min(ratings.scorewise.score, ratings.binary.score).toFixed(0)"></td>
+                <td data-bind="text: Math.max(ratings.scorewise.score, ratings.binary.score).toFixed(0)"></td>
+                <td data-bind="text: ((ratings.scorewise.score + ratings.binary.score)/2).toFixed(0)"></td>
             </tr>
         </tbody>
     </table>

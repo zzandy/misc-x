@@ -22,7 +22,7 @@ export interface Game<TPlayer, TTeam extends Team<TPlayer>> {
 
 export class GameProcessor<TPlayer extends Player, TTeam extends Team<TPlayer>, TGame extends Game<TPlayer, TTeam>> {
     public readonly games: TGame[] = [];
-    private readonly teams: TTeam[] = [];
+    public readonly teams: TTeam[] = [];
     private readonly players: TPlayer[] = [];
 
     constructor(private readonly playerAdapter: (p: Player) => TPlayer,

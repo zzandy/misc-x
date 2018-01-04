@@ -425,6 +425,7 @@ System.register("lib/canvas", [], function (exports_7, context_7) {
             ctx.fill();
             return ctx;
         };
+        document.body.style.margin = '0';
         document.body.appendChild(can);
         return ctx;
     }
@@ -677,14 +678,15 @@ System.register("elo/src/components/viewer-model", ["elo/src/lib/almaz-api", "el
                 document.body.insertBefore(ctx.canvas, document.body.firstChild);
                 ctx.canvas.style.zIndex = '-10';
                 var games = ko.observableArray([]);
+                var teams = ko.observableArray([]);
                 var haveData = ko.computed(function () { return games().length > 0; });
-                var shouldShowData = ko.observable((function () {
-                    var v = localStorage.getItem('show-games-table');
-                    return v === undefined || v == 'true';
-                })());
-                shouldShowData.subscribe(function (v) { return localStorage.setItem('show-games-table', v.toString()); });
-                var showData = ko.computed(function () { return !loading() && haveData() && shouldShowData(); });
-                var showCanvas = ko.computed(function () { return !loading() && haveData(); });
+                var selectedView = ko.observable('graph');
+                var showGames = ko.computed(function () { return !loading() && haveData() && selectedView() == 'games'; });
+                var showCanvas = ko.computed(function () { return !loading() && haveData() && selectedView() == 'graph'; });
+                var showTeams = ko.computed(function () { return !loading() && haveData() && selectedView() == 'teams'; });
+                showCanvas.subscribe(function (show) {
+                    ctx.canvas.style.display = show ? 'inline-block' : 'none';
+                });
                 var cutoff = date_1.addDays(new Date(), -21.5);
                 var aggregators = [
                     new aggregators_1.ScorewiseAggregator(cutoff),
@@ -776,7 +778,10 @@ System.register("elo/src/components/viewer-model", ["elo/src/lib/almaz-api", "el
                     numGamesTotal(data.length);
                     gp.processGames(data);
                     numGames(gp.numGames);
+                    var t = gp.teams.slice();
+                    t.sort(function (t1, t2) { return t2.ratings.scorewise.score - t1.ratings.scorewise.score; });
                     games(gp.games);
+                    teams(t);
                     loading(false);
                     aggregators.forEach(function (a) { return a.autobreak(); });
                     render();
@@ -792,10 +797,12 @@ System.register("elo/src/components/viewer-model", ["elo/src/lib/almaz-api", "el
                 return {
                     loading: loading,
                     haveData: haveData,
-                    shouldShowData: shouldShowData,
-                    showData: showData,
+                    selectedView: selectedView,
+                    showTeams: showTeams,
+                    showGames: showGames,
                     showCanvas: showCanvas,
                     games: games,
+                    teams: teams,
                     numGames: numGames,
                     numGamesTotal: numGamesTotal,
                     activeView: activeView,

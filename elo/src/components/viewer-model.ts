@@ -33,17 +33,19 @@ export const getViewerModel = () => {
     ctx.canvas.style.zIndex = '-10';
 
     const games = ko.observableArray<StatGame>([]);
+    const teams = ko.observableArray<StatTeam>([]);
 
     const haveData = ko.computed(() => games().length > 0);
-    const shouldShowData = ko.observable((() => {
-        const v = localStorage.getItem('show-games-table');
-        return v === undefined || v == 'true';
-    })());
 
-    shouldShowData.subscribe(v => localStorage.setItem('show-games-table', v.toString()));
+    const selectedView = ko.observable('graph');
 
-    const showData = ko.computed(() => !loading() && haveData() && shouldShowData());
-    const showCanvas = ko.computed(() => !loading() && haveData());
+    const showGames = ko.computed(() => !loading() && haveData() && selectedView() == 'games');
+    const showCanvas = ko.computed(() => !loading() && haveData() && selectedView() == 'graph');
+    const showTeams = ko.computed(() => !loading() && haveData() && selectedView() == 'teams');
+
+    showCanvas.subscribe((show: boolean) => {
+        ctx.canvas.style.display = show ? 'inline-block' : 'none';
+    });
 
     const cutoff = addDays(new Date(), -21.5);
 
@@ -167,7 +169,11 @@ export const getViewerModel = () => {
 
         numGames(gp.numGames);
 
+        const t = gp.teams.slice();
+        t.sort((t1, t2) => t2.ratings.scorewise.score - t1.ratings.scorewise.score);
+
         games(gp.games);
+        teams(t);
 
         loading(false);
 
@@ -188,10 +194,12 @@ export const getViewerModel = () => {
     return {
         loading: loading,
         haveData: haveData,
-        shouldShowData: shouldShowData,
-        showData: showData,
+        selectedView: selectedView,
+        showTeams: showTeams,
+        showGames: showGames,
         showCanvas: showCanvas,
         games: games,
+        teams: teams,
         numGames: numGames,
         numGamesTotal: numGamesTotal,
         activeView: activeView,
