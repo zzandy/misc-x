@@ -305,6 +305,21 @@ System.register("elo/src/components/game-processor", [], function (exports_6, co
                     configurable: true
                 });
                 ;
+                Object.defineProperty(GameProcessor.prototype, "totalGameTime", {
+                    get: function () {
+                        var n = 0;
+                        var d = this.games.reduce(function (s, g) {
+                            var duration = g.endDate.getTime() - g.startDate.getTime();
+                            var ok = duration > 30000 && duration < 1000000;
+                            if (ok)
+                                ++n;
+                            return ok ? s + duration : s;
+                        }, 0);
+                        return (this.games.length / n * d) | 0;
+                    },
+                    enumerable: true,
+                    configurable: true
+                });
                 GameProcessor.prototype.findPlayer = function (player) {
                     var p = this.players.filter(function (p) { return p.apiPlayer._id == player._id; })[0];
                     if (p === undefined) {
@@ -597,7 +612,8 @@ System.register("elo/src/components/date", [], function (exports_9, context_9) {
     return {
         setters: [],
         execute: function () {
-            formatTimespan = function (ts, inclMs) {
+            exports_9("formatTimespan", formatTimespan = function (ts, inclMs) {
+                if (inclMs === void 0) { inclMs = false; }
                 var s = 1000;
                 var m = 60 * s;
                 var h = 60 * m;
@@ -616,7 +632,7 @@ System.register("elo/src/components/date", [], function (exports_9, context_9) {
                 if (inclMs)
                     repr = repr + '.' + zf(ts, 3);
                 return repr;
-            };
+            });
             formatDate = function (date) {
                 var day = 'Sun,Mon,Tue,Wed,Thu,Fri,Sat'.split(',');
                 return day[date.getDay()] + ', ' + date.getFullYear() + '-' + zf(date.getMonth() + 1, 2) + '-' + zf(date.getDate(), 2);
@@ -1080,10 +1096,10 @@ System.register("elo/src/components/score-model", [], function (exports_12, cont
         }
     };
 });
-System.register("elo/src/components/submitter-model", ["elo/src/lib/almaz-api", "elo/src/lib/elo", "elo/src/components/score-model", "elo/src/components/game-processor"], function (exports_13, context_13) {
+System.register("elo/src/components/submitter-model", ["elo/src/lib/almaz-api", "elo/src/lib/elo", "elo/src/components/score-model", "elo/src/components/game-processor", "elo/src/components/date"], function (exports_13, context_13) {
     "use strict";
     var __moduleName = context_13 && context_13.id;
-    var almaz_api_2, elo_2, score_model_1, game_processor_2, getSource, getCurrentTeamModel, getCurrentGameModel, getPendingUploads, setPendingUploads, getSubmitterModel, getUniqueNames, nameMapping, normalizeName, showPlayer, hidePlayer, isNullObservable, whenAllNotNull;
+    var almaz_api_2, elo_2, score_model_1, game_processor_2, date_2, getSource, getCurrentTeamModel, getCurrentGameModel, getPendingUploads, setPendingUploads, getSubmitterModel, getUniqueNames, nameMapping, normalizeName, showPlayer, hidePlayer, isNullObservable, whenAllNotNull;
     return {
         setters: [
             function (almaz_api_2_1) {
@@ -1097,6 +1113,9 @@ System.register("elo/src/components/submitter-model", ["elo/src/lib/almaz-api", 
             },
             function (game_processor_2_1) {
                 game_processor_2 = game_processor_2_1;
+            },
+            function (date_2_1) {
+                date_2 = date_2_1;
             }
         ],
         execute: function () {
@@ -1196,6 +1215,8 @@ System.register("elo/src/components/submitter-model", ["elo/src/lib/almaz-api", 
                 var playersReady = m.playersReady = ko.observable(false);
                 var gamesReady = m.gamesReady = ko.observable(false);
                 var numGames = m.numGames = ko.observable(0);
+                var totalGameTime = ko.observable(0);
+                var totalGameTimeNice = m.totalGameTimeNice = ko.computed(function () { return date_2.formatTimespan(totalGameTime()).replace('.', ' days, '); });
                 var submittedGames = m.submittedGames = ko.observableArray();
                 var scores = m.scores = score_model_1.getScoreModel();
                 var scoresReady = m.scoresReady = ko.computed(function () {
@@ -1312,6 +1333,7 @@ System.register("elo/src/components/submitter-model", ["elo/src/lib/almaz-api", 
                         }
                     };
                     m.numGames(gp.numGames);
+                    totalGameTime(gp.totalGameTime);
                     uploadGame(gamePlayed);
                     var redScore = scores.red.score();
                     var bluScore = scores.blu.score();
@@ -1387,6 +1409,7 @@ System.register("elo/src/components/submitter-model", ["elo/src/lib/almaz-api", 
                 api.getGames('').then(function (apiGames) {
                     gp.processGames(apiGames);
                     m.numGames(gp.numGames);
+                    totalGameTime(gp.totalGameTime);
                     m.gamesReady(true);
                 });
                 resetPicking();

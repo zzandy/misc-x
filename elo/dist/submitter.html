@@ -82,7 +82,7 @@
         </div>
     </div>
 
-    <div class="smaller footnote" data-bind="visible: gamesReady, text: numGames() + ' games'"></div>
+    <div class="smaller footnote" data-bind="visible: gamesReady"><span data-bind="text: numGames() + ' games'"></span>; <span data-bind="text: totalGameTimeNice"></div>
 
     <table class="submitted" data-bind="visible: submittedGames().length > 0">
         <thead>

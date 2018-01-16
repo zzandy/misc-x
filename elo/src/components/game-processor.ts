@@ -30,6 +30,17 @@ export class GameProcessor<TPlayer extends Player, TTeam extends Team<TPlayer>, 
         private readonly gameAdapter: (g: Game<TPlayer, TTeam>) => TGame) { }
 
     public get numGames() { return this.games.length };
+    public get totalGameTime() {
+        let n =0;
+        const d= this.games.reduce((s, g) => {
+            const duration = g.endDate.getTime() - g.startDate.getTime();
+            const ok = duration > 30000 && duration < 1000000 ;
+            if(ok)++n;
+            return ok ? s + duration : s;
+        }, 0);
+
+        return (this.games.length / n * d)|0;
+    }
 
     public findPlayer(player: ApiPlayer): TPlayer {
         let p = this.players.filter(p => p.apiPlayer._id == player._id)[0];

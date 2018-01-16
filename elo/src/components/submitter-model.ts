@@ -4,6 +4,7 @@ import { AlmazApi, ApiPlayer, ApiTeam, ApiGame } from '../lib/almaz-api';
 import { Elo, EloPlayer } from '../lib/elo';
 import { getScoreModel } from 'score-model';
 import { GameProcessor, Player, Team, Game } from './game-processor';
+import { formatTimespan } from './date';
 
 interface NickPlayer extends Player {
     nickName: string;
@@ -137,6 +138,8 @@ export const getSubmitterModel = () => {
     const playersReady = m.playersReady = ko.observable(false);
     const gamesReady = m.gamesReady = ko.observable(false);
     const numGames = m.numGames = ko.observable(0);
+    const totalGameTime = ko.observable(0);
+    const totalGameTimeNice = m.totalGameTimeNice = ko.computed(() => formatTimespan(totalGameTime()).replace('.', ' days, '));
 
     const submittedGames = m.submittedGames = ko.observableArray<EloGame>();
 
@@ -289,6 +292,8 @@ export const getSubmitterModel = () => {
         };
 
         m.numGames(gp.numGames);
+        totalGameTime(gp.totalGameTime);
+
         uploadGame(gamePlayed);
 
         const redScore = scores.red.score();
@@ -379,6 +384,7 @@ export const getSubmitterModel = () => {
         gp.processGames(apiGames);
 
         m.numGames(gp.numGames);
+        totalGameTime(gp.totalGameTime);
         m.gamesReady(true);
     });
 
@@ -400,8 +406,8 @@ const getUniqueNames = (players: ApiPlayer[]) => {
     for (const name in names) {
         const player = names[name];
 
-        if(player.length == 1)res[player[0]._id] = name;
-        else for(const p of player){
+        if (player.length == 1) res[player[0]._id] = name;
+        else for (const p of player) {
             res[p._id] = name + ' ' + p.lastName[0];
         }
     }

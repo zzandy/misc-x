@@ -1,4 +1,4 @@
-const formatTimespan = (ts: number, inclMs: boolean): string => {
+export const formatTimespan = (ts: number, inclMs: boolean = false): string => {
     var s = 1000;
     var m = 60 * s;
     var h = 60 * m;
