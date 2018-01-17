@@ -7,18 +7,54 @@ class Node {
 }
 
 class World {
+    public readonly graph: Graph;
     public readonly dists: DistMap;
     constructor(public nodes: Node[]) {
         this.dists = new DistMap(nodes.map(n => n.pos));
+        this.graph = new Graph(this.dists);
+    }
+}
+
+class Graph {
+    public readonly links: [number, number][] = [];
+
+    constructor(dist: DistMap) {
+        const connected: boolean[] = [true];
+
+        let done = false;
+        while (!done) {
+            const cluster: number[] = [];
+            const pending: number[] = [];
+            const links: [number, number, number][] = [];
+
+            for (let i = 0; i < dist.length; ++i) {
+                (connected[i] ? cluster : pending).push(i);
+            }
+
+            if (pending.length > 0) {
+
+                for (let src of cluster)
+                    for (let tgt of pending) {
+                        links.push([src, tgt, dist.dist(src, tgt)]);
+                    }
+
+                links.sort(([a, b, d1], [c, d, d2]) => d1 - d2);
+
+                const [src, tgt] = links[0];
+
+                connected[tgt] = true;
+                this.links.push([Math.min(src, tgt), Math.max(src, tgt)]);
+            }
+            else { done = true }
+        }
     }
 }
 
 class DistMap {
     private readonly dists: number[] = [];
-    private readonly length: number;
+    public readonly length: number;
 
     constructor(points: Point[]) {
-
         this.length = points.length;
         for (let i = 1; i < points.length; ++i)
             for (let j = 0; j < i; ++j) {
@@ -42,7 +78,6 @@ class DistMap {
     public closest(idx: number): number {
         let dist = Infinity;
         let ix = -1;
-
 
         for (let j = 0; j < idx; ++j) {
             let d = this.dist(idx, j);
@@ -97,16 +132,25 @@ function blocks(width: number, height: number, size: number): [number, number] {
 }
 
 function render(ctx: ICanvasRenderingContext2D, world: World): void {
-    for (let i = 0; i < world.nodes.length; ++i) {
-        const node = world.nodes[i];
-        ctx.fillRect(node.pos.x - 5, node.pos.y - 5, 10, 10);
-        ctx.fillText(node.name, node.pos.x, node.pos.y);
+    ctx.fillStyle = '#262626';
+    ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
-        const j = world.dists.closest(i);
+    ctx.fillStyle = '#aeaeae';
+    ctx.strokeStyle = '#aeaeae';
+
+    for (let [i,j] of world.graph.links) {
+        const node = world.nodes[i];
         const other = world.nodes[j];
+
         ctx.beginPath();
         ctx.moveTo(node.pos.x, node.pos.y);
         ctx.lineTo(other.pos.x, other.pos.y);
         ctx.stroke();
+    }
+
+    for (let i = 0; i < world.nodes.length; ++i) {
+        const node = world.nodes[i];
+        ctx.fillRect(node.pos.x - 5, node.pos.y - 5, 10, 10);
+        ctx.fillText(node.name, node.pos.x, node.pos.y);
     }
 }

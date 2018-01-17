@@ -551,19 +551,26 @@ System.register("misc/src/settle", ["lib/geometry", "lib/canvas"], function (exp
         return [height / size, width / size];
     }
     function render(ctx, world) {
-        for (var i = 0; i < world.nodes.length; ++i) {
+        ctx.fillStyle = '#262626';
+        ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        ctx.fillStyle = '#aeaeae';
+        ctx.strokeStyle = '#aeaeae';
+        for (var _i = 0, _a = world.graph.links; _i < _a.length; _i++) {
+            var _b = _a[_i], i = _b[0], j = _b[1];
             var node = world.nodes[i];
-            ctx.fillRect(node.pos.x - 5, node.pos.y - 5, 10, 10);
-            ctx.fillText(node.name, node.pos.x, node.pos.y);
-            var j = world.dists.closest(i);
             var other = world.nodes[j];
             ctx.beginPath();
             ctx.moveTo(node.pos.x, node.pos.y);
             ctx.lineTo(other.pos.x, other.pos.y);
             ctx.stroke();
         }
+        for (var i = 0; i < world.nodes.length; ++i) {
+            var node = world.nodes[i];
+            ctx.fillRect(node.pos.x - 5, node.pos.y - 5, 10, 10);
+            ctx.fillText(node.name, node.pos.x, node.pos.y);
+        }
     }
-    var geometry_1, canvas_2, Node, World, DistMap, main;
+    var geometry_1, canvas_2, Node, World, Graph, DistMap, main;
     return {
         setters: [
             function (geometry_1_1) {
@@ -585,8 +592,45 @@ System.register("misc/src/settle", ["lib/geometry", "lib/canvas"], function (exp
                 function World(nodes) {
                     this.nodes = nodes;
                     this.dists = new DistMap(nodes.map(function (n) { return n.pos; }));
+                    this.graph = new Graph(this.dists);
                 }
                 return World;
+            }());
+            Graph = (function () {
+                function Graph(dist) {
+                    this.links = [];
+                    var connected = [true];
+                    var done = false;
+                    while (!done) {
+                        var cluster = [];
+                        var pending = [];
+                        var links = [];
+                        for (var i = 0; i < dist.length; ++i) {
+                            (connected[i] ? cluster : pending).push(i);
+                        }
+                        if (pending.length > 0) {
+                            for (var _i = 0, cluster_1 = cluster; _i < cluster_1.length; _i++) {
+                                var src_1 = cluster_1[_i];
+                                for (var _a = 0, pending_1 = pending; _a < pending_1.length; _a++) {
+                                    var tgt_1 = pending_1[_a];
+                                    links.push([src_1, tgt_1, dist.dist(src_1, tgt_1)]);
+                                }
+                            }
+                            links.sort(function (_a, _b) {
+                                var a = _a[0], b = _a[1], d1 = _a[2];
+                                var c = _b[0], d = _b[1], d2 = _b[2];
+                                return d1 - d2;
+                            });
+                            var _b = links[0], src = _b[0], tgt = _b[1];
+                            connected[tgt] = true;
+                            this.links.push([Math.min(src, tgt), Math.max(src, tgt)]);
+                        }
+                        else {
+                            done = true;
+                        }
+                    }
+                }
+                return Graph;
             }());
             DistMap = (function () {
                 function DistMap(points) {
