@@ -139,7 +139,13 @@ export const getSubmitterModel = () => {
     const gamesReady = m.gamesReady = ko.observable(false);
     const numGames = m.numGames = ko.observable(0);
     const totalGameTime = ko.observable(0);
-    const totalGameTimeNice = m.totalGameTimeNice = ko.computed(() => formatTimespan(totalGameTime()).replace('.', ' days, '));
+    const totalGameTimeNice = m.totalGameTimeNice = ko.computed(() =>{
+        const timespan = totalGameTime();
+        const totalHours = formatTimespan(timespan).replace('.', ' days, ');
+        const workdays = (timespan / 1000 / 60 / 60 / 8).toFixed(1);
+
+        return totalHours + ' or '  + workdays + ' working days';
+    });
 
     const submittedGames = m.submittedGames = ko.observableArray<EloGame>();
 

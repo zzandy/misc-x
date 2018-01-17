@@ -1216,7 +1216,12 @@ System.register("elo/src/components/submitter-model", ["elo/src/lib/almaz-api", 
                 var gamesReady = m.gamesReady = ko.observable(false);
                 var numGames = m.numGames = ko.observable(0);
                 var totalGameTime = ko.observable(0);
-                var totalGameTimeNice = m.totalGameTimeNice = ko.computed(function () { return date_2.formatTimespan(totalGameTime()).replace('.', ' days, '); });
+                var totalGameTimeNice = m.totalGameTimeNice = ko.computed(function () {
+                    var timespan = totalGameTime();
+                    var totalHours = date_2.formatTimespan(timespan).replace('.', ' days, ');
+                    var workdays = (timespan / 1000 / 60 / 60 / 8).toFixed(1);
+                    return totalHours + ' or ' + workdays + ' working days';
+                });
                 var submittedGames = m.submittedGames = ko.observableArray();
                 var scores = m.scores = score_model_1.getScoreModel();
                 var scoresReady = m.scoresReady = ko.computed(function () {
