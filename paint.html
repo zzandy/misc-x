@@ -143,7 +143,7 @@
         var r = 2.5;
         var h = rnd(360);
         const snake = new Snake(256);
-        const decaySteps = 150;
+        const decaySteps = 250;
 
         ctx.fillStyle = 'black';
         ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
@@ -241,7 +241,7 @@
 
             snake.forEach(function (segment) {
                 if (segment.age < decaySteps)
-                    drawsegments(segment.hue, 1, .6 * (decaySteps - segment.age) / decaySteps, segment.start.x, segment.start.y, segment.end.x, segment.end.y);
+                    drawsegments(segment.hue, 1, .6 * Math.sqrt((decaySteps - segment.age) / decaySteps), segment.start.x, segment.start.y, segment.end.x, segment.end.y);
             });
         }
 
