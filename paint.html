@@ -114,6 +114,11 @@
             this.data = new Array(len);
         }
 
+        Snake.prototype.reset = function () {
+            this.start = 0;
+            this.len = 0;
+        }
+
         Snake.prototype.push = function (v) {
             if (this.len < this.maxlen) {
                 this.data[(this.start + this.len++) % this.maxlen] = v;
@@ -142,8 +147,10 @@
     <script type="text/javascript">
         var r = 2.5;
         var h = rnd(360);
-        const snake = new Snake(256);
+        const snake = new Snake(500);
         const decaySteps = 250;
+
+        let first = true;
 
         ctx.fillStyle = 'black';
         ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
@@ -155,13 +162,15 @@
         ctx.canvas.addEventListener('mousedown', mousedown);
         ctx.canvas.addEventListener('mouseup', mouseup);
         ctx.canvas.addEventListener('mousemove', mousemove);
+        addEventListener('keydown', keydown);
 
         var isDown = false;
         var cursorX = 0;
         var cursorY = 0;
 
-        var transforms = [identity, mirror];
-        transforms = rays(24);
+        var transforms = [mirror(), vmirror(), hmirror(), xmirror(), rays(24), mrays(12)];
+        let transformn = 5;
+        let transform = transforms[transformn];
 
         function updateColor(delta) {
             h = (h + delta * .5) % 360;
@@ -179,6 +188,7 @@
         function cycleUpdate(time) {
             var delta = time - prevTime;
             prevTime = time;
+            first = true;
             renderSegments();
             ageSegments();
 
@@ -186,6 +196,15 @@
         }
 
         cycleUpdate(0);
+
+        function keydown(e) {
+            switch (e.key) {
+                case ' ': transformn = (transformn + 1) % transforms.length;
+                    transform = transforms[transformn];
+                    snake.reset();
+                    break;
+            }
+        }
 
         function mousedown(e) {
             isDown = true;
@@ -229,8 +248,7 @@
         }
 
         function drawpoints(x, y) {
-            transforms.forEach(function (t) {
-                var point = t(x, y);
+            transform(x, y).forEach(function (point) {
                 drawpoint(point[0], point[1]);
             })
         }
@@ -246,36 +264,102 @@
         }
 
         function drawsegments(h, c, y, x1, y1, x2, y2) {
-            transforms.forEach(function (t, i, trnsfrms) {
-                var point0 = t(x1, y1);
-                var point1 = t(x2, y2);
 
+            var starts = transform(x1, y1);
+            var ends = transform(x2, y2);
 
-                drawsegment((h + i * 360 / trnsfrms.length) % 360, c, y * (1 - (i % 2) * .5), point0[0], point0[1], point1[0], point1[1]);
-            })
+            const n = Math.min(starts.length, ends.length);
+            for (var i = 0; i < n; ++i) {
+                const point0 = starts[i];
+                const point1 = ends[i];
+
+                drawsegment((h + i * 360 / transform.n) % 360, c, y * (1 - (i % 2) * .5), point0[0], point0[1], point1[0], point1[1]);
+            }
         }
 
-        function identity(x, y) {
-            return [x, y]
+        function mirror() {
+            const fn = function (x, y) {
+                return [[x, y], [ctx.canvas.width - x, ctx.canvas.height - y]];
+            }
+            fn.n = 3;
+            return fn;
         }
 
-        function mirror(x, y) {
-            return [ctx.canvas.width - x, ctx.canvas.height - y]
+        function hmirror() {
+            const fn = function (x, y) {
+                return [[x, y], [ctx.canvas.width - x, y]];
+            }
+            fn.n = 3;
+            return fn;
+        }
+
+        function vmirror() {
+            const fn = function (x, y) {
+                return [[x, y], [x, ctx.canvas.height - y]];
+            }
+            fn.n = 3;
+            return fn;
+        }
+
+        function xmirror() {
+            const fn = function (x, y) {
+                return [[x, y], [ctx.canvas.width - x, y], [x, ctx.canvas.height - y], [ctx.canvas.width - x, ctx.canvas.height - y]];
+            }
+            fn.n = 4;
+            return fn;
         }
 
         function rays(n) {
             const ox = ctx.canvas.width / 2;
             const oy = ctx.canvas.height / 2;
-            const fns = [];
-            for (var i = 0; i < n; ++i) {
-                const a = i * Math.PI * 2 / n;
-                fns.push(function (x, y) {
+
+            const fn = function (x, y) {
+                const ret = [];
+                for (var i = 0; i < n; ++i) {
+                    const a = i * Math.PI * 2 / n;
                     const vec = rvec(x - ox, y - oy, a);
-                    return [vec[0] + ox, vec[1] + oy];
-                });
+                    ret.push([vec[0] + ox, vec[1] + oy]);
+                }
+
+                return ret;
+            }
+            fn.n = n;
+            return fn;
+        }
+
+        function mrays(n) {
+            const ox = ctx.canvas.width / 2;
+            const oy = ctx.canvas.height / 2;
+
+            const fn = function (x, y) {
+                const ret = [];
+
+                const veca = Math.atan2(y - oy, x - ox);
+                const sek = Math.round(veca * n / 2 / Math.PI);
+                const seka = sek * Math.PI * 2 / n;
+                const da = seka - veca;
+
+                for (var i = 0; i < n; ++i) {
+                    const a = i * Math.PI * 2 / n;
+                    const vec = rvec(x - ox, y - oy, a);
+                    const vec1 = rvec(x - ox, y - oy, a + 2 * da);
+
+                    ret.push([vec[0] + ox, vec[1] + oy], [vec1[0] + ox, vec1[1] + oy]);
+
+                }
+
+                ret.sort(function (p0, p1) {
+
+                    const a1 = Math.atan2(p0[1] - oy, p0[0] - ox);
+                    const a2 = Math.atan2(p1[1] - oy, p1[0] - ox);
+                    return a1 - a2;
+                })
+
+                return ret;
             }
 
-            return fns;
+            fn.n = n * 2;
+            return fn;
         }
 
         function rvec(x, y, a) {
