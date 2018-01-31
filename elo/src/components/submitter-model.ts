@@ -68,7 +68,8 @@ const getCurrentGameModel = () => {
     return {
         red: getCurrentTeamModel(),
         blu: getCurrentTeamModel(),
-        historicGames: ko.observable<number | null>(null)
+        historicGames: ko.observable<number | null>(null),
+        historicLength: ko.observable<string | null>(null)
     }
 }
 
@@ -139,12 +140,17 @@ export const getSubmitterModel = () => {
     const gamesReady = m.gamesReady = ko.observable(false);
     const numGames = m.numGames = ko.observable(0);
     const totalGameTime = ko.observable(0);
-    const totalGameTimeNice = m.totalGameTimeNice = ko.computed(() =>{
+    const totalGameTimeNice = m.totalGameTimeNice = ko.computed(() => {
         const timespan = totalGameTime();
-        const totalHours = formatTimespan(timespan).replace('.', ' days, ');
+        const totalHours = formatTimespan(timespan)
+        .replace('.', ' days ')
+        .replace(':', ' hours and ')
+        .replace(/:\d\d$/, ' minutes')
+        .replace(/\s0/g, ' ')
+        .replace(/((?:^|\s)1\s)(day|hour|minute)(?:s)/g, '$1$2');
         const workdays = (timespan / 1000 / 60 / 60 / 8).toFixed(1);
 
-        return totalHours + ' or '  + workdays + ' working days';
+        return totalHours + ' or ' + workdays + ' working days';
     });
 
     const submittedGames = m.submittedGames = ko.observableArray<EloGame>();
@@ -169,7 +175,16 @@ export const getSubmitterModel = () => {
             const commonGames = gp.findMutualGames(red, blu);
             const n = commonGames.length;
 
+            const [num, len] = commonGames.reduce(([num, len], g) => {
+                const duration = g.endDate.getTime() - g.startDate.getTime();
+                const ok = duration > 30000 && duration < 1000000;
+                if (ok) { num += 1; len += duration }
+                return [num, len];
+            }, [0, 0]);
+            const dur = num==0?null:(len/num/60000).toFixed(0);
+
             currentGame.historicGames(n);
+            currentGame.historicLength(dur);
 
             const redWins = commonGames.filter(findWins(red));
             const bluWins = commonGames.filter(findWins(blu));
@@ -219,7 +234,7 @@ export const getSubmitterModel = () => {
         whenAllNotNull(currentGame.blu.defence, currentGame.blu.offence).then(() => loadTeam('blu'));
     };
 
-    const consecutiveWins = { red: 0, blu: 0 };
+    const consecutiveWins = m.consecutiveWins = { red: ko.observable(0), blu: ko.observable(0) };
 
     const updatePicker = (winners: 'red' | 'blu') => {
 
@@ -229,13 +244,15 @@ export const getSubmitterModel = () => {
 
         lstPicker.defence(lstPicker.offence());
 
-        if (++consecutiveWins[winners] >= 3) {
+        consecutiveWins[winners](consecutiveWins[winners]() + 1);
+
+        if (consecutiveWins[winners]() >= 3) {
             // three consecutive wins, shuffle the winning team
             lstPicker.offence(winPicker.offence());
             winPicker.offence(null);
             picksPending = [winPicker.offence];
-            consecutiveWins.red = 0;
-            consecutiveWins.blu = 0;
+            consecutiveWins.red(0);
+            consecutiveWins.blu(0);
 
             loadTeam(losers);
             whenAllNotNull(winPicker.offence).then(() => loadTeam(winners));
@@ -243,7 +260,7 @@ export const getSubmitterModel = () => {
         else {
             lstPicker.offence(null);
             picksPending = [lstPicker.offence];
-            consecutiveWins[losers] = 0;
+            consecutiveWins[losers](0);
 
             loadTeam(winners);
             whenAllNotNull(lstPicker.offence).then(() => loadTeam(losers));
@@ -272,8 +289,8 @@ export const getSubmitterModel = () => {
     };
 
     m.resetGame = () => {
-        consecutiveWins.red = 0;
-        consecutiveWins.blu = 0;
+        consecutiveWins.red(0);
+        consecutiveWins.blu(0);
 
         resetPicking();
         resetScores();

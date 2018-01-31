@@ -20,16 +20,27 @@
     <div class="game-display row" style="display: none" data-bind="visible: playersReady">
         <div class="red column">
             <div class="smaller" data-bind="visible: currentGame().red.numTotalGames() != null">
-                Total games recorded: <span data-bind="text: currentGame().red.numTotalGames"></span>
+                <div>Total games recorded:
+                    <span data-bind="text: currentGame().red.numTotalGames"></span>
+                </div>
+                <div></div>
             </div>
             <div class="smaller" data-bind="visible: currentGame().red.numTotalGames() == null">&nbsp;</div>
 
-            <div class="player" data-bind="text: currentGame().red.defenceNickName() || '&nbsp;'"></div>
-            <div class="player" data-bind="text: currentGame().red.offenceNickName() || '&nbsp;'"></div>
+            <div class="row">
+                <div class="large" style="flex: .2" data-bind="visible: consecutiveWins.red() > 1 && currentGame().red.numTotalGames() != null">†</div>
+                <div class="column">
+                    <div class="player" data-bind="text: currentGame().red.defenceNickName() || '&nbsp;'"></div>
+                    <div class="player" data-bind="text: currentGame().red.offenceNickName() || '&nbsp;'"></div>
+                </div>
+            </div>
 
             <div class="double row">
                 <div class="column" data-bind="visible: currentGame().historicGames() > 0">
-                    <div><span data-bind="text: currentGame().red.historicWins"></span>/<span data-bind="text: currentGame().historicGames"></span></div>
+                    <div>
+                        <span data-bind="text: currentGame().red.historicWins"></span>/
+                        <span data-bind="text: currentGame().historicGames"></span>
+                    </div>
                     <div data-bind="text-as-pct: currentGame().red.historicWinRate"></div>
                 </div>
                 <div class="large" data-bind="text-as-pct: currentGame().red.expectedWinProb">
@@ -41,20 +52,30 @@
             <div class="double row">
                 <div class="large" data-bind="text-as-pct: currentGame().blu.expectedWinProb"></div>
                 <div class="column" data-bind="visible: currentGame().historicGames() > 0">
-                    <div><span data-bind="text: currentGame().blu.historicWins"></span>/<span data-bind="text: currentGame().historicGames"></span></div>
+                    <div>
+                        <span data-bind="text: currentGame().blu.historicWins"></span>/
+                        <span data-bind="text: currentGame().historicGames"></span>
+                    </div>
                     <div data-bind="text-as-pct: currentGame().blu.historicWinRate"></div>
                 </div>
             </div>
 
-            <div class="player" data-bind="text: currentGame().blu.offenceNickName() || '&nbsp;'"></div>
-            <div class="player" data-bind="text: currentGame().blu.defenceNickName() || '&nbsp;'"></div>
-
+            <div class="row">
+                <div class="column">
+                    <div class="player" data-bind="text: currentGame().blu.offenceNickName() || '&nbsp;'"></div>
+                    <div class="player" data-bind="text: currentGame().blu.defenceNickName() || '&nbsp;'"></div>
+                </div>
+                <div class="large" style="flex: .2" data-bind="visible: consecutiveWins.blu > 1 && currentGame().blu.numTotalGames() != null">†</div>
+            </div>
             <div class="smaller" data-bind="visible: currentGame().blu.numTotalGames() != null">
                 <span data-bind="text: currentGame().blu.numTotalGames"></span> - Total games recorded
             </div>
             <div class="smaller" data-bind="visible: currentGame().blu.numTotalGames() == null">&nbsp;</div>
         </div>
     </div>
+
+    <div class="smaller footnote" data-bind="visible: gameReady && currentGame().historicGames() > 0 && currentGame().historicLength != null">Estimated game time: 
+        <span data-bind="text: currentGame().historicLength"></span> minutes</div>
 
     <div class="controls row" data-bind="visible: playersReady">
         <button data-bind="enable: anyPicked, click: resetGame">Cancel</button>
@@ -82,7 +103,10 @@
         </div>
     </div>
 
-    <div class="smaller footnote" data-bind="visible: gamesReady"><span data-bind="text: numGames() + ' games'"></span>; <span data-bind="text: totalGameTimeNice"></div>
+    <div class="smaller footnote" data-bind="visible: gamesReady">
+        <span data-bind="text: numGames() + ' games'"></span>;
+        <span data-bind="text: totalGameTimeNice">
+    </div>
 
     <table class="submitted" data-bind="visible: submittedGames().length > 0">
         <thead>
@@ -104,7 +128,9 @@
                 <td data-bind="text: bluScore"></td>
                 <td data-bind="text: blu.offence.nickName"></td>
                 <td data-bind="text: blu.defence.nickName"></td>
-                <td><button data-bind="click: $parent.cancelGame">Undo</button></td>
+                <td>
+                    <button data-bind="click: $parent.cancelGame">Undo</button>
+                </td>
             </tr>
         </tbody>
     </table>

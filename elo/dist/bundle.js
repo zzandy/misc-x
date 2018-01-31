@@ -1159,10 +1159,12 @@ System.register("elo/src/components/submitter-model", ["elo/src/lib/almaz-api", 
                 };
             };
             getCurrentGameModel = function () {
+                var x = ko.observable(null);
                 return {
                     red: getCurrentTeamModel(),
                     blu: getCurrentTeamModel(),
-                    historicGames: ko.observable(null)
+                    historicGames: ko.observable(null),
+                    historicLength: ko.observable(null)
                 };
             };
             getPendingUploads = function () {
@@ -1218,7 +1220,12 @@ System.register("elo/src/components/submitter-model", ["elo/src/lib/almaz-api", 
                 var totalGameTime = ko.observable(0);
                 var totalGameTimeNice = m.totalGameTimeNice = ko.computed(function () {
                     var timespan = totalGameTime();
-                    var totalHours = date_2.formatTimespan(timespan).replace('.', ' days, ');
+                    var totalHours = date_2.formatTimespan(timespan)
+                        .replace('.', ' days ')
+                        .replace(':', ' hours and ')
+                        .replace(/:\d\d$/, ' minutes')
+                        .replace(/\s0/g, ' ')
+                        .replace(/((?:^|\s)1\s)(day|hour|minute)(?:s)/g, '$1$2');
                     var workdays = (timespan / 1000 / 60 / 60 / 8).toFixed(1);
                     return totalHours + ' or ' + workdays + ' working days';
                 });
@@ -1239,7 +1246,19 @@ System.register("elo/src/components/submitter-model", ["elo/src/lib/almaz-api", 
                         var blu = gp.findTeam(currentGame.blu.defence(), currentGame.blu.offence());
                         var commonGames = gp.findMutualGames(red, blu);
                         var n = commonGames.length;
+                        var _a = commonGames.reduce(function (_a, g) {
+                            var num = _a[0], len = _a[1];
+                            var duration = g.endDate.getTime() - g.startDate.getTime();
+                            var ok = duration > 30000 && duration < 1000000;
+                            if (ok) {
+                                num += 1;
+                                len += duration;
+                            }
+                            return [num, len];
+                        }, [0, 0]), num = _a[0], len = _a[1];
+                        var dur = num == 0 ? null : (len / num / 60000).toFixed(0);
                         currentGame.historicGames(n);
+                        currentGame.historicLength(dur);
                         var redWins = commonGames.filter(findWins(red));
                         var bluWins = commonGames.filter(findWins(blu));
                         currentGame.red.historicWins(redWins.length);
@@ -1275,25 +1294,26 @@ System.register("elo/src/components/submitter-model", ["elo/src/lib/almaz-api", 
                     whenAllNotNull(currentGame.red.defence, currentGame.red.offence).then(function () { return loadTeam('red'); });
                     whenAllNotNull(currentGame.blu.defence, currentGame.blu.offence).then(function () { return loadTeam('blu'); });
                 };
-                var consecutiveWins = { red: 0, blu: 0 };
+                var consecutiveWins = m.consecutiveWins = { red: ko.observable(0), blu: ko.observable(0) };
                 var updatePicker = function (winners) {
                     var losers = winners == 'red' ? 'blu' : 'red';
                     var winPicker = currentGame[winners];
                     var lstPicker = currentGame[losers];
                     lstPicker.defence(lstPicker.offence());
-                    if (++consecutiveWins[winners] >= 3) {
+                    consecutiveWins[winners](consecutiveWins[winners]() + 1);
+                    if (consecutiveWins[winners]() >= 3) {
                         lstPicker.offence(winPicker.offence());
                         winPicker.offence(null);
                         picksPending = [winPicker.offence];
-                        consecutiveWins.red = 0;
-                        consecutiveWins.blu = 0;
+                        consecutiveWins.red(0);
+                        consecutiveWins.blu(0);
                         loadTeam(losers);
                         whenAllNotNull(winPicker.offence).then(function () { return loadTeam(winners); });
                     }
                     else {
                         lstPicker.offence(null);
                         picksPending = [lstPicker.offence];
-                        consecutiveWins[losers] = 0;
+                        consecutiveWins[losers](0);
                         loadTeam(winners);
                         whenAllNotNull(lstPicker.offence).then(function () { return loadTeam(losers); });
                     }
@@ -1316,8 +1336,8 @@ System.register("elo/src/components/submitter-model", ["elo/src/lib/almaz-api", 
                         });
                 };
                 m.resetGame = function () {
-                    consecutiveWins.red = 0;
-                    consecutiveWins.blu = 0;
+                    consecutiveWins.red(0);
+                    consecutiveWins.blu(0);
                     resetPicking();
                     resetScores();
                 };
