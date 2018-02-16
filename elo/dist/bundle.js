@@ -1159,7 +1159,6 @@ System.register("elo/src/components/submitter-model", ["elo/src/lib/almaz-api", 
                 };
             };
             getCurrentGameModel = function () {
-                var x = ko.observable(null);
                 return {
                     red: getCurrentTeamModel(),
                     blu: getCurrentTeamModel(),

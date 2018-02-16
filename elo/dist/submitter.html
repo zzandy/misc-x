@@ -28,7 +28,7 @@
             <div class="smaller" data-bind="visible: currentGame().red.numTotalGames() == null">&nbsp;</div>
 
             <div class="row">
-                <div class="large" style="flex: .2" data-bind="visible: consecutiveWins.red() > 1 && currentGame().red.numTotalGames() != null">†</div>
+                <div class="large" style="flex: .2" data-bind="visible: consecutiveWins.red() > 1 && currentGame().red.numTotalGames() != null">‡</div>
                 <div class="column">
                     <div class="player" data-bind="text: currentGame().red.defenceNickName() || '&nbsp;'"></div>
                     <div class="player" data-bind="text: currentGame().red.offenceNickName() || '&nbsp;'"></div>
@@ -65,7 +65,7 @@
                     <div class="player" data-bind="text: currentGame().blu.offenceNickName() || '&nbsp;'"></div>
                     <div class="player" data-bind="text: currentGame().blu.defenceNickName() || '&nbsp;'"></div>
                 </div>
-                <div class="large" style="flex: .2" data-bind="visible: consecutiveWins.blu > 1 && currentGame().blu.numTotalGames() != null">†</div>
+                <div class="large" style="flex: .2" data-bind="visible: consecutiveWins.blu() > 1 && currentGame().blu.numTotalGames() != null">‡</div>
             </div>
             <div class="smaller" data-bind="visible: currentGame().blu.numTotalGames() != null">
                 <span data-bind="text: currentGame().blu.numTotalGames"></span> - Total games recorded
