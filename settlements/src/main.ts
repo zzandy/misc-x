@@ -8,8 +8,6 @@ const tau = Math.PI * 2;
 const sin = Math.sin;
 const cos = Math.cos;
 
-window. world=null;
-
 export const main = function() {
     const q = Math.sqrt(3) / 2;
 
@@ -53,7 +51,7 @@ export const main = function() {
         }
     }
 
-     world = new World(nodes, size);
+    const world = new World(nodes, size);
     render(ctx, world);
 };
 

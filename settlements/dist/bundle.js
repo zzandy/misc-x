@@ -163,7 +163,7 @@ System.register("settlements/src/graph", [], function (exports_3, context_3) {
                             links
                                 .filter(function (_a, i) {
                                 var x = _a[0], y = _a[1], d = _a[2];
-                                return i < 3 || d < cutoff / 2;
+                                return i < 2 || i < 4 && d < cutoff / 2;
                             })
                                 .forEach(function (v) {
                                 var src = v[0], tgt = v[1];
@@ -368,7 +368,6 @@ System.register("settlements/src/main", ["lib/rnd", "lib/geometry", "lib/canvas"
             tau = Math.PI * 2;
             sin = Math.sin;
             cos = Math.cos;
-            window.world = null;
             exports_8("main", main = function () {
                 var q = Math.sqrt(3) / 2;
                 var size = 120;
@@ -398,7 +397,7 @@ System.register("settlements/src/main", ["lib/rnd", "lib/geometry", "lib/canvas"
                         nodes.push(new world_1.Node(i + "x" + j, new geometry_1.Point(x, y)));
                     }
                 }
-                world = new world_1.World(nodes, size);
+                var world = new world_1.World(nodes, size);
                 render_1.render(ctx, world);
             });
         }

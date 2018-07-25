@@ -26,7 +26,7 @@ export class Graph {
                 links.sort(([a, b, d1], [c, d, d2]) => d1 - d2);
 
                 links
-                    .filter(([x, y, d], i) =>i< 3||d < cutoff/2)
+                    .filter(([x, y, d], i) => i < 2 || i < 4 && d < cutoff / 2)
                     .forEach(v => {
                         const [src, tgt] = v;
 
