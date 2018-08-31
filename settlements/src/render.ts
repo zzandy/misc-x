@@ -8,7 +8,7 @@ export function render(ctx: ICanvasRenderingContext2D, world: World): void {
     //ctx.fillStyle = "#aeaeae";
     //ctx.strokeStyle = "hsla(0,0%,100%,.2)";
 
-    for (let [i, j] of world.graph.links) {
+    for (let [i, j] of world.graph.edges) {
         const node = world.nodes[i];
         const other = world.nodes[j];
 

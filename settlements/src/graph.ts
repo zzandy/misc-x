@@ -1,7 +1,7 @@
 import { DistMap } from "./dist-map";
 
 export class Graph {
-    public readonly links: [number, number][] = [];
+    public readonly edges: [number, number][] = [];
 
     constructor(dist: DistMap, cutoff: number) {
         const connected: boolean[] = [true];
@@ -31,7 +31,7 @@ export class Graph {
                         const [src, tgt] = v;
 
                         connected[tgt] = true;
-                        this.links.push([
+                        this.edges.push([
                             Math.min(src, tgt),
                             Math.max(src, tgt)
                         ]);
