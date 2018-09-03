@@ -1,15 +1,97 @@
-import { run } from "./counter";
-const threshold = 0.87;
-run().then(map => {
-    let n = 0;
-    for (let key in map) {
-        console.log(
-            `${++n}. ${key}: ${map[key].toFixed(2)}%${
-                map[key] < threshold ? " pass" : ""
-            }`
-        );
+import { frequency, marc } from "./counter";
+
+//calcfreq();
+calcmarc();
+
+function norm(map: { [key: string]: number }) {
+    const sum = map["sum"];
+
+    for (const key in map) {
+        if (key != "sum") map[key] /= sum;
     }
-});
+
+    return map;
+}
+
+function generate(
+    key: string,
+    maps: { [key: string]: { [key: string]: number } }
+): string {
+    let res = "";
+
+    while (key != "") {
+        let x = key;
+        if (x.indexOf("/") != -1) {
+            const parts = x.split("/");
+            x = parts[(Math.random() * parts.length) | 0];
+        }
+
+        res += x;
+        key = pick(maps[key]);
+    }
+
+    return res;
+}
+
+function pick(map: { [key: string]: number }): string {
+    let prob = Math.random();
+
+    for (let key in map) {
+        if (key == "sum") continue;
+
+        if (key.indexOf("/") != -1) {
+            const parts = key.split("/");
+            key = parts[(Math.random() * parts.length) | 0];
+        }
+
+        prob -= map[key];
+
+        if (prob < 0) return key;
+    }
+
+    return "";
+}
+
+function calcmarc() {
+    marc()
+        .then(maps => {
+            for (const key in maps) norm(maps[key]);
+
+            return maps;
+        })
+        .then(maps => {
+            const keys: string[] = [];
+            for (const key in maps) keys.push(key);
+
+            for (var i = 0; i < 20; ++i) {
+                const key = keys[(Math.random() * keys.length) | 0];
+                const res = generate(key, maps);
+                if (res.length < 5) {
+                    --i;
+                    continue;
+                }
+                console.log(res);
+            }
+        });
+}
+
+function calcfreq() {
+    const threshold = 0.87;
+
+    frequency()
+        .then(norm)
+        .then(map => {
+            let n = 0;
+            for (let key in map) {
+                if (key != "sum")
+                    console.log(
+                        `${++n}. ${key}: ${(map[key] * 100).toFixed(2)}%${
+                            map[key] < threshold ? " pass" : ""
+                        }`
+                    );
+            }
+        });
+}
 
 /*
 1. the: 1.96%

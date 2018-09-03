@@ -1,84 +1,97 @@
-const keys = "THE th IN ER AN RE ES ON EN AT OR AR AL IT"
-    .toLowerCase()
-    .split(" ");
-
-const letters = "abcidefghlmnoprstuvwy".split("");
-const shift:{[key:string]:string} = {
-    'k':'k/q/j/x/z',
-    'q':'k/q/j/x/z',
-    'j':'k/q/j/x/z',
-    'x':'k/q/j/x/z',
-    'z':'k/q/j/x/z'
-}
-
-const map = keys.concat(letters).reduce(
-    (map, key) => {
-        map[key] = 0;
-        return map;
-    },
-    <{ [key: string]: number }>{}
-);
-
-for(let key in shift){map[shift[key]]=0}
-
-map["sum"] = 0;
-
+import { stream } from "./streamer";
+import { getMap } from "./map";
 import fs = require("fs");
 
-export function run(): Promise<{ [key: string]: number }> {
-    return new Promise<{ [key: string]: number }>((res, rej) => {
-        const path = __dirname + "\\..\\data";
+export function marc() {
+    const [map, shift] = getMap();
 
-        fs.readdir(path, (e, files) => {
-            const len = files.length;
-            let n = 0;
-            for (let file of files) {
-                count(path + "\\" + file, map);
+    const mark: { [key: string]: { [key: string]: number } } = {};
+    let prev = "";
 
-                process.stdout.write(
-                    `\r${++n}/${len} - ${((100 * n) / len).toFixed(2)}%`
-                );
-            }
-            console.log('\rDone processing ' + len + ' files')
-
-            const nm: { [key: string]: number } = {};
-
-            for (let key in map) {
-                if (key == "sum") continue;
-
-                nm[key] = (100 * map[key]) / map["sum"];
+    return cache("markov", () =>
+        run(map, shift, key => {
+            if (!(prev in mark)) {
+                mark[prev] = { sum: 0 };
             }
 
-            res(nm);
+            const map = mark[prev];
+
+            if (!(key in map)) map[key] = 0;
+
+            ++map[key];
+            ++map["sum"];
+
+            prev = key;
+        }).then(() => mark)
+    );
+}
+
+export function frequency() {
+    const [map, shift] = getMap();
+
+    return cache("frequency", () =>
+        run(map, shift, key => {
+            if (key != "") {
+                map[key]++;
+                map["sum"]++;
+            }
+        })
+    );
+}
+
+function run(
+    map: { [key: string]: number },
+    shift: { [key: string]: string },
+    match: (symbol: string) => void
+): Promise<{ [key: string]: number }> {
+    return stream(data => {
+        build(map, shift, match, data.toLocaleLowerCase());
+    }).then(() => map);
+}
+
+function cache<TRes>(name: string, fn: () => Promise<TRes>): Promise<TRes> {
+    const path = "./" + name + '.cache.json';
+
+    if (
+        !fs.existsSync(path) ||
+        fs.lstatSync(path).mtime < fs.lstatSync(__filename).mtime
+    ) {
+        return fn().then(res => {
+            fs.writeFileSync(path, JSON.stringify(res));
+            return res;
         });
-    });
+    } else
+        return Promise.resolve(<TRes>JSON.parse(fs.readFileSync(path, "utf8")));
 }
 
-function count(path: string, map: { [key: string]: number }) {
-    build(map, fs.readFileSync(path, "utf8").toLowerCase());
-}
-
-function build(map: { [key: string]: number }, data: string) {
+function build(
+    map: { [key: string]: number },
+    shift: { [ket: string]: string },
+    match: (symbol: string) => void,
+    data: string
+) {
     const len = data.length;
     for (let i = 0; i < len; ++i) {
-        let key = (data[i] in shift) ? shift[data[i]] : data[i];
-        if (!(key in map)) continue;
-        map["sum"]++;
+        let key = data[i] in shift ? shift[data[i]] : data[i];
+        if (!(key in map)) {
+            match("");
+            continue;
+        }
 
         let tri = data.substr(i, 3);
         if (tri in map) {
-            map[tri]++;
+            match(tri);
             i += 2;
             continue;
         }
 
         let di = tri.substr(0, 2);
         if (di in map) {
-            map[di]++;
+            match(di);
             i += 1;
             continue;
         }
 
-        map[key]++;
+        match(key);
     }
 }
