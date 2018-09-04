@@ -171,8 +171,8 @@
             return r.join('');
         }
 
-        let total = 251;
-        var initial = coreInitial('101', total, total < 150 ? 1 : (total / 150 | 0));
+        const total = 251;
+        const initial = coreInitial('101', total, total < 150 ? 1 : (total / 150 | 0));
         //initial = randomInitial(total);
 
         var pointy = {
@@ -190,6 +190,7 @@
         let algo = flat;
 
         let rule = algo.init();
+        console.log(typeof (rule[0]))
         console.log(rule.join(''));
 
         //rule = '112112220'
@@ -199,17 +200,41 @@
         let n = total, short = false;
         let row = initial;
 
-        let r = ctx.w / total;
+        const r = ctx.w / total;
+        const rk = 1.1;
         let hue = rnd(360);
-        let color = newColors();
+        let deltahue = .3;
+        let colorscheme = newColorScheme();
 
-        function newColors() {
-            return [wheel2rgb(hue, .1, .7, 1),
-            wheel2rgb(hue + 90, 1, .6, 1),
-            wheel2rgb(hue + 180, .1, .3, 1)];
+        function defColor(dh, ddh, dc, ddc, dy, ddy) {
+            return {
+                dh: rand(dh, ddh),
+                c: rand(dc, ddc),
+                y: rand(dy, ddy)
+            }
         }
 
-        ctx.lineWith = .1;
+        function rand(avg, plusminus) {
+            return avg - plusminus + Math.random() * 2 * plusminus;
+        }
+
+        function newColorScheme() {
+            return {
+                high: defColor(90, 40, .7, .3, .8, .15),
+                low: defColor(180, 40, .7, .3, .2, .15),
+                main: defColor(0, 40, .9, .1, .6, .15)
+            }
+        }
+
+        function newColors(cs) {
+            return [
+                wheel2rgb(hue + cs.main.dh, cs.main.c, cs.main.y, 1),
+                wheel2rgb(hue + cs.high.dh, cs.high.c, cs.high.y, 1),
+                wheel2rgb(hue + cs.low.dh, cs.low.c, cs.low.y, 1),
+            ];
+        }
+
+        ctx.lineWith = 0;
 
         let ox = (ctx.w - row.length * r) / 2;
         let oy = r;
@@ -223,16 +248,34 @@
 
             if (!over) {
                 let next = derive(row, rule, index)
+                //setTimeout(function () { tick(next, rule, ++index, draw, derive) }, 200)
                 requestAnimationFrame(function () { tick(next, rule, ++index, draw, derive) });
             }
         }
 
         function pointyDraw(row, index) {
             let y = oy + index * r * .87;
-            for (let i = 0; i < row.length; ++i) {
-                ctx.fillStyle = color[row[i]];
+            hue += deltahue;
 
-                ctx.fillCircle(ox + (i - (index % 2) / 2) * r, y, r / 2);
+            while (y > ctx.h) {
+                if (page == 0)
+                    rowsheight = index * r * .87;
+                page++;
+
+                hue += 30 + rnd(30);
+                colorscheme = newColorScheme();
+
+                y -= rowsheight;
+            }
+
+            let color = newColors(colorscheme);
+
+            ctx.clearRect(ox, y - r / 2, ctx.w, r);
+
+            for (let i = 0; i < row.length; ++i) {
+
+                ctx.fillStyle = color[row[i]];
+                ctx.fillCircle(ox + (i + (index % 2) / 2) * r, y, rk * r / 2);
             }
 
             return y > ctx.h;
@@ -240,22 +283,26 @@
 
         function flatDraw(row, index) {
             let y = oy + index * r - page * rowsheight;
+            hue += deltahue;
 
             while (y > ctx.h) {
                 if (page == 0)
                     rowsheight = index * r;
                 page++;
 
-                hue += 37;
-                color = newColors();
+                hue += 30 + rnd(30);
+                colorscheme = newColorScheme();
 
                 y -= rowsheight;
             }
 
+            let color = newColors(colorscheme);
+
+            ctx.clearRect(ox, y - r / 2, ctx.w, r/.87);
+
             for (let i = 0; i < row.length; ++i) {
                 ctx.fillStyle = color[row[i]];
-
-                ctx.fillCircle(ox + i * r, y - r * (i % 2) / 2, r / 2);
+                ctx.fillCircle(ox + i * r, y - r * (i % 2) / 2, rk * r / 2);
             }
 
             return false;
