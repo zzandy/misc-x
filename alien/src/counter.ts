@@ -2,7 +2,7 @@ import { stream } from "./streamer";
 import { getMap } from "./map";
 import fs = require("fs");
 
-export function marc() {
+export function mark() {
     const [map, shift] = getMap();
 
     const mark: { [key: string]: { [key: string]: number } } = {};

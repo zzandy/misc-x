@@ -1,7 +1,7 @@
-import { frequency, marc } from "./counter";
+import { frequency, mark } from "./counter";
 
 //calcfreq();
-calcmarc();
+calcmark();
 
 function norm(map: { [key: string]: number }) {
     const sum = map["sum"];
@@ -52,8 +52,8 @@ function pick(map: { [key: string]: number }): string {
     return "";
 }
 
-function calcmarc() {
-    marc()
+function calcmark() {
+    mark()
         .then(maps => {
             for (const key in maps) norm(maps[key]);
 
@@ -66,7 +66,7 @@ function calcmarc() {
             for (var i = 0; i < 20; ++i) {
                 const key = keys[(Math.random() * keys.length) | 0];
                 const res = generate(key, maps);
-                if (res.length < 5) {
+                if (res.length < 7) {
                     --i;
                     continue;
                 }
