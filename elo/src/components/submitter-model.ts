@@ -95,6 +95,7 @@ export const getSubmitterModel = () => {
     const m: any = {};
     const elo = new Elo();
     const players = m.players = ko.observableArray<NickPlayer>([]);
+    m.hideSomePlayers = ko.observable(true);
     m.visiblePlayers = ko.computed<NickPlayer[]>(() => m.players().filter((p: NickPlayer) => !hidePlayer(p.apiPlayer)));
 
     const newPlayer = (player: Player): NickPlayer => {
@@ -354,6 +355,10 @@ export const getSubmitterModel = () => {
             && currentGame.blu.offence() != player;
     };
 
+    const hiddenPlayers = ['593efe5af36d2806fcd5ccc6', '593efeb4f36d2806fcd5cd57', '593efed3f36d2806fcd5cd7e', '593efef3f36d2806fcd5ce27', '5948ffa87e00b50004cd35ed'];
+    const hidePlayer = (player: ApiPlayer): boolean => m.hideSomePlayers() && hiddenPlayers.indexOf(player._id) != -1;
+    const showPlayer = (player: ApiPlayer): boolean => !hidePlayer(player);
+
     api.getPlayers().then((apiPlayers) => {
         const uniqueName = getUniqueNames(apiPlayers.filter(showPlayer));
         apiPlayers.forEach((player, i, players) => {
@@ -454,10 +459,6 @@ const normalizeName = (name: string) => {
 
     return name;
 }
-
-const hiddenPlayers = ['593efe5af36d2806fcd5ccc6', '593efeb4f36d2806fcd5cd57', '593efed3f36d2806fcd5cd7e', '593efef3f36d2806fcd5ce27', '5948ffa87e00b50004cd35ed'];
-const hidePlayer = (player: ApiPlayer): boolean => hiddenPlayers.indexOf(player._id) != -1;
-const showPlayer = (player: ApiPlayer): boolean => !hidePlayer(player);
 
 const isNullObservable = <T>(o: KnockoutObservable<T>) => {
     const v = o();
