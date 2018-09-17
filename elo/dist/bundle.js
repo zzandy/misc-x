@@ -1099,7 +1099,7 @@ System.register("elo/src/components/score-model", [], function (exports_12, cont
 System.register("elo/src/components/submitter-model", ["elo/src/lib/almaz-api", "elo/src/lib/elo", "elo/src/components/score-model", "elo/src/components/game-processor", "elo/src/components/date"], function (exports_13, context_13) {
     "use strict";
     var __moduleName = context_13 && context_13.id;
-    var almaz_api_2, elo_2, score_model_1, game_processor_2, date_2, getSource, getCurrentTeamModel, getCurrentGameModel, getPendingUploads, setPendingUploads, getSubmitterModel, getUniqueNames, nameMapping, normalizeName, showPlayer, hidePlayer, isNullObservable, whenAllNotNull;
+    var almaz_api_2, elo_2, score_model_1, game_processor_2, date_2, getSource, getCurrentTeamModel, getCurrentGameModel, getPendingUploads, setPendingUploads, getSubmitterModel, getUniqueNames, nameMapping, normalizeName, hiddenPlayers, hidePlayer, showPlayer, isNullObservable, whenAllNotNull;
     return {
         setters: [
             function (almaz_api_2_1) {
@@ -1476,8 +1476,9 @@ System.register("elo/src/components/submitter-model", ["elo/src/lib/almaz-api", 
                 }
                 return name;
             };
+            hiddenPlayers = ['593efe5af36d2806fcd5ccc6', '593efeb4f36d2806fcd5cd57', '593efed3f36d2806fcd5cd7e', '593efef3f36d2806fcd5ce27', '5948ffa87e00b50004cd35ed'];
+            hidePlayer = function (player) { return hiddenPlayers.indexOf(player._id) != -1; };
             showPlayer = function (player) { return !hidePlayer(player); };
-            hidePlayer = function (player) { return player._id == '593efed3f36d2806fcd5cd7e'; };
             isNullObservable = function (o) {
                 var v = o();
                 return typeof (v) == 'boolean' ? v === false : v == null;
