@@ -360,7 +360,7 @@ export const getSubmitterModel = () => {
     const showPlayer = (player: ApiPlayer): boolean => !hidePlayer(player);
 
     api.getPlayers().then((apiPlayers) => {
-        const uniqueName = getUniqueNames(apiPlayers.filter(showPlayer));
+        const uniqueName = getUniqueNames(apiPlayers);
         apiPlayers.forEach((player, i, players) => {
             m.players.push({
                 nickName: uniqueName[player._id] || player.firstName + ' ' + player.lastName,
@@ -449,7 +449,9 @@ const nameMapping: { [key: string]: string } = {
     'Andrii,Andrey': 'Andriy',
     'Sergei,Serhii': 'Sergii',
     'Volodymyr,Vladimir': 'Vova',
-    'Alexander,Oleksandr': 'Sasha'
+    'Alexander,Oleksandr': 'Sasha',
+    'Pavel': 'Pasha',
+    'Valentyn': 'Valentin'
 };
 
 const normalizeName = (name: string) => {

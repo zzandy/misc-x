@@ -1393,7 +1393,7 @@ System.register("elo/src/components/submitter-model", ["elo/src/lib/almaz-api", 
                 var hidePlayer = function (player) { return m.hideSomePlayers() && hiddenPlayers.indexOf(player._id) != -1; };
                 var showPlayer = function (player) { return !hidePlayer(player); };
                 api.getPlayers().then(function (apiPlayers) {
-                    var uniqueName = getUniqueNames(apiPlayers.filter(showPlayer));
+                    var uniqueName = getUniqueNames(apiPlayers);
                     apiPlayers.forEach(function (player, i, players) {
                         m.players.push({
                             nickName: uniqueName[player._id] || player.firstName + ' ' + player.lastName,
@@ -1471,7 +1471,9 @@ System.register("elo/src/components/submitter-model", ["elo/src/lib/almaz-api", 
                 'Andrii,Andrey': 'Andriy',
                 'Sergei,Serhii': 'Sergii',
                 'Volodymyr,Vladimir': 'Vova',
-                'Alexander,Oleksandr': 'Sasha'
+                'Alexander,Oleksandr': 'Sasha',
+                'Pavel': 'Pasha',
+                'Valentyn': 'Valentin'
             };
             normalizeName = function (name) {
                 for (var key in nameMapping) {
