@@ -25,7 +25,7 @@
         </div>
         <div>
             <div v-for="g in generators">
-                {{g.name}} - {{g.yield}}
+                {{g.name}} - {{g.fuel.toFixed(0)}}/{{g.maxFuel}} @ {{g.yield}}
                 <button v-on:click="fill(g)" :disabled="!canFill(g)">Fill</button>
             </div>
             <button v-on:click="boost">Boost</button>
