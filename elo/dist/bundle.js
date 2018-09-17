@@ -1099,7 +1099,7 @@ System.register("elo/src/components/score-model", [], function (exports_12, cont
 System.register("elo/src/components/submitter-model", ["elo/src/lib/almaz-api", "elo/src/lib/elo", "elo/src/components/score-model", "elo/src/components/game-processor", "elo/src/components/date"], function (exports_13, context_13) {
     "use strict";
     var __moduleName = context_13 && context_13.id;
-    var almaz_api_2, elo_2, score_model_1, game_processor_2, date_2, getSource, getCurrentTeamModel, getCurrentGameModel, getPendingUploads, setPendingUploads, getSubmitterModel, getUniqueNames, nameMapping, normalizeName, hiddenPlayers, hidePlayer, showPlayer, isNullObservable, whenAllNotNull;
+    var almaz_api_2, elo_2, score_model_1, game_processor_2, date_2, getSource, getCurrentTeamModel, getCurrentGameModel, getPendingUploads, setPendingUploads, getSubmitterModel, getUniqueNames, nameMapping, normalizeName, isNullObservable, whenAllNotNull;
     return {
         setters: [
             function (almaz_api_2_1) {
@@ -1183,6 +1183,7 @@ System.register("elo/src/components/submitter-model", ["elo/src/lib/almaz-api", 
                 var m = {};
                 var elo = new elo_2.Elo();
                 var players = m.players = ko.observableArray([]);
+                m.hideSomePlayers = ko.observable(true);
                 m.visiblePlayers = ko.computed(function () { return m.players().filter(function (p) { return !hidePlayer(p.apiPlayer); }); });
                 var newPlayer = function (player) {
                     var p = players().filter(function (p) { return p.apiPlayer._id == player.apiPlayer._id; })[0];
@@ -1388,6 +1389,9 @@ System.register("elo/src/components/submitter-model", ["elo/src/lib/almaz-api", 
                         && currentGame.blu.defence() != player
                         && currentGame.blu.offence() != player;
                 };
+                var hiddenPlayers = ['593efe5af36d2806fcd5ccc6', '593efeb4f36d2806fcd5cd57', '593efed3f36d2806fcd5cd7e', '593efef3f36d2806fcd5ce27', '5948ffa87e00b50004cd35ed'];
+                var hidePlayer = function (player) { return m.hideSomePlayers() && hiddenPlayers.indexOf(player._id) != -1; };
+                var showPlayer = function (player) { return !hidePlayer(player); };
                 api.getPlayers().then(function (apiPlayers) {
                     var uniqueName = getUniqueNames(apiPlayers.filter(showPlayer));
                     apiPlayers.forEach(function (player, i, players) {
@@ -1476,9 +1480,6 @@ System.register("elo/src/components/submitter-model", ["elo/src/lib/almaz-api", 
                 }
                 return name;
             };
-            hiddenPlayers = ['593efe5af36d2806fcd5ccc6', '593efeb4f36d2806fcd5cd57', '593efed3f36d2806fcd5cd7e', '593efef3f36d2806fcd5ce27', '5948ffa87e00b50004cd35ed'];
-            hidePlayer = function (player) { return hiddenPlayers.indexOf(player._id) != -1; };
-            showPlayer = function (player) { return !hidePlayer(player); };
             isNullObservable = function (o) {
                 var v = o();
                 return typeof (v) == 'boolean' ? v === false : v == null;

@@ -85,6 +85,9 @@
     <div class="picker row" data-bind="foreach: visiblePlayers, visible: !gameReady()">
         <button data-bind="text: nickName, click: () => $parent.pick($data), enable: $parent.isNotPicked($data)"></button>
     </div>
+    <div data-bind="visible: !gameReady()">
+        <input type="checkbox" data-bind="checked: hideSomePlayers" />
+    </div>
 
     <div class="score row" data-bind="visible: gameReady">
         <div class="red column">
