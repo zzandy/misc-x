@@ -355,7 +355,7 @@ export const getSubmitterModel = () => {
             && currentGame.blu.offence() != player;
     };
 
-    const hiddenPlayers = ['593efe5af36d2806fcd5ccc6', '593efeb4f36d2806fcd5cd57', '593efed3f36d2806fcd5cd7e', '593efef3f36d2806fcd5ce27', '5948ffa87e00b50004cd35ed'];
+    const hiddenPlayers = ['593efe5af36d2806fcd5ccc6', '593efeb4f36d2806fcd5cd57', '593efed3f36d2806fcd5cd7e', '593efef3f36d2806fcd5ce27', '5948ffa87e00b50004cd35ed', '593efe82f36d2806fcd5cd47'];
     const hidePlayer = (player: ApiPlayer): boolean => m.hideSomePlayers() && hiddenPlayers.indexOf(player._id) != -1;
     const showPlayer = (player: ApiPlayer): boolean => !hidePlayer(player);
 
@@ -451,7 +451,8 @@ const nameMapping: { [key: string]: string } = {
     'Volodymyr,Vladimir': 'Vova',
     'Alexander,Oleksandr': 'Sasha',
     'Pavel': 'Pasha',
-    'Valentyn': 'Valentin'
+    'Valentyn': 'Valentin',
+    'Maksym,Maksim,Maxim': 'Max'
 };
 
 const normalizeName = (name: string) => {

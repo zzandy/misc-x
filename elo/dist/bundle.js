@@ -1389,7 +1389,7 @@ System.register("elo/src/components/submitter-model", ["elo/src/lib/almaz-api", 
                         && currentGame.blu.defence() != player
                         && currentGame.blu.offence() != player;
                 };
-                var hiddenPlayers = ['593efe5af36d2806fcd5ccc6', '593efeb4f36d2806fcd5cd57', '593efed3f36d2806fcd5cd7e', '593efef3f36d2806fcd5ce27', '5948ffa87e00b50004cd35ed'];
+                var hiddenPlayers = ['593efe5af36d2806fcd5ccc6', '593efeb4f36d2806fcd5cd57', '593efed3f36d2806fcd5cd7e', '593efef3f36d2806fcd5ce27', '5948ffa87e00b50004cd35ed', '593efe82f36d2806fcd5cd47'];
                 var hidePlayer = function (player) { return m.hideSomePlayers() && hiddenPlayers.indexOf(player._id) != -1; };
                 var showPlayer = function (player) { return !hidePlayer(player); };
                 api.getPlayers().then(function (apiPlayers) {
@@ -1473,7 +1473,8 @@ System.register("elo/src/components/submitter-model", ["elo/src/lib/almaz-api", 
                 'Volodymyr,Vladimir': 'Vova',
                 'Alexander,Oleksandr': 'Sasha',
                 'Pavel': 'Pasha',
-                'Valentyn': 'Valentin'
+                'Valentyn': 'Valentin',
+                'Maksym,Maksim,Maxim': 'Max'
             };
             normalizeName = function (name) {
                 for (var key in nameMapping) {
