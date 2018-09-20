@@ -22,8 +22,15 @@
         <label>Height:
             <input id="h" type="number" value="4" />
         </label>
-    </div>
 
+        <label>Total:
+            <input id="total" type="number" readonly />
+        </label>
+
+        <label>Extra:
+            <input id="extra" type="number" readonly />
+        </label>
+    </div>
 
     <script type="text/javascript">
         (function () {
@@ -36,10 +43,6 @@
             ctx.canvas.style.position = 'absolute';
             ctx.canvas.style.top = 0;
             ctx.canvas.style.left = 0;
-
-            ctx.clear = function () {
-                ctx.clearRect(-ctx.canvas.width / 2, -ctx.canvas.height / 2, ctx.canvas.width, ctx.canvas.height);
-            };
 
             document.body.appendChild(c);
         })();
@@ -119,13 +122,11 @@
     </script>
 
     <script type="text/javascript">
-
         main();
 
         function main() {
             ['w', 'h'].map(id => document.getElementById(id)).forEach(e => {
                 e.addEventListener('input', updateSize);
-                //e.addEventListener('change', updateSize);
             });
             updateSize();
         }
@@ -135,37 +136,76 @@
         }
 
         function renderCircles(w, h) {
+
+            const plateColor = hcy2rgb(0, 1, .3);
+            const rectColor = hcy2rgb(60, 1, .6);
+            const hexColor = hcy2rgb(100, 1, .5);
+
             const sq32 = Math.sqrt(3) / 2;
 
-            var width = ctx.canvas.width;
-            var height = ctx.canvas.height;
+            const width = ctx.canvas.width;
+            const height = ctx.canvas.height;
 
-            var pad = width * .03;
+            const pad = width * .03;
 
-            var s = 2 * (width - pad * 3) / 5 / w;
+            const rw = (width - 3 * pad) / 2;
+            const rh = height - 2 * pad;
+
+            const sar = w / h;
+            const tar = rw / rh;
+
+            const s = sar > tar ? rw / w : rh / h;
 
             ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
             var hue = rnd(360);
+            const oy = height / 2 - s * h / 2;
 
             // render rect
-            ctx.strokeStyle = hcy2rgb(hue, 1, .5);
-            for (var i = 0; i < w; ++i) {
-                for (var j = 0; j < h; ++j) {
-                    ctx.strokeCircle(pad + i * s + s / 2, height / 2 - s * h / 2 + s * j + s / 2, s / 2);
+            ctx.strokeStyle = plateColor;
+            ctx.strokeRect(pad, oy, s * w, s * h);
+
+            ctx.strokeStyle = rectColor;
+            for (let i = 0; i < w; ++i) {
+                for (let j = 0; j < h; ++j) {
+                    ctx.strokeCircle(pad + i * s + s / 2, oy + s * j + s / 2, s / 2);
                 }
             }
-
-            ctx.strokeRect(pad * 2 + i * s, height / 2 - s * h / 2, s * w, s * h)
 
             // render hex
-            ctx.strokeStyle = hcy2rgb(hue + 120, 1, .5);
-            console.log(hue, hue + 120)
-            for (var i = 0; i < w; ++i) {
-                for (var j = 0; j < h; ++j) {
-                    ctx.strokeCircle(pad * 2 + w * s + s / 2 + j % 2 * s / 2 + s * i, height / 2 - s * h / 2 + s * j * sq32 + s / 2, s / 2);
+            let n = w * h;
+            let extra = 0;
+
+            let i = 0;
+            let j = 0;
+
+            const mar = pad * 2 + w * s;
+
+            ctx.strokeStyle = plateColor;
+            ctx.strokeRect(mar, oy, s * w, s * h);
+            ctx.strokeStyle = rectColor;
+
+            while (true) {
+                if (i >= w - j % 2) {
+                    j += 1;
+
+                    i = 0;
                 }
+
+                n--;
+                if (n < 0 && j * sq32 + 1 > h) break;
+
+                ctx.strokeCircle(mar + s / 2 + j % 2 * s / 2 + s * i, oy + s * j * sq32 + s / 2, s / 2);
+                ++i;
+
+                if (n == 0) ctx.strokeStyle = hexColor;
+                if (n < 0) extra++;
+                if (j * sq32 + 1 > h) extra--;
+
             }
+
+            document.getElementById('total').value = w * h;
+            document.getElementById('extra').value = extra;
         }
 
     </script>
