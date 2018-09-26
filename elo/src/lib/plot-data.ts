@@ -2,7 +2,7 @@ import { Point, Rect } from '../../../lib/geometry';
 
 export class Break { constructor(public readonly label: string, public readonly coord: number) { } }
 
-export class IDataWindow {
+export interface IDataWindow {
     readonly name: string;
     readonly window: Rect;
     readonly breaks: { x: Break[], y: Break[] };

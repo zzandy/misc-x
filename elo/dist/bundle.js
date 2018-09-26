@@ -79,7 +79,7 @@ System.register("lib/geometry", [], function (exports_1, context_1) {
 System.register("elo/src/lib/plot-data", [], function (exports_2, context_2) {
     "use strict";
     var __moduleName = context_2 && context_2.id;
-    var Break, IDataWindow;
+    var Break;
     return {
         setters: [],
         execute: function () {
@@ -91,12 +91,6 @@ System.register("elo/src/lib/plot-data", [], function (exports_2, context_2) {
                 return Break;
             }());
             exports_2("Break", Break);
-            IDataWindow = (function () {
-                function IDataWindow() {
-                }
-                return IDataWindow;
-            }());
-            exports_2("IDataWindow", IDataWindow);
         }
     };
 });
@@ -587,9 +581,9 @@ System.register("elo/src/lib/plotter", ["lib/geometry"], function (exports_8, co
                         for (var _b = 0, _c = series.data; _b < _c.length; _b++) {
                             var point = _c[_b];
                             var p = scale(point);
-                            this.ctx.fillCircle(p.x, p.y, 1.7);
+                            this.ctx.fillCircle(p.x, p.y, 2);
                             if (prev !== null) {
-                                this.ctx.lineWidth = prev.x - p.x > 10 ? .5 : 1;
+                                this.ctx.lineWidth = prev.x - p.x > 10 ? 1 : 2;
                                 this.ctx.beginPath();
                                 this.ctx.moveTo(prev.x, prev.y);
                                 this.ctx.lineTo(p.x, p.y);
@@ -1504,15 +1498,6 @@ System.register("elo/src/components/submitter-model", ["elo/src/lib/almaz-api", 
                         observables.forEach(function (o) { return o.subscribe(test); });
                 });
             };
-        }
-    };
-});
-System.register("elo/src/lib/view-selector", [], function (exports_14, context_14) {
-    "use strict";
-    var __moduleName = context_14 && context_14.id;
-    return {
-        setters: [],
-        execute: function () {
         }
     };
 });

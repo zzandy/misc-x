@@ -130,10 +130,10 @@ export class Plotter implements IPlotter {
 
             for (const point of series.data) {
                 const p = scale(point);
-                this.ctx.fillCircle(p.x, p.y, 1.7);
+                this.ctx.fillCircle(p.x, p.y, 2);
 
                 if (prev !== null) {
-                    this.ctx.lineWidth = prev.x - p.x > 10 ? .5 : 1;
+                    this.ctx.lineWidth = prev.x - p.x > 10 ? 1 : 2;
 
                     this.ctx.beginPath();
                     this.ctx.moveTo(prev.x, prev.y);
