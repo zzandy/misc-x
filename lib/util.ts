@@ -3,7 +3,6 @@ function rnd(max: number): number;
 function rnd(min: number, max: number): number;
 function rnd<T>(a: T[]): T;
 function rnd<T>(min?: number | T[], max?: number): number | T {
-
     if (typeof max === 'number' && typeof min === 'number')
         return Math.floor(min + Math.random() * (max - min));
 
