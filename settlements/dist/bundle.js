@@ -372,12 +372,117 @@ System.register("settlements/src/world", ["settlements/src/graph", "settlements/
         }
     };
 });
-System.register("settlements/src/render", [], function (exports_8, context_8) {
+System.register("lib/color", [], function (exports_8, context_8) {
     "use strict";
     var __moduleName = context_8 && context_8.id;
+    function hcy(h, c, y) {
+        var r = .3;
+        var g = .59;
+        var b = .11;
+        h %= 360;
+        h /= 60;
+        var k = (1 - Math.abs((h % 2) - 1));
+        var K = h < 1 ? r + k * g
+            : h < 2 ? g + k * r
+                : h < 3 ? g + k * b
+                    : h < 4 ? b + k * g
+                        : h < 5 ? b + k * r
+                            : r + k * b;
+        var cmax = 1;
+        if (y <= 0 || y >= 1)
+            cmax = 0;
+        else
+            cmax *= K < y ? (y - 1) / (K - 1) : K > y ? y / K : 1;
+        c = Math.min(c, cmax);
+        var x = c * k;
+        var rgb = h < 1 ? [c, x, 0]
+            : h < 2 ? [x, c, 0]
+                : h < 3 ? [0, c, x]
+                    : h < 4 ? [0, x, c]
+                        : h < 5 ? [x, 0, c]
+                            : [c, 0, x];
+        var m = y - (r * rgb[0] + g * rgb[1] + b * rgb[2]);
+        return [rgb[0] + m, rgb[1] + m, rgb[2] + m];
+    }
+    exports_8("hcy", hcy);
+    function wheelHcy(h, c, y) {
+        h %= 360;
+        var h2 = h;
+        var _a = [0, 0], s0 = _a[0], t0 = _a[1];
+        for (var _i = 0, breaks_1 = breaks; _i < breaks_1.length; _i++) {
+            var _b = breaks_1[_i], t = _b[0], s = _b[1];
+            if (h < s) {
+                h2 = t0 + (h - s0) * (t - t0) / (s - s0);
+                break;
+            }
+            _c = [s, t], s0 = _c[0], t0 = _c[1];
+        }
+        return hcy(h2, c, y);
+        var _c;
+    }
+    exports_8("wheelHcy", wheelHcy);
+    function wheel2rgb(h, c, y, a) {
+        if (a === void 0) { a = 1; }
+        var rgbdata = wheelHcy(h, c, y);
+        return tuple2rgb(rgbdata[0], rgbdata[1], rgbdata[2], a || 1);
+    }
+    exports_8("wheel2rgb", wheel2rgb);
+    function tuple2rgb(r, g, b, a) {
+        return 'rgba(' + (r * 255).toFixed(0) + ',' + (g * 255).toFixed(0) + ',' + (b * 255).toFixed(0) + ', ' + a + ')';
+    }
+    function hcy2rgb(h, c, y, a) {
+        if (a === void 0) { a = 1; }
+        var rgbdata = hcy(h, c, y);
+        return tuple2rgb(rgbdata[0], rgbdata[1], rgbdata[2], a || 1);
+    }
+    exports_8("hcy2rgb", hcy2rgb);
+    function rgbdata2rgb(t, a) {
+        if (t.length == 3)
+            return tuple2rgb(t[0], t[1], t[2], a === undefined ? 1 : a);
+        return tuple2rgb(t[0], t[1], t[2], t[3]);
+    }
+    exports_8("rgbdata2rgb", rgbdata2rgb);
+    var breaks;
+    return {
+        setters: [],
+        execute: function () {
+            breaks = [
+                [39, 60],
+                [60, 120],
+                [120, 180],
+                [240, 240],
+                [290, 300],
+                [360, 360]
+            ];
+        }
+    };
+});
+System.register("settlements/src/render", ["lib/color"], function (exports_9, context_9) {
+    "use strict";
+    var __moduleName = context_9 && context_9.id;
     function render(ctx, world) {
-        for (var _i = 0, _a = world.graph.edges; _i < _a.length; _i++) {
-            var _b = _a[_i], i = _b[0], j = _b[1];
+        var maxdist = world.graph.edges.reduce(avgedge(world.dists), 0) * 1.01;
+        var _a = ctx.canvas, w = _a.width, h = _a.height;
+        var imgData = ctx.createImageData(w, h);
+        var data = imgData.data;
+        for (var i = 0; i < h; ++i) {
+            for (var j = 0; j < w; ++j) {
+                var v = world.nodes
+                    .map(distto(j, i))
+                    .filter(function (d) { return d < maxdist; })
+                    .map(function (d) { return d / maxdist; })
+                    .reduce(function (a, b) { return a + fade(1 - b); }, 0);
+                var _b = mapColor(v), r = _b[0], g = _b[1], b = _b[2];
+                var idx = (i * w + j) * 4;
+                data[idx] = (r * 255) & 255;
+                data[idx + 1] = (g * 255) & 255;
+                data[idx + 2] = (b * 255) & 255;
+                data[idx + 3] = 150;
+            }
+        }
+        ctx.putImageData(imgData, 0, 0);
+        for (var _i = 0, _c = world.graph.edges; _i < _c.length; _i++) {
+            var _d = _c[_i], i = _d[0], j = _d[1];
             var node = world.nodes[i];
             var other = world.nodes[j];
             ctx.beginPath();
@@ -391,16 +496,66 @@ System.register("settlements/src/render", [], function (exports_8, context_8) {
             ctx.fillText(node.name, node.pos.x, node.pos.y - 7);
         }
     }
-    exports_8("render", render);
+    exports_9("render", render);
+    function avgedge(dist) {
+        return function (max, _a, i, arr) {
+            var a = _a[0], b = _a[1];
+            return max + dist.dist(a, b) / arr.length;
+        };
+    }
+    function distto(x, y) {
+        return function (_a) {
+            var pos = _a.pos;
+            return dist(x, y, pos.x, pos.y);
+        };
+    }
+    function dist(x1, y1, x2, y2) {
+        return Math.sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
+    }
+    function mapColor(n) {
+        return mapGrad(n, grad);
+    }
+    function mapGrad(v, grad) {
+        var prev = grad[0];
+        for (var i = 1; i < grad.length; ++i) {
+            var _a = grad[i], lvl = _a[0], color = _a[1];
+            if (v < lvl) {
+                var lvl0 = prev[0], color0 = prev[1];
+                var k = 1 - (v - lvl0) / (lvl - lvl0);
+                return [
+                    color0[0] * k + color[0] * (1 - k),
+                    color0[1] * k + color[1] * (1 - k),
+                    color0[2] * k + color[2] * (1 - k)
+                ];
+            }
+            prev = grad[i];
+        }
+        return grad[grad.length - 1][1];
+    }
+    function fade(t) {
+        return t * t * t * (t * (t * 6 - 15) + 10);
+    }
+    var color_1, grad;
     return {
-        setters: [],
+        setters: [
+            function (color_1_1) {
+                color_1 = color_1_1;
+            }
+        ],
         execute: function () {
+            grad = [
+                [0, color_1.wheelHcy(0, 1, 1)],
+                [0.4, color_1.wheelHcy(0, 1, 1)],
+                [0.405, color_1.wheelHcy(0, 1, 0.5)],
+                [0.55, color_1.wheelHcy(120, 1, 0.5)],
+                [0.60, color_1.wheelHcy(60, 1, 0.8)],
+            ];
         }
     };
 });
-System.register("settlements/src/main", ["lib/rnd", "lib/geometry", "lib/canvas", "settlements/src/world", "settlements/src/render", "settlements/src/cycle"], function (exports_9, context_9) {
+System.register("settlements/src/main", ["lib/rnd", "lib/geometry", "lib/canvas", "settlements/src/world", "settlements/src/render", "settlements/src/cycle"], function (exports_10, context_10) {
     "use strict";
-    var __moduleName = context_9 && context_9.id;
+    var __moduleName = context_10 && context_10.id;
     function getScore(cycles) {
         return cycles
             .map(function (c) { return c.length; })
@@ -434,7 +589,7 @@ System.register("settlements/src/main", ["lib/rnd", "lib/geometry", "lib/canvas"
             sin = Math.sin;
             cos = Math.cos;
             minlen = 6;
-            exports_9("main", main = function () {
+            exports_10("main", main = function () {
                 var q = Math.sqrt(3) / 2;
                 var size = 120;
                 var ctx = canvas_1.fullscreenCanvas();
