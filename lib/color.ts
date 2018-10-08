@@ -85,8 +85,5 @@ export function rgbdata2rgb(data: rgbtuple): rgbastring;
 export function rgbdata2rgb(data: rgbtuple, a: number): rgbastring;
 export function rgbdata2rgb(data: rgbtuple): rgbastring;
 export function rgbdata2rgb(t: rgbtuple, a?: number): rgbastring {
-    if (t.length == 3)
-        return tuple2rgb(t[0], t[1], t[2], a === undefined ? 1 : a);
-
-    return tuple2rgb(t[0], t[1], t[2], t[3]);
+    return tuple2rgb(t[0], t[1], t[2], a === undefined ? 1 : a);
 }

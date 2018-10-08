@@ -73,8 +73,8 @@ const grad: [number, [number, number, number]][] = [
     [0, wheelHcy(0, 1, 1)],
     [0.4, wheelHcy(0, 1, 1)],
     [0.405, wheelHcy(0, 1, 0.5)],
-    [0.55, wheelHcy(120, 1, 0.5)],
-    [0.60, wheelHcy(60, 1, 0.8)],
+    [0.60, wheelHcy(120, 1, 0.5)],
+    [0.70, wheelHcy(180, 1, 0.8)],
 ];
 
 function mapColor(n: number) {

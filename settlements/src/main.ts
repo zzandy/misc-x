@@ -10,7 +10,9 @@ const sin = Math.sin;
 const cos = Math.cos;
 const minlen = 6;
 
-export const main = function() {
+main();
+
+function main() {
     const q = Math.sqrt(3) / 2;
 
     const size = 120;
@@ -89,3 +91,4 @@ function getScore(cycles: number[][]): number {
         .filter(l => l >= minlen)
         .reduce((sum, len) => sum + len / minlen, 0);
 }
+
