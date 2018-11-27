@@ -2,6 +2,34 @@ import { stream } from "./streamer";
 import { getMap } from "./map";
 import fs = require("fs");
 
+export function doublemark() {
+    const [map, shift] = getMap();
+
+    const mark: { [key: string]: { [key: string]: number } } = {};
+    let prev1 = "";
+    let prev2 = "";
+
+    return cache("doublemark", () =>
+        run(map, shift, key => {
+            const prev = prev1 + "." + prev2;
+
+            if (!(prev in mark)) {
+                mark[prev] = { sum: 0 };
+            }
+
+            const map = mark[prev];
+
+            if (!(key in map)) map[key] = 0;
+
+            ++map[key];
+            ++map["sum"];
+
+            prev2 = prev1;
+            prev1 = key;
+        }).then(() => mark)
+    );
+}
+
 export function mark() {
     const [map, shift] = getMap();
 
@@ -50,7 +78,7 @@ function run(
 }
 
 function cache<TRes>(name: string, fn: () => Promise<TRes>): Promise<TRes> {
-    const path = "./" + name + '.cache.json';
+    const path = "./" + name + ".cache.json";
 
     if (
         !fs.existsSync(path) ||

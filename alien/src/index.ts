@@ -1,7 +1,8 @@
-import { frequency, mark } from "./counter";
+import { frequency, mark, doublemark } from "./counter";
 
 //calcfreq();
 calcmark();
+//calcdouble();
 
 function norm(map: { [key: string]: number }) {
     const sum = map["sum"];
@@ -23,11 +24,32 @@ function generate(
         let x = key;
         if (x.indexOf("/") != -1) {
             const parts = x.split("/");
-            x = parts[(Math.random() * parts.length) | 0];
+            x = parts[(Math.random() * parts.length) | 0].toUpperCase();
         }
 
         res += x;
         key = pick(maps[key]);
+    }
+
+    return res;
+}
+
+function generate2(
+    key: string,
+    maps: { [key: string]: { [key: string]: number } }
+): string {
+    let res = "";
+
+    while (!key.endsWith(".")) {
+        let x = key.split(".")[1];
+        if (x.indexOf("/") != -1) {
+            const parts = x.split("/");
+            x = parts[(Math.random() * parts.length) | 0].toUpperCase();
+        }
+
+        res += x;
+        const nxt = pick(maps[key]);
+        key = key.split(".")[1] + "." + nxt;
     }
 
     return res;
@@ -50,6 +72,29 @@ function pick(map: { [key: string]: number }): string {
     }
 
     return "";
+}
+
+function calcdouble() {
+    doublemark()
+        .then(maps => {
+            for (const key in maps) norm(maps[key]);
+
+            return maps;
+        })
+        .then(maps => {
+            const keys: string[] = [];
+            for (const key in maps) if (!key.endsWith(".")) keys.push(key);
+
+            for (var i = 0; i < 20; ++i) {
+                const key = keys[(Math.random() * keys.length) | 0];
+                const res = generate2(key, maps);
+                if (res.length < 7) {
+                    --i;
+                    continue;
+                }
+                console.log(res);
+            }
+        });
 }
 
 function calcmark() {
