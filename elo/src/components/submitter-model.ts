@@ -370,6 +370,8 @@ export const getSubmitterModel = () => {
         });
 
         m.playersReady(true);
+
+        if(m.gamesReady())sortPlayers(gp.games, m);
     });
 
     const dumpPendingUploads = function () {
@@ -414,12 +416,44 @@ export const getSubmitterModel = () => {
         m.numGames(gp.numGames);
         totalGameTime(gp.totalGameTime);
         m.gamesReady(true);
+
+        if(m.playersReady()) sortPlayers(gp.games, m);
     });
 
     resetPicking();
 
     return m;
 };
+
+const sortPlayers = (games: EloGame[], m: any) => {
+    const scores: any = {};
+    m.players().forEach((p: any) => scorePlayer(p.apiPlayer));
+    
+    m.players.sort(byScore);
+
+    function scorePlayer(p: ApiPlayer) {
+        const n = games.length;
+
+        let score = 0;
+      
+        for (let i = 0; i<100; ++i) {
+            const game = games[n-1-i];
+
+            if (game.red.defence.apiPlayer._id == p._id
+                || game.red.offence.apiPlayer._id == p._id
+                || game.blu.defence.apiPlayer._id == p._id
+                || game.blu.offence.apiPlayer._id == p._id)
+                ++score;
+        }
+
+        scores[p._id] = score;
+    }
+
+    function byScore(p1: any, p2: any) {
+        return scores[p2.apiPlayer._id] - scores[p1.apiPlayer._id];
+    }
+};
+
 const getUniqueNames = (players: ApiPlayer[]) => {
     const names: { [key: string]: ApiPlayer[] } = {};
     for (const player of players) {

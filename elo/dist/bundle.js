@@ -1093,7 +1093,7 @@ System.register("elo/src/components/score-model", [], function (exports_12, cont
 System.register("elo/src/components/submitter-model", ["elo/src/lib/almaz-api", "elo/src/lib/elo", "elo/src/components/score-model", "elo/src/components/game-processor", "elo/src/components/date"], function (exports_13, context_13) {
     "use strict";
     var __moduleName = context_13 && context_13.id;
-    var almaz_api_2, elo_2, score_model_1, game_processor_2, date_2, getSource, getCurrentTeamModel, getCurrentGameModel, getPendingUploads, setPendingUploads, getSubmitterModel, getUniqueNames, nameMapping, normalizeName, isNullObservable, whenAllNotNull;
+    var almaz_api_2, elo_2, score_model_1, game_processor_2, date_2, getSource, getCurrentTeamModel, getCurrentGameModel, getPendingUploads, setPendingUploads, getSubmitterModel, sortPlayers, getUniqueNames, nameMapping, normalizeName, isNullObservable, whenAllNotNull;
     return {
         setters: [
             function (almaz_api_2_1) {
@@ -1396,6 +1396,8 @@ System.register("elo/src/components/submitter-model", ["elo/src/lib/almaz-api", 
                         });
                     });
                     m.playersReady(true);
+                    if (m.gamesReady())
+                        sortPlayers(gp.games, m);
                 });
                 var dumpPendingUploads = function () {
                     while (pendingUploads.length > 0) {
@@ -1433,10 +1435,33 @@ System.register("elo/src/components/submitter-model", ["elo/src/lib/almaz-api", 
                     m.numGames(gp.numGames);
                     totalGameTime(gp.totalGameTime);
                     m.gamesReady(true);
+                    if (m.playersReady())
+                        sortPlayers(gp.games, m);
                 });
                 resetPicking();
                 return m;
             });
+            sortPlayers = function (games, m) {
+                var scores = {};
+                m.players().forEach(function (p) { return scorePlayer(p.apiPlayer); });
+                m.players.sort(byScore);
+                function scorePlayer(p) {
+                    var n = games.length;
+                    var score = 0;
+                    for (var i = 0; i < 100; ++i) {
+                        var game = games[n - 1 - i];
+                        if (game.red.defence.apiPlayer._id == p._id
+                            || game.red.offence.apiPlayer._id == p._id
+                            || game.blu.defence.apiPlayer._id == p._id
+                            || game.blu.offence.apiPlayer._id == p._id)
+                            ++score;
+                    }
+                    scores[p._id] = score;
+                }
+                function byScore(p1, p2) {
+                    return scores[p2.apiPlayer._id] - scores[p1.apiPlayer._id];
+                }
+            };
             getUniqueNames = function (players) {
                 var names = {};
                 for (var _i = 0, players_1 = players; _i < players_1.length; _i++) {
