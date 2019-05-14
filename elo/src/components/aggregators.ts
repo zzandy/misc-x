@@ -108,7 +108,6 @@ abstract class Aggregator implements IAggregator {
         series.data.unshift(p)
     }
 
-
     private getColor(key: string): string {
         if (!(key in this.colormap))
             this.colormap[key] = this.colors[this.cc = (this.cc + 1) % this.colors.length];

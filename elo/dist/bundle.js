@@ -1178,7 +1178,9 @@ System.register("elo/src/components/submitter-model", ["elo/src/lib/almaz-api", 
                 var elo = new elo_2.Elo();
                 var players = m.players = ko.observableArray([]);
                 m.hideSomePlayers = ko.observable(true);
-                m.visiblePlayers = ko.computed(function () { return m.players().filter(function (p) { return !hidePlayer(p.apiPlayer); }); });
+                m.visiblePlayers = ko.computed(function () { return m.players()
+                    .filter(function (p, i) { return !m.hideSomePlayers() || i < 12; }); });
+                m.toggleHidePlayers = function () { return m.hideSomePlayers(!m.hideSomePlayers()); };
                 var newPlayer = function (player) {
                     var p = players().filter(function (p) { return p.apiPlayer._id == player.apiPlayer._id; })[0];
                     return p;
@@ -1316,6 +1318,8 @@ System.register("elo/src/components/submitter-model", ["elo/src/lib/almaz-api", 
                 var resetScores = function () {
                     scores.red.score(null);
                     scores.blu.score(null);
+                    scores.red.extendedScore(null);
+                    scores.blu.extendedScore(null);
                 };
                 m.cancelGame = function () {
                     var _this = this;
@@ -1383,15 +1387,11 @@ System.register("elo/src/components/submitter-model", ["elo/src/lib/almaz-api", 
                         && currentGame.blu.defence() != player
                         && currentGame.blu.offence() != player;
                 };
-                var hiddenPlayers = ['593efe5af36d2806fcd5ccc6', '593efeb4f36d2806fcd5cd57', '593efed3f36d2806fcd5cd7e', '593efef3f36d2806fcd5ce27', '5948ffa87e00b50004cd35ed', '593efe82f36d2806fcd5cd47'];
-                var hidePlayer = function (player) { return m.hideSomePlayers() && hiddenPlayers.indexOf(player._id) != -1; };
-                var showPlayer = function (player) { return !hidePlayer(player); };
                 api.getPlayers().then(function (apiPlayers) {
                     var uniqueName = getUniqueNames(apiPlayers);
                     apiPlayers.forEach(function (player, i, players) {
                         m.players.push({
                             nickName: uniqueName[player._id] || player.firstName + ' ' + player.lastName,
-                            hide: hidePlayer(player),
                             apiPlayer: player,
                         });
                     });
@@ -1444,19 +1444,32 @@ System.register("elo/src/components/submitter-model", ["elo/src/lib/almaz-api", 
             sortPlayers = function (games, m) {
                 var scores = {};
                 m.players().forEach(function (p) { return scorePlayer(p.apiPlayer); });
+                m.players().forEach(function (p) { return console.log(p.apiPlayer.lastName, scores[p.apiPlayer._id]); });
                 m.players.sort(byScore);
                 function scorePlayer(p) {
                     var n = games.length;
                     var score = 0;
-                    for (var i = 0; i < 100; ++i) {
+                    for (var i = 0; i < n - 1; ++i) {
                         var game = games[n - 1 - i];
                         if (game.red.defence.apiPlayer._id == p._id
                             || game.red.offence.apiPlayer._id == p._id
                             || game.blu.defence.apiPlayer._id == p._id
-                            || game.blu.offence.apiPlayer._id == p._id)
-                            ++score;
+                            || game.blu.offence.apiPlayer._id == p._id) {
+                            score += slope(i);
+                            if (p.lastName == 'Smirnova' || p.lastName == 'Kozak')
+                                console.log(p.lastName, i, slope(n - 1 - i), score);
+                        }
                     }
                     scores[p._id] = score;
+                }
+                function slope(x) {
+                    var a = 100;
+                    var b = .005;
+                    var c = 100;
+                    var r = .01;
+                    var ecr = Math.pow(Math.E, c * r);
+                    var erx = Math.pow(Math.E, x * r);
+                    return (a * ecr + b * erx) / (ecr + erx);
                 }
                 function byScore(p1, p2) {
                     return scores[p2.apiPlayer._id] - scores[p1.apiPlayer._id];

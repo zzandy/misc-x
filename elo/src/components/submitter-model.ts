@@ -96,7 +96,10 @@ export const getSubmitterModel = () => {
     const elo = new Elo();
     const players = m.players = ko.observableArray<NickPlayer>([]);
     m.hideSomePlayers = ko.observable(true);
-    m.visiblePlayers = ko.computed<NickPlayer[]>(() => m.players().filter((p: NickPlayer) => !hidePlayer(p.apiPlayer)));
+    m.visiblePlayers = ko.computed<NickPlayer[]>(() => m.players()
+        .filter((p: NickPlayer, i: number) => !m.hideSomePlayers() || i < 12));
+
+    m.toggleHidePlayers = () => m.hideSomePlayers(!m.hideSomePlayers());
 
     const newPlayer = (player: Player): NickPlayer => {
 
@@ -144,11 +147,11 @@ export const getSubmitterModel = () => {
     const totalGameTimeNice = m.totalGameTimeNice = ko.computed(() => {
         const timespan = totalGameTime();
         const totalHours = formatTimespan(timespan)
-        .replace('.', ' days ')
-        .replace(':', ' hours and ')
-        .replace(/:\d\d$/, ' minutes')
-        .replace(/\s0/g, ' ')
-        .replace(/((?:^|\s)1\s)(day|hour|minute)(?:s)/g, '$1$2');
+            .replace('.', ' days ')
+            .replace(':', ' hours and ')
+            .replace(/:\d\d$/, ' minutes')
+            .replace(/\s0/g, ' ')
+            .replace(/((?:^|\s)1\s)(day|hour|minute)(?:s)/g, '$1$2');
         const workdays = (timespan / 1000 / 60 / 60 / 8).toFixed(1);
 
         return totalHours + ' or ' + workdays + ' working days';
@@ -182,7 +185,7 @@ export const getSubmitterModel = () => {
                 if (ok) { num += 1; len += duration }
                 return [num, len];
             }, [0, 0]);
-            const dur = num==0?null:(len/num/60000).toFixed(0);
+            const dur = num == 0 ? null : (len / num / 60000).toFixed(0);
 
             currentGame.historicGames(n);
             currentGame.historicLength(dur);
@@ -273,6 +276,8 @@ export const getSubmitterModel = () => {
     const resetScores = () => {
         scores.red.score(null);
         scores.blu.score(null);
+        scores.red.extendedScore(null);
+        scores.blu.extendedScore(null);
     };
 
     m.cancelGame = function (this: EloGame) {
@@ -355,23 +360,19 @@ export const getSubmitterModel = () => {
             && currentGame.blu.offence() != player;
     };
 
-    const hiddenPlayers = ['593efe5af36d2806fcd5ccc6', '593efeb4f36d2806fcd5cd57', '593efed3f36d2806fcd5cd7e', '593efef3f36d2806fcd5ce27', '5948ffa87e00b50004cd35ed', '593efe82f36d2806fcd5cd47'];
-    const hidePlayer = (player: ApiPlayer): boolean => m.hideSomePlayers() && hiddenPlayers.indexOf(player._id) != -1;
-    const showPlayer = (player: ApiPlayer): boolean => !hidePlayer(player);
 
     api.getPlayers().then((apiPlayers) => {
         const uniqueName = getUniqueNames(apiPlayers);
         apiPlayers.forEach((player, i, players) => {
             m.players.push({
                 nickName: uniqueName[player._id] || player.firstName + ' ' + player.lastName,
-                hide: hidePlayer(player),
                 apiPlayer: player,
             })
         });
 
         m.playersReady(true);
 
-        if(m.gamesReady())sortPlayers(gp.games, m);
+        if (m.gamesReady()) sortPlayers(gp.games, m);
     });
 
     const dumpPendingUploads = function () {
@@ -417,7 +418,7 @@ export const getSubmitterModel = () => {
         totalGameTime(gp.totalGameTime);
         m.gamesReady(true);
 
-        if(m.playersReady()) sortPlayers(gp.games, m);
+        if (m.playersReady()) sortPlayers(gp.games, m);
     });
 
     resetPicking();
@@ -428,25 +429,42 @@ export const getSubmitterModel = () => {
 const sortPlayers = (games: EloGame[], m: any) => {
     const scores: any = {};
     m.players().forEach((p: any) => scorePlayer(p.apiPlayer));
-    
+    m.players().forEach((p: any) => console.log(p.apiPlayer.lastName, scores[p.apiPlayer._id]));
+
     m.players.sort(byScore);
 
     function scorePlayer(p: ApiPlayer) {
         const n = games.length;
 
         let score = 0;
-      
-        for (let i = 0; i<100; ++i) {
-            const game = games[n-1-i];
+
+        for (let i = 0; i < n - 1; ++i) {
+            const game = games[n - 1 - i];
 
             if (game.red.defence.apiPlayer._id == p._id
                 || game.red.offence.apiPlayer._id == p._id
                 || game.blu.defence.apiPlayer._id == p._id
-                || game.blu.offence.apiPlayer._id == p._id)
-                ++score;
+                || game.blu.offence.apiPlayer._id == p._id) {
+                score += slope(i);
+                if (p.lastName == 'Smirnova' || p.lastName == 'Kozak') console.log(p.lastName, i, slope(n - 1 - i), score);
+
+            }
         }
 
         scores[p._id] = score;
+    }
+
+    function slope(x: number) {
+        const a = 100; // low level
+        const b = .005;// high level
+
+        const c = 100; // midpoint
+        const r = .01; // slope (0 - smooth, 10 - sharp)
+
+        const ecr = Math.pow(Math.E, c * r);
+        const erx = Math.pow(Math.E, x * r);
+
+        return (a * ecr + b * erx) / (ecr + erx);
     }
 
     function byScore(p1: any, p2: any) {
