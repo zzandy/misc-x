@@ -1323,7 +1323,6 @@ System.register("elo/src/components/submitter-model", ["elo/src/lib/almaz-api", 
                 };
                 m.cancelGame = function () {
                     var _this = this;
-                    console.log(this);
                     if (this._id === undefined)
                         return;
                     var red = this.red.defence.nickName + ' (def) ' + this.red.offence.nickName + ' (off)';
@@ -1443,8 +1442,6 @@ System.register("elo/src/components/submitter-model", ["elo/src/lib/almaz-api", 
             });
             sortPlayers = function (games, m) {
                 var scores = {};
-                m.players().forEach(function (p) { return scorePlayer(p.apiPlayer); });
-                m.players().forEach(function (p) { return console.log(p.apiPlayer.lastName, scores[p.apiPlayer._id]); });
                 m.players.sort(byScore);
                 function scorePlayer(p) {
                     var n = games.length;

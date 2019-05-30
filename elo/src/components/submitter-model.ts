@@ -281,7 +281,6 @@ export const getSubmitterModel = () => {
     };
 
     m.cancelGame = function (this: EloGame) {
-        console.log(this)
         if (this._id === undefined)
             return;
 
@@ -428,8 +427,6 @@ export const getSubmitterModel = () => {
 
 const sortPlayers = (games: EloGame[], m: any) => {
     const scores: any = {};
-    m.players().forEach((p: any) => scorePlayer(p.apiPlayer));
-    m.players().forEach((p: any) => console.log(p.apiPlayer.lastName, scores[p.apiPlayer._id]));
 
     m.players.sort(byScore);
 
