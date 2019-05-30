@@ -1442,6 +1442,7 @@ System.register("elo/src/components/submitter-model", ["elo/src/lib/almaz-api", 
             });
             sortPlayers = function (games, m) {
                 var scores = {};
+                m.players().forEach(function (p) { return scorePlayer(p.apiPlayer); });
                 m.players.sort(byScore);
                 function scorePlayer(p) {
                     var n = games.length;
@@ -1453,8 +1454,6 @@ System.register("elo/src/components/submitter-model", ["elo/src/lib/almaz-api", 
                             || game.blu.defence.apiPlayer._id == p._id
                             || game.blu.offence.apiPlayer._id == p._id) {
                             score += slope(i);
-                            if (p.lastName == 'Smirnova' || p.lastName == 'Kozak')
-                                console.log(p.lastName, i, slope(n - 1 - i), score);
                         }
                     }
                     scores[p._id] = score;

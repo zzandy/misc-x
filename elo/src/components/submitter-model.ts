@@ -428,6 +428,7 @@ export const getSubmitterModel = () => {
 const sortPlayers = (games: EloGame[], m: any) => {
     const scores: any = {};
 
+    m.players().forEach((p: NickPlayer) => scorePlayer(p.apiPlayer));
     m.players.sort(byScore);
 
     function scorePlayer(p: ApiPlayer) {
@@ -443,8 +444,6 @@ const sortPlayers = (games: EloGame[], m: any) => {
                 || game.blu.defence.apiPlayer._id == p._id
                 || game.blu.offence.apiPlayer._id == p._id) {
                 score += slope(i);
-                if (p.lastName == 'Smirnova' || p.lastName == 'Kozak') console.log(p.lastName, i, slope(n - 1 - i), score);
-
             }
         }
 
