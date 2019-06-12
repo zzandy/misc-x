@@ -18,6 +18,6 @@ function objectify(record) {
     send(url, obj)
         .catch(e => console.log(e))
         .then(res =>
-            console.writeLine(obj.firstName + " " + obj.lastName + ": " + res)
+            console.log(obj.firstName + " " + obj.lastName + ": " + res)
         );
 });
