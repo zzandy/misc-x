@@ -586,18 +586,19 @@ System.register("lib/simplex", ["lib/random"], function (exports_6, context_6) {
 });
 System.register("misc/src/simplex", ["lib/canvas", "lib/color", "lib/simplex"], function (exports_7, context_7) {
     "use strict";
-    var canvas_2, color_2, simplex_1, octaves, persistance, main, render, waterlevel, sandlevel, greenslevel, depths, depths2, sand, grad;
+    var canvas_2, color_2, simplex_1, octaves, persistance, scale, main, render, waterlevel, sandlevel, greenslevel, depths, depths2, sand, grad;
     var __moduleName = context_7 && context_7.id;
     function renderNoise(ctx, octaves, persistance) {
         var noise = new simplex_1.SimplexNoise2d(persistance, octaves);
         var _a = ctx.canvas, w = _a.width, h = _a.height;
         var imgData = ctx.createImageData(w, h);
         var data = imgData.data;
-        var levels = 10;
+        var levels = 16;
         for (var i = 0; i < h; ++i) {
             for (var j = 0; j < w; ++j) {
-                var v = noise.getNoise2d(j / w, i / h);
-                var va = ease((v + 1) / 2);
+                var v = noise.getNoise2d(j / scale, i / scale);
+                var va = (1 - Math.abs(v + 1)) * (1 - Math.abs(v + 1));
+                ;
                 var borderdist = Math.min(i, j, h - i, w - j);
                 var vignette = borderdist < 200 ? ease(borderdist / 200) : 1;
                 var _b = mapColor(((levels * (Math.min(1, Math.max(0, va * vignette)))) | 0) / levels), r = _b[0], g = _b[1], b = _b[2];
@@ -642,8 +643,9 @@ System.register("misc/src/simplex", ["lib/canvas", "lib/color", "lib/simplex"], 
             }
         ],
         execute: function () {
-            octaves = 5;
-            persistance = .6;
+            octaves = 7;
+            persistance = .5;
+            scale = 1000;
             exports_7("main", main = function () {
                 var ctx = canvas_2.fullscreenCanvas();
                 document.body.style.backgroundColor = 'black';
@@ -656,10 +658,10 @@ System.register("misc/src/simplex", ["lib/canvas", "lib/color", "lib/simplex"], 
                 var after = (new Date).getTime();
                 console.log('fullscreen in ' + (after - before) + 'ms');
             });
-            waterlevel = .45;
-            sandlevel = .6;
-            greenslevel = .95;
-            depths = color_2.wheelHcy(210, 1, .1);
+            waterlevel = .15;
+            sandlevel = .25;
+            greenslevel = .90;
+            depths = color_2.wheelHcy(210, 1, .2);
             depths2 = color_2.wheelHcy(220, 1, .4);
             sand = color_2.wheelHcy(80, 1, .9);
             grad = [
@@ -667,10 +669,10 @@ System.register("misc/src/simplex", ["lib/canvas", "lib/color", "lib/simplex"], 
                 [waterlevel, depths2],
                 [waterlevel + .001, sand],
                 [sandlevel, sand],
-                [sandlevel + .001, color_2.wheelHcy(180, 1, .4)],
-                [greenslevel, color_2.wheelHcy(100, 1, .4)],
-                [greenslevel + .001, color_2.wheelHcy(170, 1, 1)],
-                [1, color_2.wheelHcy(170, 1, .95)]
+                [sandlevel + .001, color_2.wheelHcy(155, 1, .5)],
+                [greenslevel, color_2.wheelHcy(80, .05, .2)],
+                [greenslevel + .001, color_2.wheelHcy(230, 1, .8)],
+                [1, color_2.wheelHcy(230, 1, .99)]
             ];
         }
     };

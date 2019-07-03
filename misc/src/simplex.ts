@@ -2,8 +2,9 @@ import { fullscreenCanvas, ICanvasRenderingContext2D } from '../../lib/canvas';
 import { wheelHcy } from '../../lib/color';
 import { SimplexNoise2d } from '../../lib/simplex';
 
-let octaves = 5;
-let persistance = .6;
+let octaves =  7;
+let persistance = .5;
+let scale = 1000;
 
 export const main = () => {
     const ctx = fullscreenCanvas();
@@ -27,13 +28,13 @@ function renderNoise(ctx: ICanvasRenderingContext2D, octaves: number, persistanc
 
     const imgData = ctx.createImageData(w, h);
     const data = imgData.data;
-    const levels = 10;
+    const levels = 16;
 
     for (let i = 0; i < h; ++i) {
         for (let j = 0; j < w; ++j) {
-            const v = noise.getNoise2d(j / w, i / h);
+            const v = noise.getNoise2d(j / scale, i / scale);
             // move to [0, 1] range and expand the middle
-            const va = ease((v + 1) / 2);
+            const va = (1 - Math.abs(v + 1)) * (1 - Math.abs(v + 1));;
             const borderdist = Math.min(i, j, h - i, w - j);
 
             const vignette = borderdist < 200 ? ease(borderdist / 200) : 1;
@@ -54,11 +55,11 @@ function ease(x: number) {
     return x * x * x * (x * (6 * x - 15) + 10);
 }
 
-const waterlevel = .45;
-const sandlevel = .6;
-const greenslevel = .95;
+const waterlevel = .15;
+const sandlevel = .25;
+const greenslevel = .90;
 
-const depths = wheelHcy(210, 1, .1);
+const depths = wheelHcy(210, 1, .2);
 const depths2 = wheelHcy(220, 1, .4);
 const sand = wheelHcy(80, 1, .9);
 
@@ -67,10 +68,10 @@ const grad: [number, [number, number, number]][] = [
     [waterlevel, depths2],
     [waterlevel + .001, sand],
     [sandlevel, sand],
-    [sandlevel + .001, wheelHcy(180, 1, .4)],
-    [greenslevel, wheelHcy(100, 1, .4)],
-    [greenslevel + .001, wheelHcy(170, 1, 1)],
-    [1, wheelHcy(170, 1, .95)]
+    [sandlevel + .001, wheelHcy(155, 1, .5)],
+    [greenslevel, wheelHcy(80, .05, .2)],
+    [greenslevel + .001, wheelHcy(230, 1, .8)],
+    [1, wheelHcy(230, 1, .99)]
 ];
 
 function mapColor(v: number) {
