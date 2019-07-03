@@ -12,7 +12,7 @@
 <body>
     <script type="text/javascript">
         System.import('misc/src/simplex').then(function (main) {
-            main.main();
+            window.render = main.main();
         }).catch(function (e) { console.log(e) });
     </script>
 </body>

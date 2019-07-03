@@ -34,22 +34,22 @@ export class SimplexNoise2d implements INoise2d {
 
     private readonly octaves: { octave: SimplexNoiseOctave, frequency: number, amplitude: number }[];
 
-    constructor(persistence: number, num_octaves: number, seed: number = (new Date).getTime()) {
-
+    constructor(persistence: number, num_octaves: number, seed: number = Date.now()) {
+        const lacunarity = 2;
         const r = new Random(seed);
         this.octaves = new Array(num_octaves);
 
         for (let i = 0; i < num_octaves; ++i) {
             this.octaves.push({
                 octave: new SimplexNoiseOctave(r.inext(0, 9007199254740991)),
-                frequency: Math.pow(2, i),
-                amplitude: Math.pow(persistence, num_octaves - i)
+                frequency: Math.pow(lacunarity, i),
+                amplitude: Math.pow(persistence, i)
             });
         }
     }
 
     getNoise2d(x: number, y: number): number {
-        return this.octaves.reduce((res, o) => res + o.amplitude * o.octave.getNoise2d(x / o.frequency, y / o.frequency), 0)
+        return this.octaves.reduce((res, o) => res + o.amplitude * o.octave.getNoise2d(x * o.frequency, y * o.frequency), 0)
     }
 }
 

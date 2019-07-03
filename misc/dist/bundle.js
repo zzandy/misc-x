@@ -1,15 +1,6 @@
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 System.register("lib/canvas", [], function (exports_1, context_1) {
     "use strict";
+    var getCanvas, fullscreenCanvas3d;
     var __moduleName = context_1 && context_1.id;
     function fullscreenCanvas(relative, noAlpha) {
         if (relative === void 0) { relative = false; }
@@ -50,7 +41,6 @@ System.register("lib/canvas", [], function (exports_1, context_1) {
         return ctx;
     }
     exports_1("fullscreenCanvas", fullscreenCanvas);
-    var getCanvas, fullscreenCanvas3d;
     return {
         setters: [],
         execute: function () {
@@ -80,6 +70,7 @@ System.register("lib/canvas", [], function (exports_1, context_1) {
 });
 System.register("lib/color", [], function (exports_2, context_2) {
     "use strict";
+    var breaks;
     var __moduleName = context_2 && context_2.id;
     function hcy(h, c, y) {
         var r = .3;
@@ -112,19 +103,19 @@ System.register("lib/color", [], function (exports_2, context_2) {
     }
     exports_2("hcy", hcy);
     function wheelHcy(h, c, y) {
+        var _a;
         h %= 360;
         var h2 = h;
-        var _a = [0, 0], s0 = _a[0], t0 = _a[1];
+        var _b = [0, 0], s0 = _b[0], t0 = _b[1];
         for (var _i = 0, breaks_1 = breaks; _i < breaks_1.length; _i++) {
-            var _b = breaks_1[_i], t = _b[0], s = _b[1];
+            var _c = breaks_1[_i], t = _c[0], s = _c[1];
             if (h < s) {
                 h2 = t0 + (h - s0) * (t - t0) / (s - s0);
                 break;
             }
-            _c = [s, t], s0 = _c[0], t0 = _c[1];
+            _a = [s, t], s0 = _a[0], t0 = _a[1];
         }
         return hcy(h2, c, y);
-        var _c;
     }
     exports_2("wheelHcy", wheelHcy);
     function wheel2rgb(h, c, y, a) {
@@ -143,12 +134,9 @@ System.register("lib/color", [], function (exports_2, context_2) {
     }
     exports_2("hcy2rgb", hcy2rgb);
     function rgbdata2rgb(t, a) {
-        if (t.length == 3)
-            return tuple2rgb(t[0], t[1], t[2], a === undefined ? 1 : a);
-        return tuple2rgb(t[0], t[1], t[2], t[3]);
+        return tuple2rgb(t[0], t[1], t[2], a === undefined ? 1 : a);
     }
     exports_2("rgbdata2rgb", rgbdata2rgb);
-    var breaks;
     return {
         setters: [],
         execute: function () {
@@ -165,6 +153,7 @@ System.register("lib/color", [], function (exports_2, context_2) {
 });
 System.register("misc/src/color", ["lib/canvas", "lib/color"], function (exports_3, context_3) {
     "use strict";
+    var canvas_1, color_1, main;
     var __moduleName = context_3 && context_3.id;
     function renderWheel(ctx, r, t, colorFn, start) {
         if (start === void 0) { start = 0; }
@@ -188,7 +177,6 @@ System.register("misc/src/color", ["lib/canvas", "lib/color"], function (exports
         if (a === void 0) { a = 1; }
         return 'hsla(' + [h % 360, s * 100 + '%', l * 100 + '%', a].join(',') + ')';
     }
-    var canvas_1, color_1, main;
     return {
         setters: [
             function (canvas_1_1) {
@@ -218,6 +206,7 @@ System.register("misc/src/color", ["lib/canvas", "lib/color"], function (exports
 });
 System.register("misc/src/map", [], function (exports_4, context_4) {
     "use strict";
+    var Point, Token, Cell, Rule, RuleStub, RuleBuilder, None, Reef, Sea, Bay, Marsh, Mountain, Forest, Lake, Shore, Meadow, RectMap, Solver, RectRender, main;
     var __moduleName = context_4 && context_4.id;
     function rnd(a, b) {
         if (a !== undefined && b !== undefined) {
@@ -237,7 +226,6 @@ System.register("misc/src/map", [], function (exports_4, context_4) {
             ? str + (new Array(w - str.length + 1)).join(' ')
             : str;
     }
-    var Point, Token, Cell, Rule, RuleStub, RuleBuilder, None, Reef, Sea, Bay, Marsh, Mountain, Forest, Lake, Shore, Meadow, RectMap, Solver, RectRender, main;
     return {
         setters: [],
         execute: function () {
@@ -453,252 +441,10 @@ System.register("misc/src/map", [], function (exports_4, context_4) {
         }
     };
 });
-System.register("lib/rnd", [], function (exports_5, context_5) {
+System.register("lib/random", [], function (exports_5, context_5) {
     "use strict";
-    var __moduleName = context_5 && context_5.id;
-    function rnd(a, b) {
-        if (a !== undefined && b !== undefined) {
-            return (b + (a - b) * Math.random()) | 0;
-        }
-        else if (a !== undefined && b === undefined) {
-            if (a instanceof Array)
-                return a[(Math.random() * a.length) | 0];
-            else
-                return (a * Math.random()) | 0;
-        }
-        else
-            return Math.random();
-    }
-    exports_5("rnd", rnd);
-    return {
-        setters: [],
-        execute: function () {
-        }
-    };
-});
-System.register("lib/geometry", [], function (exports_6, context_6) {
-    "use strict";
-    var __moduleName = context_6 && context_6.id;
-    var Point, Rect, Range;
-    return {
-        setters: [],
-        execute: function () {
-            Point = (function () {
-                function Point(x, y) {
-                    this.x = x;
-                    this.y = y;
-                }
-                Point.prototype.times = function (a, b) {
-                    if (typeof (a) === 'number')
-                        return new Point(this.x * a, this.y * b);
-                    return new Point(this.x * a.x, this.y * a.y);
-                };
-                Point.prototype.plus = function (a, b) {
-                    if (typeof (a) === 'number')
-                        return new Point(this.x + a, this.y + b);
-                    return new Point(this.x + a.x, this.y + a.y);
-                };
-                return Point;
-            }());
-            exports_6("Point", Point);
-            Rect = (function (_super) {
-                __extends(Rect, _super);
-                function Rect(x, y, w, h) {
-                    var _this = _super.call(this, x, y) || this;
-                    _this.w = w;
-                    _this.h = h;
-                    return _this;
-                }
-                Object.defineProperty(Rect.prototype, "horizontal", {
-                    get: function () {
-                        return new Range(this.x, this.w);
-                    },
-                    enumerable: true,
-                    configurable: true
-                });
-                Object.defineProperty(Rect.prototype, "vertical", {
-                    get: function () {
-                        return new Range(this.y, this.h);
-                    },
-                    enumerable: true,
-                    configurable: true
-                });
-                return Rect;
-            }(Point));
-            exports_6("Rect", Rect);
-            Range = (function () {
-                function Range(start, length) {
-                    this.start = start;
-                    this.length = length;
-                }
-                Object.defineProperty(Range.prototype, "end", {
-                    get: function () {
-                        return this.start + this.length;
-                    },
-                    enumerable: true,
-                    configurable: true
-                });
-                return Range;
-            }());
-            exports_6("Range", Range);
-        }
-    };
-});
-System.register("misc/src/settle", ["lib/geometry", "lib/canvas"], function (exports_7, context_7) {
-    "use strict";
-    var __moduleName = context_7 && context_7.id;
-    function blocks(width, height, size) {
-        return [height / size, width / size];
-    }
-    function render(ctx, world) {
-        ctx.fillStyle = '#262626';
-        ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-        ctx.fillStyle = '#aeaeae';
-        ctx.strokeStyle = '#aeaeae';
-        for (var _i = 0, _a = world.graph.links; _i < _a.length; _i++) {
-            var _b = _a[_i], i = _b[0], j = _b[1];
-            var node = world.nodes[i];
-            var other = world.nodes[j];
-            ctx.beginPath();
-            ctx.moveTo(node.pos.x, node.pos.y);
-            ctx.lineTo(other.pos.x, other.pos.y);
-            ctx.stroke();
-        }
-        for (var i = 0; i < world.nodes.length; ++i) {
-            var node = world.nodes[i];
-            ctx.fillRect(node.pos.x - 5, node.pos.y - 5, 10, 10);
-            ctx.fillText(node.name, node.pos.x, node.pos.y);
-        }
-    }
-    var geometry_1, canvas_2, Node, World, Graph, DistMap, main;
-    return {
-        setters: [
-            function (geometry_1_1) {
-                geometry_1 = geometry_1_1;
-            },
-            function (canvas_2_1) {
-                canvas_2 = canvas_2_1;
-            }
-        ],
-        execute: function () {
-            Node = (function () {
-                function Node(name, pos) {
-                    this.name = name;
-                    this.pos = pos;
-                }
-                return Node;
-            }());
-            World = (function () {
-                function World(nodes) {
-                    this.nodes = nodes;
-                    this.dists = new DistMap(nodes.map(function (n) { return n.pos; }));
-                    this.graph = new Graph(this.dists);
-                }
-                return World;
-            }());
-            Graph = (function () {
-                function Graph(dist) {
-                    this.links = [];
-                    var connected = [true];
-                    var done = false;
-                    while (!done) {
-                        var cluster = [];
-                        var pending = [];
-                        var links = [];
-                        for (var i = 0; i < dist.length; ++i) {
-                            (connected[i] ? cluster : pending).push(i);
-                        }
-                        if (pending.length > 0) {
-                            for (var _i = 0, cluster_1 = cluster; _i < cluster_1.length; _i++) {
-                                var src_1 = cluster_1[_i];
-                                for (var _a = 0, pending_1 = pending; _a < pending_1.length; _a++) {
-                                    var tgt_1 = pending_1[_a];
-                                    links.push([src_1, tgt_1, dist.dist(src_1, tgt_1)]);
-                                }
-                            }
-                            links.sort(function (_a, _b) {
-                                var a = _a[0], b = _a[1], d1 = _a[2];
-                                var c = _b[0], d = _b[1], d2 = _b[2];
-                                return d1 - d2;
-                            });
-                            var _b = links[0], src = _b[0], tgt = _b[1];
-                            connected[tgt] = true;
-                            this.links.push([Math.min(src, tgt), Math.max(src, tgt)]);
-                        }
-                        else {
-                            done = true;
-                        }
-                    }
-                }
-                return Graph;
-            }());
-            DistMap = (function () {
-                function DistMap(points) {
-                    this.dists = [];
-                    this.length = points.length;
-                    for (var i = 1; i < points.length; ++i)
-                        for (var j = 0; j < i; ++j) {
-                            var _a = points[i], x0 = _a.x, y0 = _a.y;
-                            var _b = points[j], x1 = _b.x, y1 = _b.y;
-                            var d = Math.sqrt((x0 - x1) * (x0 - x1) + (y0 - y1) * (y0 - y1));
-                            this.dists.push(d);
-                        }
-                }
-                DistMap.prototype.dist = function (i0, i1) {
-                    return i0 == i1
-                        ? 0
-                        : i1 > i0
-                            ? this.dists[(i1 - 1) * i1 / 2 + i0]
-                            : this.dists[(i0 - 1) * i0 / 2 + i1];
-                };
-                DistMap.prototype.closest = function (idx) {
-                    var dist = Infinity;
-                    var ix = -1;
-                    for (var j = 0; j < idx; ++j) {
-                        var d = this.dist(idx, j);
-                        if (d < dist) {
-                            dist = d;
-                            ix = j;
-                        }
-                    }
-                    for (var i = idx + 1; i < this.length; ++i) {
-                        var d = this.dist(i, idx);
-                        if (d < dist) {
-                            dist = d;
-                            ix = i;
-                        }
-                    }
-                    return ix;
-                };
-                return DistMap;
-            }());
-            exports_7("main", main = function () {
-                var q = Math.sqrt(3) / 2;
-                var size = 100;
-                var ctx = canvas_2.fullscreenCanvas();
-                var _a = blocks(ctx.canvas.width, ctx.canvas.height / q, size), rows = _a[0], cols = _a[1];
-                var _b = [ctx.canvas.width / cols, ctx.canvas.height / rows * q], bw = _b[0], bh = _b[1];
-                var nodes = [];
-                for (var i = 1; i < rows - 1; ++i)
-                    for (var j = 1; j < cols - 1; ++j) {
-                        var x = (j + i % 2 / 2) * bw;
-                        var y = (i + .5) * bh;
-                        var a = Math.random() * 2 * Math.PI;
-                        var d = Math.random() * size * q * 2 / 3 * .8;
-                        x += d * Math.cos(a);
-                        y += d * Math.sin(a);
-                        nodes.push(new Node(i + "x" + j, new geometry_1.Point(x, y)));
-                    }
-                var world = new World(nodes);
-                render(ctx, world);
-            });
-        }
-    };
-});
-System.register("lib/random", [], function (exports_8, context_8) {
-    "use strict";
-    var __moduleName = context_8 && context_8.id;
     var Random;
+    var __moduleName = context_5 && context_5.id;
     return {
         setters: [],
         execute: function () {
@@ -726,13 +472,14 @@ System.register("lib/random", [], function (exports_8, context_8) {
                 };
                 return Random;
             }());
-            exports_8("Random", Random);
+            exports_5("Random", Random);
         }
     };
 });
-System.register("lib/simplex", ["lib/random"], function (exports_9, context_9) {
+System.register("lib/simplex", ["lib/random"], function (exports_6, context_6) {
     "use strict";
-    var __moduleName = context_9 && context_9.id;
+    var random_1, grad3, F2, G2, SimplexNoise2d, SimplexNoiseOctave;
+    var __moduleName = context_6 && context_6.id;
     function generateShuffledArray(n, seed) {
         var a = new Array(n);
         for (var i = 0; i < n; ++i)
@@ -744,7 +491,6 @@ System.register("lib/simplex", ["lib/random"], function (exports_9, context_9) {
     function dot2d(x1, y1, x2, y2) {
         return x1 * x2 + y1 * y2;
     }
-    var random_1, grad3, F2, G2, SimplexNoise2d, SimplexNoiseOctave;
     return {
         setters: [
             function (random_1_1) {
@@ -761,23 +507,24 @@ System.register("lib/simplex", ["lib/random"], function (exports_9, context_9) {
             G2 = (3.0 - Math.sqrt(3.0)) / 6.0;
             SimplexNoise2d = (function () {
                 function SimplexNoise2d(persistence, num_octaves, seed) {
-                    if (seed === void 0) { seed = (new Date).getTime(); }
+                    if (seed === void 0) { seed = Date.now(); }
+                    var lacunarity = 2;
                     var r = new random_1.Random(seed);
                     this.octaves = new Array(num_octaves);
                     for (var i = 0; i < num_octaves; ++i) {
                         this.octaves.push({
                             octave: new SimplexNoiseOctave(r.inext(0, 9007199254740991)),
-                            frequency: Math.pow(2, i),
-                            amplitude: Math.pow(persistence, num_octaves - i)
+                            frequency: Math.pow(lacunarity, i),
+                            amplitude: Math.pow(persistence, i)
                         });
                     }
                 }
                 SimplexNoise2d.prototype.getNoise2d = function (x, y) {
-                    return this.octaves.reduce(function (res, o) { return res + o.amplitude * o.octave.getNoise2d(x / o.frequency, y / o.frequency); }, 0);
+                    return this.octaves.reduce(function (res, o) { return res + o.amplitude * o.octave.getNoise2d(x * o.frequency, y * o.frequency); }, 0);
                 };
                 return SimplexNoise2d;
             }());
-            exports_9("SimplexNoise2d", SimplexNoise2d);
+            exports_6("SimplexNoise2d", SimplexNoise2d);
             SimplexNoiseOctave = (function () {
                 function SimplexNoiseOctave(seed) {
                     if (seed === void 0) { seed = 0; }
@@ -833,25 +580,27 @@ System.register("lib/simplex", ["lib/random"], function (exports_9, context_9) {
                 };
                 return SimplexNoiseOctave;
             }());
-            exports_9("SimplexNoiseOctave", SimplexNoiseOctave);
+            exports_6("SimplexNoiseOctave", SimplexNoiseOctave);
         }
     };
 });
-System.register("misc/src/simplex", ["lib/canvas", "lib/color", "lib/simplex"], function (exports_10, context_10) {
+System.register("misc/src/simplex", ["lib/canvas", "lib/color", "lib/simplex"], function (exports_7, context_7) {
     "use strict";
-    var __moduleName = context_10 && context_10.id;
-    function renderNoise(ctx) {
-        var noise = new simplex_1.SimplexNoise2d(.7, 10);
+    var canvas_2, color_2, simplex_1, octaves, persistance, main, render, waterlevel, sandlevel, greenslevel, depths, depths2, sand, grad;
+    var __moduleName = context_7 && context_7.id;
+    function renderNoise(ctx, octaves, persistance) {
+        var noise = new simplex_1.SimplexNoise2d(persistance, octaves);
         var _a = ctx.canvas, w = _a.width, h = _a.height;
         var imgData = ctx.createImageData(w, h);
         var data = imgData.data;
+        var levels = 10;
         for (var i = 0; i < h; ++i) {
             for (var j = 0; j < w; ++j) {
-                var v = noise.getNoise2d(j / 1, i / 1);
+                var v = noise.getNoise2d(j / w, i / h);
                 var va = ease((v + 1) / 2);
                 var borderdist = Math.min(i, j, h - i, w - j);
                 var vignette = borderdist < 200 ? ease(borderdist / 200) : 1;
-                var _b = mapColor(va * vignette), r = _b[0], g = _b[1], b = _b[2];
+                var _b = mapColor(((levels * (Math.min(1, Math.max(0, va * vignette)))) | 0) / levels), r = _b[0], g = _b[1], b = _b[2];
                 var idx = (i * w + j) * 4;
                 data[idx] = (r * 255) & 255;
                 data[idx + 1] = (g * 255) & 255;
@@ -880,11 +629,10 @@ System.register("misc/src/simplex", ["lib/canvas", "lib/color", "lib/simplex"], 
         }
         return grad[grad.length - 1][1];
     }
-    var canvas_3, color_2, simplex_1, main, waterlevel, sandlevel, greenslevel, grad;
     return {
         setters: [
-            function (canvas_3_1) {
-                canvas_3 = canvas_3_1;
+            function (canvas_2_1) {
+                canvas_2 = canvas_2_1;
             },
             function (color_2_1) {
                 color_2 = color_2_1;
@@ -894,25 +642,34 @@ System.register("misc/src/simplex", ["lib/canvas", "lib/color", "lib/simplex"], 
             }
         ],
         execute: function () {
-            exports_10("main", main = function () {
-                var ctx = canvas_3.fullscreenCanvas();
+            octaves = 5;
+            persistance = .6;
+            exports_7("main", main = function () {
+                var ctx = canvas_2.fullscreenCanvas();
                 document.body.style.backgroundColor = 'black';
-                var before = (new Date).getTime();
-                renderNoise(ctx);
-                var after = (new Date).getTime();
-                console.log('fullscreen in ', after - before);
+                render(ctx, octaves, persistance);
+                return function (o, p) { return render(ctx, o, p); };
             });
-            waterlevel = .3;
-            sandlevel = .33;
-            greenslevel = .90;
+            exports_7("render", render = function (ctx, octaves, persistance) {
+                var before = (new Date).getTime();
+                renderNoise(ctx, octaves, persistance);
+                var after = (new Date).getTime();
+                console.log('fullscreen in ' + (after - before) + 'ms');
+            });
+            waterlevel = .45;
+            sandlevel = .6;
+            greenslevel = .95;
+            depths = color_2.wheelHcy(210, 1, .1);
+            depths2 = color_2.wheelHcy(220, 1, .4);
+            sand = color_2.wheelHcy(80, 1, .9);
             grad = [
-                [0, color_2.wheelHcy(270, 1, .05)],
-                [waterlevel, color_2.wheelHcy(270, 1, .4)],
-                [waterlevel + .01, color_2.wheelHcy(60, 1, .8)],
-                [sandlevel, color_2.wheelHcy(60, 1, .6)],
-                [sandlevel + .01, color_2.wheelHcy(180, 1, .4)],
+                [0, depths],
+                [waterlevel, depths2],
+                [waterlevel + .001, sand],
+                [sandlevel, sand],
+                [sandlevel + .001, color_2.wheelHcy(180, 1, .4)],
                 [greenslevel, color_2.wheelHcy(100, 1, .4)],
-                [greenslevel + .01, color_2.wheelHcy(170, 1, 1)],
+                [greenslevel + .001, color_2.wheelHcy(170, 1, 1)],
                 [1, color_2.wheelHcy(170, 1, .95)]
             ];
         }
