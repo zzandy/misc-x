@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Hilbert's Curve</title>
+    <style type="text/css">
+        html {
+            background-color: #262926;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Fullscreen canvas -->
+    <script type="text/javascript">
+        function fullscreenCanvas() {
+            return canvas(window.innerWidth, window.innerHeight);
+        }
+
+        function canvas(width, height) {
+            var c = window.document.createElement('canvas');
+            window.document.body.appendChild(c);
+
+            var ctx = c.getContext('2d');
+
+            ctx.canvas.width = width;
+            ctx.canvas.height = height;
+            ctx.canvas.style.position = 'absolute';
+            ctx.canvas.style.top = 0;
+            ctx.canvas.style.left = 0;
+
+            return ctx;
+        }
+    </script>
+
+    <!-- Colors -->
+    <script type="text/javascript">
+
+        (function ($) {
+            var r = .3;
+            var g = .59;
+            var b = .11;
+
+            // hue Chroma luma
+            $.hcy2rgb = function (h, c, y) {
+                h0 = h;
+                h /= 60;
+
+                var k = (1 - Math.abs((h % 2) - 1));
+
+                var K = h < 1 ? r + k * g
+                    : h < 2 ? g + k * r
+                        : h < 3 ? g + k * b
+                            : h < 4 ? b + k * g
+                                : h < 5 ? b + k * r
+                                    : r + k * b;
+
+                var cmax = 1;
+
+                if (y <= 0 || y >= 1) cmax = 0;
+                else cmax *= K < y ? (y - 1) / (K - 1) : K > y ? y / K : 1;
+                c = Math.min(c, cmax);
+
+                var x = c * k;
+                var rgb = h < 1 ? [c, x, 0]
+                    : h < 2 ? [x, c, 0]
+                        : h < 3 ? [0, c, x]
+                            : h < 4 ? [0, x, c]
+                                : h < 5 ? [x, 0, c]
+                                    : [c, 0, x];
+
+                var m = y - (r * rgb[0] + g * rgb[1] + b * rgb[2]);
+
+                return [rgb[0] + m, rgb[1] + m, rgb[2] + m];
+            }
+
+            $.adjust = function (hcyrgb) {
+                return [255 * hcyrgb[0] | 0, 255 * hcyrgb[1] | 0, 255 * hcyrgb[2] | 0];
+            }
+
+            $.hcyCol = function (h, c, y) {
+                var col = adjust(hcy2rgb(h % 360, c, y));
+                return 'rgb(' + col[0] + ', ' + col[1] + ',' + col[2] | 0 + ')';
+            }
+        })(window);
+    </script>
+
+    <!-- Render loop -->
+    <script type="text/javascript">
+        function RenderLoop(frame) {
+            this.frame = frame;
+            this.isRunning = false;
+        }
+
+        RenderLoop.prototype.start = function () {
+            this.isRunning = true;
+
+            var self = this;
+            var onFrame = function () {
+                if (self.isRunning) {
+                    self.frame();
+                    window.requestAnimationFrame(onFrame);
+                }
+            };
+
+            window.requestAnimationFrame(onFrame);
+        }
+
+        RenderLoop.prototype.stop = function () {
+            this.isRunning = false;
+        }
+    </script>
+
+    <script type="text/javascript">
+        const positions = [[0, 0], [0, 1], [1, 1], [1, 0]];
+
+        const ctx = fullscreenCanvas();
+        const scale = Math.min(ctx.canvas.width, ctx.canvas.height);
+
+        const order = 5;
+        const path = [];
+        let n = 0;
+        getpath(path, order, 0, 0, scale, id);
+        //const rl = new RenderLoop(render);
+        //rl.start();
+
+        render();
+
+        function render() {
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+            
+            
+            for (let i = 1; i < path.length; ++i) {
+                ctx.beginPath();
+                ctx.moveTo(path[i-1][0], path[i-1][1]);
+                ctx.lineTo(path[i][0], path[i][1]);
+                ctx.strokeStyle = 'hsl(' + ((i*360/path.length-n) % 360) + ', 100%, 60%)';
+                ctx.stroke();
+                
+            }
+            n+=5;
+        }
+
+        function getpos(index) {
+            return positions[index % 4];
+        }
+
+        function getpath(path, order, ox, oy, size, rot) {
+            const scale = size / 2;
+
+            if (order == 0) {
+                const pad = size / 4;
+
+                for (let i = 0; i < 4; ++i) {
+                    const pos = rot(positions[i]);
+                    path.push([ox + pad + pos[0] * scale, oy + pad + pos[1] * scale]);
+                }
+            }
+            else {
+
+                const dr = [left, id, id, right];
+                for (let i = 0; i < 4; ++i) {
+                    const pos = rot(positions[i]);
+                    getpath(path, order - 1, ox + pos[0] * scale, oy + pos[1] * scale, scale, (x) => dr[i](rot(x)));
+                }
+            }
+        }
+
+        function rotate(rot, x, y) {
+            switch ((rot + 4) % 4) {
+                case 0: return [x, 1 - y];
+                case 1: return [1 - y, 1 - x];
+                case 2: return [x, y];
+                case 3: return [y, x];
+            }
+        }
+
+        function id(a) { return a }
+
+        function left(a) {
+            return [a[1], a[0]];
+        }
+
+        function right(a) {
+            return [1 - a[1], 1 - a[0]];
+        }
+    </script>
+</body>
+
+</html>
