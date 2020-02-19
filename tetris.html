@@ -131,6 +131,7 @@
         const SHADOW = 6;
         const PAUSE = 7;
         const MOVE = 8;
+        const TOGGLEROTATE = 9;
 
         const figSize = 4;
 
@@ -139,7 +140,7 @@
         function init() {
             const width = 9;
             const height = 21;
-            const input = [0];
+            const input = [];
 
             window.addEventListener('keydown', (e) => {
                 switch (e.keyCode) {
@@ -173,6 +174,8 @@
                     case 90: // z
                         input.push(MOVE);
                         break;
+                    case 82: // r
+                        input.push(TOGGLEROTATE)
                 }
             })
 
@@ -204,7 +207,8 @@
                 paused: false,
                 shadowEnabled: false,
                 moveAfterDrop: false,
-                score: 0
+                score: 0,
+                rotateCw: true
             };
         }
 
@@ -265,6 +269,9 @@
                 if (command == MOVE) {
                     world.moveAfterDrop = !world.moveAfterDrop;
                 }
+                else if (command == TOGGLEROTATE) {
+                    world.rotateCw = !world.rotateCw;
+                }
 
                 else if (command == PAUSE) {
                     world.paused = !world.paused;
@@ -275,7 +282,7 @@
                 }
 
                 else if (command == ROTATE) {
-                    let newrotation = world.rotation = (rotation + figure.length - 1) % figure.length;
+                    let newrotation = world.rotation = (rotation + figure.length + (world.rotateCw ? -1 : 1)) % figure.length;
                     const rotated = figure[newrotation];
                     if (isValid(rotated, pos, field, width, height)) {
                         current = world.current = rotated;
@@ -300,7 +307,7 @@
                     }
                     else {
                         solidify(current, pos, field, color);
-                        world.score+=score(world.burn.length)
+                        world.score += score(world.burn.length)
                         current = world.current = null;
                         input.length = 0;
                         break;
@@ -310,12 +317,12 @@
                 else if (command == DROP) {
                     const dh = getDropHeight(current, pos, field);
                     pos[1] += dh;
-                    world.score += dh*10;
+                    world.score += dh * 10;
 
                     if (dh == 0 || !world.moveAfterDrop) {
                         world.burn = solidify(current, pos, field, color, width);
 
-                        world.score+=score(world.burn.length)
+                        world.score += score(world.burn.length)
                         current = world.current = null;
                         input.length = 0;
                     }
@@ -520,8 +527,8 @@
             return true;
         }
 
-        function score(rows){
-            switch (rows){
+        function score(rows) {
+            switch (rows) {
                 case 1: return 10;
                 case 2: return 25;
                 case 3: return 40;
