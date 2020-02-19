@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Tetris</title>
+    <style type="text/css">
+        html {
+            background-color: #212025;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Fullscreen canvas -->
+    <script type="text/javascript">
+        function fullscreenCanvas() {
+            return canvas(window.innerWidth, window.innerHeight);
+        }
+
+        function canvas(width, height) {
+            var c = window.document.createElement('canvas');
+            window.document.body.appendChild(c);
+
+            var ctx = c.getContext('2d');
+
+            ctx.canvas.width = width;
+            ctx.canvas.height = height;
+            ctx.canvas.style.position = 'absolute';
+            ctx.canvas.style.top = 0;
+            ctx.canvas.style.left = 0;
+
+            return ctx;
+        }
+    </script>
+
+    <!-- Colors -->
+    <script type="text/javascript">
+
+        (function ($) {
+            var r = .3;
+            var g = .59;
+            var b = .11;
+
+            // hue Chroma luma
+            $.hcy2rgb = function (h, c, y) {
+                h0 = h;
+                h /= 60;
+
+                var k = (1 - Math.abs((h % 2) - 1));
+
+                var K = h < 1 ? r + k * g
+                    : h < 2 ? g + k * r
+                        : h < 3 ? g + k * b
+                            : h < 4 ? b + k * g
+                                : h < 5 ? b + k * r
+                                    : r + k * b;
+
+                var cmax = 1;
+
+                if (y <= 0 || y >= 1) cmax = 0;
+                else cmax *= K < y ? (y - 1) / (K - 1) : K > y ? y / K : 1;
+                c = Math.min(c, cmax);
+
+                var x = c * k;
+                var rgb = h < 1 ? [c, x, 0]
+                    : h < 2 ? [x, c, 0]
+                        : h < 3 ? [0, c, x]
+                            : h < 4 ? [0, x, c]
+                                : h < 5 ? [x, 0, c]
+                                    : [c, 0, x];
+
+                var m = y - (r * rgb[0] + g * rgb[1] + b * rgb[2]);
+
+                return [rgb[0] + m, rgb[1] + m, rgb[2] + m];
+            }
+
+            $.adjust = function (hcyrgb) {
+                return [255 * hcyrgb[0] | 0, 255 * hcyrgb[1] | 0, 255 * hcyrgb[2] | 0];
+            }
+
+            $.hcyCol = function (h, c, y) {
+                var col = adjust(hcy2rgb(h % 360, c, y));
+                return 'rgb(' + col[0] + ', ' + col[1] + ',' + col[2] | 0 + ')';
+            }
+        })(window);
+    </script>
+
+    <!-- Render loop -->
+    <script type="text/javascript">
+
+        function loop(framerate, init, update, render) {
+            let state = init();
+
+            let then = Date.now();
+            let delta = 1000 / framerate;
+
+            let tick = function () {
+
+                let now = Date.now();
+                let time = now - then;
+                then = now;
+                let shouldRender = false;
+
+                while (time > delta) {
+                    time -= delta;
+                    shouldRender = true;
+
+                    state = update(state, delta);
+                }
+
+                if (shouldRender)
+                    render(state);
+
+                requestAnimationFrame(tick);
+            }
+
+            requestAnimationFrame(tick);
+        }
+    </script>
+
+    <script type="text/javascript">
+        const tau = Math.PI * 2;
+
+        const LEFT = 1;
+        const RIGHT = 2;
+        const DOWN = 3;
+        const DROP = 4;
+        const ROTATE = 5;
+
+        const figSize = 4;
+
+        loop(60, init, update, render);
+
+        function init() {
+            const width = 9;
+            const height = 21;
+            const input = [0];
+
+            window.addEventListener('keydown', (e) => {
+                switch (e.keyCode) {
+                    case 65:
+                    case 37: input.push(LEFT);
+                        return;
+                    case 68:
+                    case 39: input.push(RIGHT);
+                        return;
+                    case 40:
+                    case 83:
+                        input.push(DOWN);
+                        return;
+                    case 13: input.push(DROP);
+                    case 32: input.push(DROP);
+                        return;
+                    case 38:
+                    case 87:
+                        input.push(ROTATE);
+                }
+            })
+
+            return {
+                ctx: fullscreenCanvas(),
+                figs: figures(),
+                next: null,
+                figure: [],
+                rotation: 0,
+                current: null,
+                pos: null,
+                bag: [],
+                width,
+                height,
+                wait: 0,
+                speed: 1000,
+                input,
+                field: makeArray(0, width, height),
+                color: 1,
+                nextColor: 1,
+                palette: ['magenta', '#ff4365', '#00d9c0', '#9cfc97', '#e3170a', '#f7b32b', '#077187', '#f3752b'],
+                gameOver: false
+            };
+        }
+
+        function update(world, delta) {
+            let { bag, figs, width, height, speed, pos, input, current, field, color, gameOver, figure, rotation } = world;
+
+            if (gameOver) return world;
+
+            if (world.next == null) {
+                const id = []
+                world.next = draw(bag, figs, id);
+                world.nextColor = id[0] + 1;
+            }
+
+            let isNew = false;
+
+            if (world.current == null) {
+                rotation = world.rotation = 0;
+                figure = world.figure = world.next;
+                current = world.current = world.next[rotation];
+                color = world.color = world.nextColor;
+
+                pos = world.pos = [((width / 2) | 0) - 1, 0]
+                const id = []
+                world.next = draw(bag, figs, id);
+                world.nextColor = id[0] + 1;
+                isNew = true;
+
+                if (!isValid(current, pos, field, width, height)) {
+                    world.gameOver = true;
+                    console.log('Game Over')
+
+                    return world;
+                }
+            }
+
+            let moveDown = (world.wait += delta) > speed;
+            if (moveDown) world.wait -= speed;
+
+            while ((command = input.shift()) !== undefined) {
+                if (command == ROTATE) {
+                    rotation = world.rotation = (rotation + figure.length - 1) % figure.length;
+                    const rotated = figure[rotation];
+                    if (isValid(rotated, pos, field, width, height))
+                        current = world.current = rotated;
+                }
+
+                if (command == LEFT || command == RIGHT) {
+                    const dx = command == LEFT ? -1 : 1;
+                    if (isValid(current, [pos[0] + dx, pos[1]], field, width, height))
+                        pos = world.pos = [pos[0] + dx, pos[1]];
+                }
+
+                if (command == DOWN) {
+                    if (command == DOWN) world.wait = 0;
+
+                    if (isValid(current, [pos[0], pos[1] + 1], field, width, height))
+                        pos = world.pos = [pos[0], pos[1] + 1];
+                    else {
+                        solidify(current, pos, field, color);
+                        current = world.current = null;
+                        input.lenght = 0;
+                        break;
+                    }
+                }
+
+                if (command == DROP) {
+                    pos[1] += getDropHeight(current, pos, field);
+
+                    solidify(current, pos, field, color, width);
+                    current = world.current = null;
+
+                    input.lenght = 0;
+                    break;
+                }
+            }
+
+            if (moveDown) {
+                if (isValid(current, [pos[0], pos[1] + 1], field, width, height))
+                    pos = world.pos = [pos[0], pos[1] + 1];
+                else {
+                    solidify(current, pos, field, color, width);
+                    current = world.current = null;
+                }
+            }
+
+            return world;
+        }
+
+        function render(world) {
+            let { ctx, pos, current, next, width, height, palette, color, nextColor, field } = world;
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+            const scale = 20;
+
+            ctx.strokeStyle = 'silver';
+            ctx.strokeRect(0, 0, width * scale, height * scale)
+
+            for (let i = 0; i < height; ++i)
+                for (let j = 0; j < width; ++j)
+                    if (field[i][j] != 0) {
+                        ctx.fillStyle = palette[field[i][j]];
+                        ctx.fillRect(j * scale, i * scale, scale - 1, scale - 1)
+                    }
+
+            if (current != null) {
+                ctx.fillStyle = palette[color];
+                for (let i = 0; i < figSize; ++i)
+                    for (let j = 0; j < figSize; ++j) {
+                        if (current[i][j] != 0)
+                            ctx.fillRect((pos[0] + j) * scale, (pos[1] + i) * scale, scale - 1, scale - 1)
+                    }
+            }
+
+            if (next != null) {
+                ctx.fillStyle = palette[nextColor];
+                for (let i = 0; i < figSize; ++i)
+                    for (let j = 0; j < figSize; ++j) {
+                        if (next[0][i][j] != 0)
+                            ctx.fillRect((j + width) * scale, (i) * scale, scale - 1, scale - 1)
+                    }
+            }
+        }
+
+        function draw(bag, figs, id) {
+            if (bag.length == 0)
+                fillBag(bag, figs.length, 3);
+
+            const res = bag.shift();
+
+            if (bag.length == 0)
+                fillBag(bag, figs.length, 3);
+
+            id.push(res);
+            return copy(figs[res]);
+        }
+
+        function fillBag(bag, length, times) {
+            const indices = new Array(length * times);
+            for (let i = 0; i < length; ++i)
+                for (let j = 0; j < times; ++j)
+                    indices[i * times + j] = i;
+
+            bag.push.apply(bag, indices);
+            shuffle(bag);
+        }
+
+        function copy(arr) {
+            return arr.slice();
+        }
+
+        function shuffle(arr) {
+            for (let i = arr.length - 1; i > 0; --i) {
+                const j = (Math.random() * (i + 1)) | 0;
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+        }
+
+        function makeArray(value, width, height) {
+            const a = [];
+            for (let i = 0; i < height; ++i) {
+                let row = [];
+                for (let j = 0; j < width; ++j)
+                    row.push(value);
+                a.push(row)
+            }
+            return a;
+        }
+
+        function figures() {
+            return [
+                [[[1, 1, 0, 0], [1, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]],
+                [[[0, 1, 0, 0], [0, 1, 0, 0], [0, 1, 0, 0], [0, 1, 0, 0]], [[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]]],
+                [[[0, 1, 1, 0], [0, 1, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0]], [[0, 0, 0, 0], [1, 1, 1, 0], [0, 0, 1, 0], [0, 0, 0, 0]], [[0, 1, 0, 0], [0, 1, 0, 0], [1, 1, 0, 0], [0, 0, 0, 0]], [[1, 0, 0, 0], [1, 1, 1, 0], [0, 0, 0, 0], [0, 0, 0, 0]]],
+                [[[1, 1, 0, 0], [0, 1, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0]], [[0, 0, 1, 0], [1, 1, 1, 0], [0, 0, 0, 0], [0, 0, 0, 0]], [[0, 1, 0, 0], [0, 1, 0, 0], [0, 1, 1, 0], [0, 0, 0, 0]], [[0, 0, 0, 0], [1, 1, 1, 0], [1, 0, 0, 0], [0, 0, 0, 0]]],
+                [[[1, 0, 0, 0], [1, 1, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0]], [[0, 1, 1, 0], [1, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]],
+                [[[0, 1, 0, 0], [1, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 0]], [[1, 1, 0, 0], [0, 1, 1, 0], [0, 0, 0, 0], [0, 0, 0, 0]]],
+                [[[0, 1, 0, 0], [1, 1, 1, 0], [0, 0, 0, 0], [0, 0, 0, 0]], [[0, 1, 0, 0], [0, 1, 1, 0], [0, 1, 0, 0], [0, 0, 0, 0]], [[0, 0, 0, 0], [1, 1, 1, 0], [0, 1, 0, 0], [0, 0, 0, 0]], [[0, 1, 0, 0], [1, 1, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0]]]
+            ];
+        }
+
+        function solidify(current, pos, field, color, width) {
+            let rows = [];
+            for (let i = 0; i < figSize; ++i)
+            {
+                let marked = false;
+                for (let j = 0; j < figSize; ++j) {
+                    if (current[i][j] != 0) {
+                        field[pos[1] + i][pos[0] + j] = color;
+                        if(!marked){
+                            marked = true;
+                            rows.push(pos[1]+i);
+                        }
+                    }
+                }
+            }
+
+            rows = rows.filter(row=>field[row].every(cell=>cell!=0));
+            
+            rows.forEach(row=>field.splice(row, 1));
+
+            field.unshift.apply(field, makeArray(0, width, rows.length));
+        }
+
+        function getDropHeight(current, pos, field) {
+            const height = field.length;
+            let dropHeight = Infinity;
+
+            for (let j = 0; j < figSize; ++j) {
+                for (let i = figSize - 1; i >= 0; --i) {
+                    if (current[i][j] != 0) {
+                        let fig = i + pos[1];
+
+                        dropHeight = Math.min(height - fig - 1, dropHeight);
+
+                        for (let k = fig + 1; k < height; ++k) {
+                            if (field[k][j + pos[0]] != 0)
+                                dropHeight = Math.min(k - fig - 1, dropHeight);
+                        }
+
+                        break;
+                    }
+                }
+            }
+
+            return dropHeight;
+        }
+
+        function rotatedCopy(fig) {
+            let res = makeArray(0, figSize, figSize);
+
+            for (let i = 0; i < figSize; ++i)
+                for (let j = 0; j < figSize; ++j) {
+                    res[i][j] = fig[j][figSize - 1 - i];
+                }
+
+            return res;
+        }
+
+        function isValid(figure, pos, field, width, height) {
+            top: for (let i = 0; i < figSize; ++i)
+                for (let j = 0; j < figSize; ++j) {
+                    if (figure[i][j] != 0) {
+                        let nx = pos[0] + j;
+                        let ny = pos[1] + i;
+
+                        if (nx < 0 || ny < 0 || nx >= width || ny >= height || field[ny][nx] != 0) {
+                            return false;
+                        }
+                    }
+                }
+
+            return true;
+        }
+    </script>
+</body>
+
+</html>
