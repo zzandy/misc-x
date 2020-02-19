@@ -128,6 +128,9 @@
         const DOWN = 3;
         const DROP = 4;
         const ROTATE = 5;
+        const SHADOW = 6;
+        const PAUSE = 7;
+        const MOVE = 8;
 
         const figSize = 4;
 
@@ -140,22 +143,36 @@
 
             window.addEventListener('keydown', (e) => {
                 switch (e.keyCode) {
-                    case 65:
-                    case 37: input.push(LEFT);
-                        return;
-                    case 68:
-                    case 39: input.push(RIGHT);
-                        return;
-                    case 40:
-                    case 83:
+                    case 65: // a
+                    case 37: // LEFT
+                        input.push(LEFT);
+                        break;
+                    case 68: // d
+                    case 39: // RIGHT
+                        input.push(RIGHT);
+                        break;
+                    case 40: // DOWN
+                    case 83: // s
                         input.push(DOWN);
-                        return;
-                    case 13:
-                    case 32: input.push(DROP);
-                        return;
-                    case 38:
-                    case 87:
+                        break;
+                    case 13: // Enter
+                    case 32: // Space
+                        input.push(DROP);
+                        break;
+                    case 38: // UP
+                    case 87: // w
                         input.push(ROTATE);
+                        break;
+                    case 72: // h
+                        input.push(SHADOW)
+                        break;
+                    case 80: // p
+                        input.push(PAUSE);
+                        break;
+                    case 77: // m
+                    case 90: // z
+                        input.push(MOVE);
+                        break;
                 }
             })
 
@@ -180,7 +197,11 @@
                 gameOver: false,
                 burn: [],
                 burnWait: 0,
-                maxBurnWait: 200
+                maxBurnWait: 200,
+                shadowdepth: 0,
+                paused: false,
+                shadowEnabled: false,
+                moveAfterDrop: false
             };
         }
 
@@ -188,12 +209,15 @@
             let { bag, figs, width, height, speed, pos, input, current, field, color, gameOver, figure, rotation } = world;
 
             if (gameOver) return world;
+            if (world.paused && !input.includes(PAUSE)) return world;
 
             if (world.next == null) {
                 const id = []
                 world.next = draw(bag, figs, id);
                 world.nextColor = id[0] + 1;
             }
+
+            let reshadow = false;
 
             if (world.burn.length > 0 && (world.burnWait += delta) < world.maxBurnWait) {
                 return world;
@@ -203,12 +227,13 @@
                 field.unshift.apply(field, makeArray(0, width, world.burn.length));
                 world.burn.length = 0;
                 world.burnWait = 0;
+                reshadow = true;
             }
 
             if (world.current == null) {
                 rotation = world.rotation = 0;
-
                 pos = world.pos = [((width / 2) | 0) - 1, 0]
+                reshadow = true;
 
                 if (!isValid(world.next[rotation], pos, field, width, height)) {
                     world.gameOver = true;
@@ -230,24 +255,43 @@
             if (moveDown) world.wait -= speed;
 
             while ((command = input.shift()) !== undefined) {
-                if (command == ROTATE) {
-                    rotation = world.rotation = (rotation + figure.length - 1) % figure.length;
-                    const rotated = figure[rotation];
-                    if (isValid(rotated, pos, field, width, height))
+
+                if (command == MOVE) {
+                    world.moveAfterDrop = !world.moveAfterDrop;
+                }
+
+                else if (command == PAUSE) {
+                    world.paused = !world.paused;
+                }
+
+                else if (command == SHADOW) {
+                    world.shadowEnabled = !world.shadowEnabled;
+                }
+
+                else if (command == ROTATE) {
+                    let newrotation = world.rotation = (rotation + figure.length - 1) % figure.length;
+                    const rotated = figure[newrotation];
+                    if (isValid(rotated, pos, field, width, height)) {
                         current = world.current = rotated;
+                        reshadow = true;
+                    }
                 }
 
-                if (command == LEFT || command == RIGHT) {
+                else if (command == LEFT || command == RIGHT) {
                     const dx = command == LEFT ? -1 : 1;
-                    if (isValid(current, [pos[0] + dx, pos[1]], field, width, height))
+                    if (isValid(current, [pos[0] + dx, pos[1]], field, width, height)) {
                         pos = world.pos = [pos[0] + dx, pos[1]];
+                        reshadow = true;
+                    }
                 }
 
-                if (command == DOWN) {
+                else if (command == DOWN) {
                     if (command == DOWN) world.wait = 0;
 
-                    if (isValid(current, [pos[0], pos[1] + 1], field, width, height))
+                    if (isValid(current, [pos[0], pos[1] + 1], field, width, height)) {
                         pos = world.pos = [pos[0], pos[1] + 1];
+                        world.shadowdepth -= 1;
+                    }
                     else {
                         solidify(current, pos, field, color);
                         current = world.current = null;
@@ -256,22 +300,32 @@
                     }
                 }
 
-                if (command == DROP) {
-                    pos[1] += getDropHeight(current, pos, field);
+                else if (command == DROP) {
+                    const dh = getDropHeight(current, pos, field);
+                    pos[1] += dh;
 
-                    world.burn = solidify(current, pos, field, color, width);
-                    current = world.current = null;
+                    if (dh == 0 || !world.moveAfterDrop) {
+                        world.burn = solidify(current, pos, field, color, width);
+                        current = world.current = null;
+                        input.lenght = 0;
+                    }
 
                     world.wait = 0;
                     moveDown = false;
-                    input.lenght = 0;
+
                     break;
                 }
             }
 
+            if (reshadow && world.shadowEnabled) {
+                world.shadowdepth = getDropHeight(current, pos, field);
+            }
+
             if (moveDown) {
-                if (isValid(current, [pos[0], pos[1] + 1], field, width, height))
+                if (isValid(current, [pos[0], pos[1] + 1], field, width, height)) {
                     pos = world.pos = [pos[0], pos[1] + 1];
+                    world.shadowdepth -= 1;
+                }
                 else {
                     world.burn = solidify(current, pos, field, color, width);
                     current = world.current = null;
@@ -282,7 +336,7 @@
         }
 
         function render(world) {
-            let { ctx, pos, current, next, width, height, palette, color, nextColor, field } = world;
+            let { ctx, pos, current, next, width, height, palette, color, nextColor, field, shadowdepth } = world;
             ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
             const scale = 20;
@@ -291,22 +345,26 @@
             ctx.strokeRect(0, 0, width * scale, height * scale)
 
             // draw field
-            for (let i = 0; i < height; ++i){
+            for (let i = 0; i < height; ++i) {
                 const burning = world.burn.includes(i);
                 for (let j = 0; j < width; ++j)
                     if (field[i][j] != 0) {
                         ctx.fillStyle = burning ? palette[0] : palette[field[i][j]];
                         ctx.fillRect(j * scale, i * scale, scale - 1, scale - 1)
                     }
-                }
+            }
 
-            // draw current figure
+            // draw current figure and it's shadow
             if (current != null) {
                 ctx.fillStyle = palette[color];
                 for (let i = 0; i < figSize; ++i)
                     for (let j = 0; j < figSize; ++j) {
-                        if (current[i][j] != 0)
+                        if (current[i][j] != 0) {
+                            if (world.shadowEnabled)
+                                ctx.strokeRect((((pos[0] + j) * scale) | 0) + .5, (((pos[1] + i + shadowdepth) * scale) | 0) + .5, (scale | 0) - 2, (scale | 0) - 2)
+
                             ctx.fillRect((pos[0] + j) * scale, (pos[1] + i) * scale, scale - 1, scale - 1)
+                        }
                     }
             }
 
