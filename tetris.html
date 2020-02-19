@@ -188,12 +188,14 @@
                 width,
                 height,
                 wait: 0,
-                speed: 1000,
+                speed: 500,
+                speedChange: 10, // one point per X figures
+                figuresDrawn: 0,
                 input,
                 field: makeArray(0, width, height),
                 color: 1,
                 nextColor: 1,
-                palette: ['white', '#ff4365', '#00d9c0', '#9cfc97', '#e3170a', '#f7b32b', '#077187', '#f3752b'],
+                palette: ['white', '#ff4365', '#00d9c0', '#4cfc97', '#e3170a', '#f7b32b', '#077187', '#f3752b'],
                 gameOver: false,
                 burn: [],
                 burnWait: 0,
@@ -201,7 +203,8 @@
                 shadowdepth: 0,
                 paused: false,
                 shadowEnabled: false,
-                moveAfterDrop: false
+                moveAfterDrop: false,
+                score: 0
             };
         }
 
@@ -241,6 +244,9 @@
 
                     return world;
                 }
+
+                world.figuresDrawn++;
+                world.speed -= 1 / world.speedChange;
 
                 figure = world.figure = world.next;
                 current = world.current = world.next[rotation];
@@ -294,8 +300,9 @@
                     }
                     else {
                         solidify(current, pos, field, color);
+                        world.score+=score(world.burn.length)
                         current = world.current = null;
-                        input.lenght = 0;
+                        input.length = 0;
                         break;
                     }
                 }
@@ -303,11 +310,14 @@
                 else if (command == DROP) {
                     const dh = getDropHeight(current, pos, field);
                     pos[1] += dh;
+                    world.score += dh*10;
 
                     if (dh == 0 || !world.moveAfterDrop) {
                         world.burn = solidify(current, pos, field, color, width);
+
+                        world.score+=score(world.burn.length)
                         current = world.current = null;
-                        input.lenght = 0;
+                        input.length = 0;
                     }
 
                     world.wait = 0;
@@ -377,6 +387,9 @@
                             ctx.fillRect((j + width) * scale, (i) * scale, scale - 1, scale - 1)
                     }
             }
+
+            ctx.fillText(world.score, width * scale, figSize * scale);
+            ctx.fillText(((500 - world.speed) / world.speedChange).toFixed(1), width * scale, figSize * scale + 10)
         }
 
         function draw(bag, figs, id) {
@@ -426,13 +439,13 @@
 
         function figures() {
             return [
-                [[[1, 1, 0, 0], [1, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]],
-                [[[0, 1, 0, 0], [0, 1, 0, 0], [0, 1, 0, 0], [0, 1, 0, 0]], [[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]]],
-                [[[0, 1, 1, 0], [0, 1, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0]], [[0, 0, 0, 0], [1, 1, 1, 0], [0, 0, 1, 0], [0, 0, 0, 0]], [[0, 1, 0, 0], [0, 1, 0, 0], [1, 1, 0, 0], [0, 0, 0, 0]], [[1, 0, 0, 0], [1, 1, 1, 0], [0, 0, 0, 0], [0, 0, 0, 0]]],
-                [[[1, 1, 0, 0], [0, 1, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0]], [[0, 0, 1, 0], [1, 1, 1, 0], [0, 0, 0, 0], [0, 0, 0, 0]], [[0, 1, 0, 0], [0, 1, 0, 0], [0, 1, 1, 0], [0, 0, 0, 0]], [[0, 0, 0, 0], [1, 1, 1, 0], [1, 0, 0, 0], [0, 0, 0, 0]]],
-                [[[1, 0, 0, 0], [1, 1, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0]], [[0, 1, 1, 0], [1, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]],
-                [[[0, 1, 0, 0], [1, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 0]], [[1, 1, 0, 0], [0, 1, 1, 0], [0, 0, 0, 0], [0, 0, 0, 0]]],
-                [[[0, 1, 0, 0], [1, 1, 1, 0], [0, 0, 0, 0], [0, 0, 0, 0]], [[0, 1, 0, 0], [0, 1, 1, 0], [0, 1, 0, 0], [0, 0, 0, 0]], [[0, 0, 0, 0], [1, 1, 1, 0], [0, 1, 0, 0], [0, 0, 0, 0]], [[0, 1, 0, 0], [1, 1, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0]]]
+             /*Box  */[[[0, 0, 0, 0], [0, 1, 1, 0], [0, 1, 1, 0], [0, 0, 0, 0]]],
+             /*Stick*/[[[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]], [[0, 1, 0, 0], [0, 1, 0, 0], [0, 1, 0, 0], [0, 1, 0, 0]]],
+             /*Jay  */[[[0, 0, 0, 0], [1, 1, 1, 0], [0, 0, 1, 0], [0, 0, 0, 0]], [[0, 1, 0, 0], [0, 1, 0, 0], [1, 1, 0, 0], [0, 0, 0, 0]], [[1, 0, 0, 0], [1, 1, 1, 0], [0, 0, 0, 0], [0, 0, 0, 0]], [[0, 1, 1, 0], [0, 1, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0]]],
+             /*L    */[[[0, 0, 0, 0], [1, 1, 1, 0], [1, 0, 0, 0], [0, 0, 0, 0]], [[1, 1, 0, 0], [0, 1, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0]], [[0, 0, 1, 0], [1, 1, 1, 0], [0, 0, 0, 0], [0, 0, 0, 0]], [[0, 1, 0, 0], [0, 1, 0, 0], [0, 1, 1, 0], [0, 0, 0, 0]]],
+             /*Zed  */[[[0, 0, 0, 0], [0, 1, 1, 0], [1, 1, 0, 0], [0, 0, 0, 0]], [[0, 0, 0, 0], [1, 0, 0, 0], [1, 1, 0, 0], [0, 1, 0, 0]]],
+             /*S    */[[[0, 0, 0, 0], [1, 1, 0, 0], [0, 1, 1, 0], [0, 0, 0, 0]], [[0, 0, 0, 0], [0, 1, 0, 0], [1, 1, 0, 0], [1, 0, 0, 0]]],
+             /*T    */[[[0, 0, 0, 0], [1, 1, 1, 0], [0, 1, 0, 0], [0, 0, 0, 0]], [[0, 1, 0, 0], [1, 1, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0]], [[0, 1, 0, 0], [1, 1, 1, 0], [0, 0, 0, 0], [0, 0, 0, 0]], [[0, 1, 0, 0], [0, 1, 1, 0], [0, 1, 0, 0], [0, 0, 0, 0]]]
             ];
         }
 
@@ -494,17 +507,27 @@
         function isValid(figure, pos, field, width, height) {
             top: for (let i = 0; i < figSize; ++i)
                 for (let j = 0; j < figSize; ++j) {
-                    if (figure[i][j] != 0) {
+                    let ny = pos[1] + i;
+                    if (ny >= 0 && figure[i][j] != 0) {
                         let nx = pos[0] + j;
-                        let ny = pos[1] + i;
 
-                        if (nx < 0 || ny < 0 || nx >= width || ny >= height || field[ny][nx] != 0) {
+                        if (nx < 0 || nx >= width || ny >= height || field[ny][nx] != 0) {
                             return false;
                         }
                     }
                 }
 
             return true;
+        }
+
+        function score(rows){
+            switch (rows){
+                case 1: return 10;
+                case 2: return 25;
+                case 3: return 40;
+                case 4: return 55;
+                default: return 0;
+            }
         }
     </script>
 </body>
