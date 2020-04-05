@@ -12,7 +12,7 @@ function rnd<T>(min?: number | T[], max?: number): number | T {
     if (min instanceof Array)
         return (<T[]>min)[Math.floor(min.length * Math.random())];
 
-    throw new Error('invalid set of arguments to rnd');
+    return Math.random();
 }
 
 function array<TValue>(w: number, h: number, fn: (i: number, j: number) => TValue): TValue[][] {
@@ -26,4 +26,11 @@ function array<TValue>(w: number, h: number, fn: (i: number, j: number) => TValu
     return res;
 }
 
-export { rnd, array };
+function shuffle<TValue>(a: TValue[]) {
+    for (let i = a.length - 1; i > 0; --i) {
+        const idx = rnd(i + 1);
+        [a[i], a[idx]] = [a[idx], a[i]];
+    }
+}
+
+export { rnd, array, shuffle };
