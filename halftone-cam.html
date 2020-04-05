@@ -52,6 +52,22 @@
             return 0.2126 * d[i] / 256 + 0.7152 * d[i + 1] / 256 + 0.0722 * d[i + 2] / 256;
         }
 
+        function lumstar(d, i) {
+            function srgbtolin(v) {
+                v = v / 255;
+
+                return v <= 0.04045
+                    ? v / 12.92
+                    : Math.pow((v + 0.055) / 1.055, 2.4);
+            }
+
+            const y = srgbtolin(d[i]) * .2126 + srgbtolin(d[i + 1] * .7152) + srgbtolin(d[i + 2]) * .0722;
+
+            return (y <= 216 / 24389
+                ? y * 24389 / 27
+                : Math.pow(y, 1 / 3) * 116 - 16)/100;
+        }
+
         function makeKernel(kernelSize) {
 
             var kernel = [];
@@ -76,7 +92,7 @@
                 var ky = (i / kernelWidth) | 0;
                 var dataPoint = ((y + ky) * dataWidth + x + kx) * 4;
 
-                var val = valmax[0] + weight * lum(data, dataPoint);
+                var val = valmax[0] + weight * lumstar(data, dataPoint);
                 var max = valmax[1] + weight;
 
                 return [val, max];
