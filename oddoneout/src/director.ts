@@ -31,13 +31,12 @@ function pick<T>(options: T[], n: number, oddone: boolean, alldifferent: boolean
 
 const minsize = 2;
 const maxsize = 27;
-const countdown = 5;
 
 export class Director {
 
     private _shapes: IDrawable[] | null = null;
     private size: number = 10;
-    private countdown: number = countdown * 3;
+    private isregen: boolean = false;
 
     private makeShapes() {
 
@@ -66,16 +65,22 @@ export class Director {
     }
 
     public get shapes() {
-        if (this._shapes == null || this.countdown > 0) {
+        if (this._shapes == null || this.isregen) {
             this._shapes = this.makeShapes();
-            this.countdown--;
         }
 
         return this._shapes;
     }
 
+    public startregen() {
+        this.isregen = true;
+    }
+
+    public stopregen() {
+        this.isregen = false;
+    }
+
     public regen() {
-        this.countdown = countdown;
         this._shapes = null;
     }
 

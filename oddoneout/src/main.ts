@@ -16,8 +16,10 @@ function init(): World {
         dir: new Director()
     };
 
-    addEventListener('keydown', () => world.dir.regen());
-    addEventListener('mousedown', () => world.dir.regen());
+    addEventListener('keydown', () => world.dir.startregen());
+    addEventListener('keyup', () => world.dir.stopregen());
+    addEventListener('mousedown', () => world.dir.startregen());
+    addEventListener('mouseup', () => world.dir.stopregen());
 
     addEventListener("wheel", (e) => { if (e.deltaY < 0) world.dir.grow(); else world.dir.shrink(); });
 
