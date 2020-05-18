@@ -204,7 +204,7 @@
                 field: makeArray(0, width, height),
                 color: 1,
                 nextColor: 1,
-                palette: ['white', '#ff4365', '#00d9c0', '#4cfc97', '#e3170a', '#f7b32b', '#077187', '#f3752b'],
+                palette: ['#ffffff', '#ff4365', '#00d9c0', '#4cfc97', '#e3170a', '#f7b32b', '#077187', '#f3752b'],
                 gameOver: false,
                 burn: [],
                 burnWait: 0,
@@ -249,8 +249,6 @@
 
                 if (!isValid(world.next[rotation], pos, field, width, height)) {
                     world.gameOver = true;
-                    console.log('Game Over')
-
                     return world;
                 }
 
@@ -270,6 +268,9 @@
             if (moveDown) world.wait -= speed;
 
             while ((command = input.shift()) !== undefined) {
+                if (world.paused && command != PAUSE) continue;
+
+
                 if (command == TOGGLEROTATE) {
                     world.rotateCw = !world.rotateCw;
                 }
@@ -355,7 +356,7 @@
         }
 
         function render(world) {
-            let { ctx, pos, current, next, width, height, palette, color, nextColor, field, shadowdepth, paused, shadowEnabled, rotateCw } = world;
+            let { ctx, pos, current, next, width, height, palette, color, nextColor, field, shadowdepth, paused, shadowEnabled, rotateCw, gameOver } = world;
             ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
             const scale = 24;
@@ -433,6 +434,26 @@
             ctx.fillText('p - ' + (paused ? 'unpause' : 'pause'), ox, sy - line * 2);
             ctx.fillText('h - turn shadow ' + (shadowEnabled ? 'off' : 'on'), ox, sy - line);
             ctx.fillText('r - rotate ' + (rotateCw ? 'clockwise' : 'counter clockwise'), ox, sy);
+
+
+            if (paused) {
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = '64px Verdana';
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.fillText('\u23F8Paused', 11, sy / 2 + 2)
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.fillText('\u23F8Paused', 10, sy / 2)
+            }
+
+            if (gameOver) {
+                ctx.fillStyle = '#ffffff';
+                ctx.font = '64px Verdana';
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.fillText('Game Over', 3, sy / 2 + 2)
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.fillText('Game Over', 2, sy / 2)
+            }
 
             ctx.restore();
         }
