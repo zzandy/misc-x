@@ -143,6 +143,7 @@
             const input = [];
 
             window.addEventListener('keydown', (e) => {
+                let len = input.length;
                 switch (e.keyCode) {
                     case 65: // a
                     case 37: // LEFT
@@ -170,6 +171,7 @@
                     case 80: // p
                         input.push(PAUSE);
                         break;
+                    case 09: //tab
                     case 77: // m
                     case 90: // z
                         input.push(MOVE);
@@ -178,7 +180,10 @@
                         input.push(TOGGLEROTATE);
                         break;
                 }
-            });
+
+                if (input.length != len)
+                    e.preventDefault();
+            }, true);
 
             return {
                 ctx: fullscreenCanvas(),
@@ -207,7 +212,6 @@
                 shadowdepth: 0,
                 paused: false,
                 shadowEnabled: false,
-                moveAfterDrop: false,
                 score: 0,
                 rotateCw: true
             };
@@ -266,10 +270,7 @@
             if (moveDown) world.wait -= speed;
 
             while ((command = input.shift()) !== undefined) {
-                if (command == MOVE) {
-                    world.moveAfterDrop = !world.moveAfterDrop;
-                }
-                else if (command == TOGGLEROTATE) {
+                if (command == TOGGLEROTATE) {
                     world.rotateCw = !world.rotateCw;
                 }
 
@@ -306,7 +307,7 @@
                         world.shadowdepth -= 1;
                     }
                     else {
-                        solidify(current, pos, field, color);
+                        world.burn = solidify(current, pos, field, color);
                         world.score += score(world.burn.length)
                         current = world.current = null;
                         input.length = 0;
@@ -314,12 +315,12 @@
                     }
                 }
 
-                else if (command == DROP) {
+                else if (command == DROP || command == MOVE) {
                     const dh = getDropHeight(current, pos, field);
                     pos[1] += dh;
                     world.score += dh * 10;
 
-                    if (dh == 0 || !world.moveAfterDrop) {
+                    if (dh == 0 || command != MOVE) {
                         world.burn = solidify(current, pos, field, color, width);
 
                         world.score += score(world.burn.length)
@@ -345,6 +346,7 @@
                 }
                 else {
                     world.burn = solidify(current, pos, field, color, width);
+                    world.score += score(world.burn.length);
                     current = world.current = null;
                 }
             }
@@ -353,13 +355,19 @@
         }
 
         function render(world) {
-            let { ctx, pos, current, next, width, height, palette, color, nextColor, field, shadowdepth } = world;
+            let { ctx, pos, current, next, width, height, palette, color, nextColor, field, shadowdepth, paused, shadowEnabled, rotateCw } = world;
             ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
-            const scale = 20;
+            const scale = 24;
 
+            const sx = width * scale + figSize * scale + scale;
+            const sy = height * scale;
+
+            ctx.save();
+            ctx.translate(((ctx.canvas.width - sx) / 2) | 0, ((ctx.canvas.height - sy) / 5) | 0);
             ctx.strokeStyle = 'silver';
-            ctx.strokeRect(0, 0, width * scale, height * scale)
+
+            ctx.strokeRect(-1.5, - 1.5, (width * scale) | 0 + 2, (height * scale) | 0 + 2)
 
             // draw field
             for (let i = 0; i < height; ++i) {
@@ -377,7 +385,7 @@
                 for (let i = 0; i < figSize; ++i)
                     for (let j = 0; j < figSize; ++j) {
                         if (current[i][j] != 0) {
-                            if (world.shadowEnabled)
+                            if (shadowEnabled)
                                 ctx.strokeRect((((pos[0] + j) * scale) | 0) + .5, (((pos[1] + i + shadowdepth) * scale) | 0) + .5, (scale | 0) - 2, (scale | 0) - 2)
 
                             ctx.fillRect((pos[0] + j) * scale, (pos[1] + i) * scale, scale - 1, scale - 1)
@@ -391,7 +399,7 @@
                 for (let i = 0; i < figSize; ++i)
                     for (let j = 0; j < figSize; ++j) {
                         if (next[0][i][j] != 0)
-                            ctx.fillRect((j + width+1) * scale, (i) * scale, scale - 1, scale - 1)
+                            ctx.fillRect((j + width + 1) * scale, (i) * scale, scale - 1, scale - 1)
                     }
             }
 
@@ -402,14 +410,31 @@
 
             ctx.fillStyle = 'silver'
             ctx.font = '10px Verdana';
+            ctx.fillText('Next:', ox, 10);
             ctx.fillText('Score:', ox, oy);
             ctx.font = '30px Verdana';
-            ctx.fillText(world.score, ox, oy+30);
+            ctx.fillText(world.score, ox, oy + 30);
 
             ctx.font = '10px Verdana';
-            ctx.fillText('Speed:', ox, oy+50);
+            ctx.fillText('Speed:', ox, oy + 50);
             ctx.font = '30px Verdana';
-            ctx.fillText(speed, ox, oy+80);
+            ctx.fillText(speed, ox, oy + 80);
+
+            // draw help;
+            ctx.font = '10px Verdana';
+
+            const line = 12;
+
+            ctx.fillText('wasd or arrows', ox, sy - line * 6.8);
+            ctx.fillText('to move and rotate', ox, sy - line * 5.8);
+            ctx.fillText('space to drop', ox, sy - line * 4.4);
+            ctx.fillText('tab to drop with move', ox, sy - 3.3 * line);
+
+            ctx.fillText('p - ' + (paused ? 'unpause' : 'pause'), ox, sy - line * 2);
+            ctx.fillText('h - turn shadow ' + (shadowEnabled ? 'off' : 'on'), ox, sy - line);
+            ctx.fillText('r - rotate ' + (rotateCw ? 'clockwise' : 'counter clockwise'), ox, sy);
+
+            ctx.restore();
         }
 
         function draw(bag, figs, id) {
