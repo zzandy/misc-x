@@ -109,7 +109,7 @@
                     state = update(state, delta);
                 }
 
-                if (shouldRender){
+                if (shouldRender) {
                     render(state);
                 }
 
@@ -266,9 +266,6 @@
             if (moveDown) world.wait -= speed;
 
             while ((command = input.shift()) !== undefined) {
-
-
-
                 if (command == MOVE) {
                     world.moveAfterDrop = !world.moveAfterDrop;
                 }
@@ -394,12 +391,25 @@
                 for (let i = 0; i < figSize; ++i)
                     for (let j = 0; j < figSize; ++j) {
                         if (next[0][i][j] != 0)
-                            ctx.fillRect((j + width) * scale, (i) * scale, scale - 1, scale - 1)
+                            ctx.fillRect((j + width+1) * scale, (i) * scale, scale - 1, scale - 1)
                     }
             }
 
-            ctx.fillText(world.score, width * scale, figSize * scale);
-            ctx.fillText(((500 - world.speed) / world.speedChange).toFixed(1), width * scale, figSize * scale + 10)
+            // draw score and speed
+            const ox = (width + .2) * scale + 3;
+            const oy = (figSize + .4) * scale + 3;
+            const speed = ((500 - world.speed) / world.speedChange).toFixed(1);
+
+            ctx.fillStyle = 'silver'
+            ctx.font = '10px Verdana';
+            ctx.fillText('Score:', ox, oy);
+            ctx.font = '30px Verdana';
+            ctx.fillText(world.score, ox, oy+30);
+
+            ctx.font = '10px Verdana';
+            ctx.fillText('Speed:', ox, oy+50);
+            ctx.font = '30px Verdana';
+            ctx.fillText(speed, ox, oy+80);
         }
 
         function draw(bag, figs, id) {
