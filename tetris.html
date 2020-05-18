@@ -93,13 +93,12 @@
         function loop(framerate, init, update, render) {
             let state = init();
 
-            let then = Date.now();
+            let then = 0;
+            let time = 0;
             let delta = 1000 / framerate;
 
-            let tick = function () {
-
-                let now = Date.now();
-                let time = now - then;
+            let tick = function (now) {
+                time += now - then;
                 then = now;
                 let shouldRender = false;
 
@@ -110,8 +109,9 @@
                     state = update(state, delta);
                 }
 
-                if (shouldRender)
+                if (shouldRender){
                     render(state);
+                }
 
                 requestAnimationFrame(tick);
             }
@@ -175,9 +175,10 @@
                         input.push(MOVE);
                         break;
                     case 82: // r
-                        input.push(TOGGLEROTATE)
+                        input.push(TOGGLEROTATE);
+                        break;
                 }
-            })
+            });
 
             return {
                 ctx: fullscreenCanvas(),
@@ -265,6 +266,8 @@
             if (moveDown) world.wait -= speed;
 
             while ((command = input.shift()) !== undefined) {
+
+
 
                 if (command == MOVE) {
                     world.moveAfterDrop = !world.moveAfterDrop;
