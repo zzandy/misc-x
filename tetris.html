@@ -222,17 +222,47 @@
             let { bag, figs, width, height, speed, pos, input, current, field, color, gameOver, figure, rotation } = world;
 
             world.new = false;
-
+            
             if (gameOver) return world;
-            if (world.paused && !input.includes(PAUSE)) return world;
+
+            let reshadow = false;
+
+            if (world.paused) {
+                while ((command = input.shift()) !== undefined) {
+
+                    if (command == TOGGLEROTATE) {
+                        world.rotateCw = !world.rotateCw;
+                        world.new = true;
+                    }
+
+                    else if (command == PAUSE) {
+                        world.paused = !world.paused;
+                        world.new = true;
+                        input.length = 0;
+                        break;
+                    }
+
+                    else if (command == SHADOW) {
+                        world.shadowEnabled = !world.shadowEnabled;
+                        reshadow = world.shadowEnabled;
+                        world.new = true;
+                    }
+                }
+
+                if (reshadow && world.shadowEnabled) {
+                    world.shadowdepth = getDropHeight(current, pos, field);
+                    world.new = true;
+                }
+
+                return world;
+            }
 
             if (world.next == null) {
                 const id = []
                 world.next = draw(bag, figs, id);
                 world.nextColor = id[0] + 1;
+                world.new = true;
             }
-
-            let reshadow = false;
 
             if (world.burn.length > 0 && (world.burnWait += delta) < world.maxBurnWait) {
                 return world;
@@ -267,18 +297,16 @@
                 const id = []
                 world.next = draw(bag, figs, id);
                 world.nextColor = id[0] + 1;
-
             }
 
             let moveDown = (world.wait += delta) > speed;
+
             if (moveDown) {
                 world.wait -= speed;
                 world.new = true
             }
 
             while ((command = input.shift()) !== undefined) {
-                if (world.paused && command != PAUSE) continue;
-
                 if (command == TOGGLEROTATE) {
                     world.rotateCw = !world.rotateCw;
                     world.new = true;
@@ -287,6 +315,7 @@
                 else if (command == PAUSE) {
                     world.paused = !world.paused;
                     world.new = true;
+                    input.length = 0;
                 }
 
                 else if (command == SHADOW) {
@@ -376,17 +405,11 @@
             return world;
         }
 
-        var x = 0;
-
         function render(world) {
             if (!world.new) return;
 
             let { ctx, pos, current, next, width, height, palette, color, nextColor, field, shadowdepth, paused, shadowEnabled, rotateCw, gameOver } = world;
             ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-
-            x = (++x) % 10
-            ctx.fillStyle = 'silver';
-            ctx.fillRect(10 + x * 10, 10, 10, 20);
 
             const scale = 24;
 
