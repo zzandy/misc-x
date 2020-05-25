@@ -89,7 +89,6 @@
 
     <!-- Render loop -->
     <script type="text/javascript">
-
         function loop(framerate, init, update, render) {
             let state = init();
 
@@ -98,14 +97,13 @@
             let delta = 1000 / framerate;
 
             let tick = function (now) {
-                time += now - then;
+                let shouldRender = time==0;
+                time += then == 0 ? 0 : now - then;
                 then = now;
-                let shouldRender = false;
 
                 while (time > delta) {
                     time -= delta;
                     shouldRender = true;
-
                     state = update(state, delta);
                 }
 
@@ -139,8 +137,6 @@
             const height = 21;
 
         loop(60, init, update, render);
-
-        
 
         function init() {
             const input = [];
