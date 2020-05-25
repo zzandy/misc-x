@@ -135,11 +135,14 @@
 
         const figSize = 4;
 
+        const width = 9;
+            const height = 21;
+
         loop(60, init, update, render);
 
+        
+
         function init() {
-            const width = 9;
-            const height = 21;
             const input = [];
 
             window.addEventListener('keydown', (e) => {
@@ -222,8 +225,21 @@
             let { bag, figs, width, height, speed, pos, input, current, field, color, gameOver, figure, rotation } = world;
 
             world.new = false;
-            
-            if (gameOver) return world;
+
+            if (gameOver) {
+                if (input.includes(DROP)) {
+                    input.length=0;
+                    world.gameOver = false;
+                    world.score = 0;
+                    world.bag = [];
+                    world.current = world.next = null;
+                    world.field = makeArray(0, width, height);
+                    world.speed=500;
+                    world.new = true;
+                }
+
+                return world;
+            }
 
             let reshadow = false;
 
@@ -437,11 +453,14 @@
                 ctx.fillStyle = palette[color];
                 for (let i = 0; i < figSize; ++i)
                     for (let j = 0; j < figSize; ++j) {
+                        let x = ((pos[0] + j) * scale) | 0;
+                        let y = ((pos[1] + i) * scale) | 0;
+
                         if (current[i][j] != 0) {
                             if (shadowEnabled)
-                                ctx.strokeRect((((pos[0] + j) * scale) | 0) + .5, (((pos[1] + i + shadowdepth) * scale) | 0) + .5, (scale | 0) - 2, (scale | 0) - 2)
+                                ctx.strokeRect(x + 1.5, y + ((shadowdepth * scale) | 0) + 1.5, (scale | 0) - 4, (scale | 0) - 4)
 
-                            ctx.fillRect((pos[0] + j) * scale, (pos[1] + i) * scale, scale - 1, scale - 1)
+                            ctx.fillRect(x, y, (scale | 0) - 1, (scale | 0) - 1);
                         }
                     }
             }
@@ -487,9 +506,7 @@
             ctx.fillText('h - turn shadow ' + (shadowEnabled ? 'off' : 'on'), ox, sy - line);
             ctx.fillText('r - rotate ' + (rotateCw ? 'clockwise' : 'counter clockwise'), ox, sy);
 
-
             if (paused) {
-
                 ctx.fillStyle = '#ffffff';
                 ctx.font = '64px Verdana';
                 ctx.globalCompositeOperation = 'destination-out';
@@ -500,11 +517,21 @@
 
             if (gameOver) {
                 ctx.fillStyle = '#ffffff';
-                ctx.font = '64px Verdana';
                 ctx.globalCompositeOperation = 'destination-out';
+
+                ctx.font = '64px Verdana';
                 ctx.fillText('Game Over', 3, sy / 2 + 2)
+
+                ctx.font = '12px Verdana';
+                ctx.fillText('space to restart', 130.5, sy / 2 + 16)
+
                 ctx.globalCompositeOperation = 'source-over';
+
+                ctx.font = '64px Verdana';
                 ctx.fillText('Game Over', 2, sy / 2)
+
+                ctx.font = '12px Verdana';
+                ctx.fillText('space to restart', 130, sy / 2 + 15)
             }
 
             ctx.restore();
