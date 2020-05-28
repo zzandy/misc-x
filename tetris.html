@@ -146,7 +146,17 @@
                 ? 8 + (8 - level) * 5
                 : level > 28
                     ? 1
-                    : (20-(level - 8)) / 4+2)|0)*frame*2;
+                    : (20 - (level - 8)) / 4 + 2) | 0) * frame * 2;
+        }
+
+        function savescore(score, level) {
+            const scores = JSON.parse(localStorage.getItem('scores') || '[]');
+
+            scores.push([score, level]);
+            scores.sort((a, b) => b[0] - a[0]);
+            scores.splice(10);
+
+            localStorage.setItem('scores', JSON.stringify(scores));
         }
 
         function init() {
@@ -245,7 +255,7 @@
                     world.current = world.next = null;
                     world.field = makeArray(0, width, height);
                     world.level = 0;
-                    wolrd.wait = 0;
+                    world.wait = 0;
                     world.new = true;
                     world.linesCleared = 0;
                     world.linesClearedInLevel = 0;
@@ -315,6 +325,7 @@
 
                 if (!isValid(world.next[rotation], pos, field, width, height)) {
                     world.gameOver = true;
+                    savescore(world.score, world.level);
                     return world;
                 }
 
@@ -384,7 +395,7 @@
                         world.burn = solidify(current, pos, field, color);
                         world.linesCleared += world.burn.length;
                         world.linesClearedInLevel += world.burn.length;
-                        world.score += (world.level+1)*score(world.burn.length)
+                        world.score += (world.level + 1) * score(world.burn.length)
                         current = world.current = null;
                         input.length = 0;
                         break;
@@ -396,13 +407,13 @@
                 else if (command == DROP || command == MOVE) {
                     const dh = getDropHeight(current, pos, field);
                     pos[1] += dh;
-                    world.score += dh * 10 * (world.level+2)/2;
+                    world.score += dh * 10 * (world.level + 2) / 2;
 
                     if (dh == 0 || command != MOVE) {
                         world.burn = solidify(current, pos, field, color, width);
                         world.linesCleared += world.burn.length;
                         world.linesClearedInLevel += world.burn.length;
-                        world.score += (world.level+1)*score(world.burn.length)
+                        world.score += (world.level + 1) * score(world.burn.length)
                         current = world.current = null;
                         input.length = 0;
                     }
@@ -531,32 +542,54 @@
             if (paused) {
                 ctx.fillStyle = '#ffffff';
                 ctx.font = '64px Verdana';
-                ctx.globalCompositeOperation = 'destination-out';
-                ctx.fillText('\u23F8Paused', 11, sy / 2 + 2)
-                ctx.globalCompositeOperation = 'source-over';
-                ctx.fillText('\u23F8Paused', 10, sy / 2)
+                text(ctx, '\u23F8Paused', 10, sy / 2, 1, 2);
             }
 
             if (gameOver) {
                 ctx.fillStyle = '#ffffff';
                 ctx.globalCompositeOperation = 'destination-out';
 
-                ctx.font = '64px Verdana';
-                ctx.fillText('Game Over', 3, sy / 2 + 2)
-
-                ctx.font = '12px Verdana';
-                ctx.fillText('space to restart', 130.5, sy / 2 + 16)
-
-                ctx.globalCompositeOperation = 'source-over';
+                const oy = sy / 4;
 
                 ctx.font = '64px Verdana';
-                ctx.fillText('Game Over', 2, sy / 2)
+                text(ctx, "Game Over", 3, oy, 1, 2);
 
                 ctx.font = '12px Verdana';
-                ctx.fillText('space to restart', 130, sy / 2 + 15)
+                text(ctx, 'space to restart', 130, oy + 16, .5, 1);
+
+                const scores = JSON.parse(localStorage.getItem('scores') || '[]');
+
+                let row = 0;
+                let found = false;
+                let pref = '';
+                let suff = '';
+
+                let w = ctx.measureText('Score').width;
+                text(ctx, 'Score   Level', sx / 2 - w + 5, oy + 35, .5, 1);
+                for (let score of scores) {
+                    if (!found && score[0] == world.score) {
+                        pref = '\u25B6 ';
+                        suff = ' \u25C0';
+                        found = true;
+                    }
+                    else {
+                        pref = suff = '';
+                        ctx.fillStyle = '#ffffff';
+                    }
+
+                    let w = ctx.measureText(pref + score[0]).width;
+                    text(ctx, pref + score[0] + '   ' + score[1] + suff, sx / 2 - w + 5, oy + 50 + 15 * (row++), .5, 1);
+                }
             }
 
             ctx.restore();
+        }
+
+        function text(ctx, txt, x, y, dx, dy) {
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.fillText(txt, x + dx, y + dy);
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.fillText(txt, x, y);
         }
 
         function draw(bag, figs, id) {
