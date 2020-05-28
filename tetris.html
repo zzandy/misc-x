@@ -547,7 +547,6 @@
 
             if (gameOver) {
                 ctx.fillStyle = '#ffffff';
-                ctx.globalCompositeOperation = 'destination-out';
 
                 const oy = sy / 4;
 
@@ -564,7 +563,16 @@
                 let pref = '';
                 let suff = '';
 
-                let w = ctx.measureText('Score').width;
+                ctx.font = '14px Verdana';
+
+                let w = ctx.measureText(scores[0][0]).width;
+
+                ctx.fillStyle = 'rgba(0,0,0,.5)';
+                ctx.fillRect(sx / 2 - w, oy + 35, w * 2, 17 * (scores.length + 1));
+
+                ctx.fillStyle = '#ffffff';
+
+                w = ctx.measureText('Score').width;
                 text(ctx, 'Score   Level', sx / 2 - w + 5, oy + 35, .5, 1);
                 for (let score of scores) {
                     if (!found && score[0] == world.score) {
@@ -578,7 +586,7 @@
                     }
 
                     let w = ctx.measureText(pref + score[0]).width;
-                    text(ctx, pref + score[0] + '   ' + score[1] + suff, sx / 2 - w + 5, oy + 50 + 15 * (row++), .5, 1);
+                    text(ctx, pref + score[0] + '   ' + score[1] + suff, sx / 2 - w + 5, oy + 55 + 17 * (row++), .5, 1);
                 }
             }
 
