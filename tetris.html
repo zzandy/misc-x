@@ -97,7 +97,7 @@
             let delta = 1000 / framerate;
 
             let tick = function (now) {
-                let shouldRender = time==0;
+                let shouldRender = time == 0;
                 time += then == 0 ? 0 : now - then;
                 then = now;
 
@@ -134,9 +134,20 @@
         const figSize = 4;
 
         const width = 9;
-            const height = 21;
+        const height = 21;
 
-        loop(60, init, update, render);
+        const fps = 60;
+        const frame = 1000 / fps;
+
+        loop(fps, init, update, render);
+
+        function getDropDelta(level) {
+            return ((level <= 8
+                ? 8 + (8 - level) * 5
+                : level > 28
+                    ? 1
+                    : (20-(level - 8)) / 4+2)|0)*frame*2;
+        }
 
         function init() {
             const input = [];
@@ -196,8 +207,11 @@
                 width,
                 height,
                 wait: 0,
-                speed: 500,
-                speedChange: 10, // one point per X figures
+                level: 0,
+                linesPerLevel: 12,
+                dropDelta: getDropDelta(0),
+                linesCleared: 0,
+                linesClearedInLevel: 0,
                 figuresDrawn: 0,
                 input,
                 field: makeArray(0, width, height),
@@ -218,20 +232,25 @@
         }
 
         function update(world, delta) {
-            let { bag, figs, width, height, speed, pos, input, current, field, color, gameOver, figure, rotation } = world;
+            let { bag, figs, width, height, dropDelta, pos, input, current, field, color, gameOver, figure, rotation } = world;
 
             world.new = false;
 
             if (gameOver) {
                 if (input.includes(DROP)) {
-                    input.length=0;
+                    input.length = 0;
                     world.gameOver = false;
                     world.score = 0;
                     world.bag = [];
                     world.current = world.next = null;
                     world.field = makeArray(0, width, height);
-                    world.speed=500;
+                    world.level = 0;
+                    wolrd.wait = 0;
                     world.new = true;
+                    world.linesCleared = 0;
+                    world.linesClearedInLevel = 0;
+                    world.figuresDrawn = 0;
+                    world.dropDelta = getDropDelta(0);
                 }
 
                 return world;
@@ -247,7 +266,7 @@
                         world.new = true;
                     }
 
-                    else if (command == PAUSE) {
+                    else if (command == PAUSE || command == DROP) {
                         world.paused = !world.paused;
                         world.new = true;
                         input.length = 0;
@@ -300,7 +319,6 @@
                 }
 
                 world.figuresDrawn++;
-                world.speed -= 1 / world.speedChange;
 
                 figure = world.figure = world.next;
                 current = world.current = world.next[rotation];
@@ -311,10 +329,10 @@
                 world.nextColor = id[0] + 1;
             }
 
-            let moveDown = (world.wait += delta) > speed;
+            let moveDown = (world.wait += delta) > dropDelta;
 
             if (moveDown) {
-                world.wait -= speed;
+                world.wait -= dropDelta;
                 world.new = true
             }
 
@@ -364,7 +382,9 @@
                     }
                     else {
                         world.burn = solidify(current, pos, field, color);
-                        world.score += score(world.burn.length)
+                        world.linesCleared += world.burn.length;
+                        world.linesClearedInLevel += world.burn.length;
+                        world.score += (world.level+1)*score(world.burn.length)
                         current = world.current = null;
                         input.length = 0;
                         break;
@@ -376,12 +396,13 @@
                 else if (command == DROP || command == MOVE) {
                     const dh = getDropHeight(current, pos, field);
                     pos[1] += dh;
-                    world.score += dh * 10;
+                    world.score += dh * 10 * (world.level+2)/2;
 
                     if (dh == 0 || command != MOVE) {
                         world.burn = solidify(current, pos, field, color, width);
-
-                        world.score += score(world.burn.length)
+                        world.linesCleared += world.burn.length;
+                        world.linesClearedInLevel += world.burn.length;
+                        world.score += (world.level+1)*score(world.burn.length)
                         current = world.current = null;
                         input.length = 0;
                     }
@@ -392,6 +413,12 @@
 
                     break;
                 }
+            }
+
+            if (world.linesClearedInLevel > world.linesPerLevel) {
+                world.linesClearedInLevel -= world.linesPerLevel;
+                world.level++;
+                world.dropDelta = getDropDelta(world.level);
             }
 
             if (reshadow && world.shadowEnabled) {
@@ -474,7 +501,6 @@
             // draw score and speed
             const ox = (width + .2) * scale + 3;
             const oy = (figSize + .4) * scale + 3;
-            const speed = ((500 - world.speed) / world.speedChange).toFixed(1);
 
             ctx.fillStyle = 'silver'
             ctx.font = '10px Verdana';
@@ -484,9 +510,9 @@
             ctx.fillText(world.score, ox, oy + 30);
 
             ctx.font = '10px Verdana';
-            ctx.fillText('Speed:', ox, oy + 50);
+            ctx.fillText('Level:', ox, oy + 50);
             ctx.font = '30px Verdana';
-            ctx.fillText(speed, ox, oy + 80);
+            ctx.fillText(world.level, ox, oy + 80);
 
             // draw help;
             ctx.font = '10px Verdana';
