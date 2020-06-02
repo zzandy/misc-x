@@ -8,17 +8,19 @@ export type ShapeType = typeof shapeTypes[number];
 export type Orientation = 'vertical' | 'horizontal' | 'grid';
 export const sq32 = Math.sqrt(3) / 2;
 
-const colors = [
+const colors=[
+    '#fad000',
+    '#faa002',
+    '#e66102',
     '#ed1515',
-    '#f67400',
-    '#ffd900',
-    '#20cc10',
-    '#00dbdb',
-    '#1d99f3',
-    '#ff4fbc',
     '#ea005e',
+    '#ff4fbc',
+    '#0e39b2',
+    '#0d5bc7',
+    '#079ebd',
+    '#20cc10',
     '#fcfcfc',
-];
+]
 
 function pick<T>(options: T[], n: number, oddone: boolean, alldifferent: boolean = false): T[] {
     const res = [];
@@ -66,8 +68,8 @@ export class Director {
 
         const len = w * h;
 
-        const shapes = pick(types, len, vary == 'shape', this.orientation == "grid" && rnd() < .5);
-        const cols = pick(colors, len, vary == 'color', rnd() < .5);
+        const shapes = pick(types, len, vary == 'shape', this.orientation == "grid" && rnd() < .4);
+        const cols = pick(colors, len, vary == 'color', rnd() < .4);
 
         let f = rnd() < .5;
         const fils = pick([f, !f], len, vary == 'shading');
