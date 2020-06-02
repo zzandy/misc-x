@@ -17,10 +17,8 @@ function init(): World {
         dir: new Director(r.aspect),
     };
 
-    addEventListener('keydown', () => world.dir.startregen());
-    addEventListener('keyup', () => world.dir.stopregen());
-    addEventListener('mousedown', () => world.dir.startregen());
-    addEventListener('mouseup', () => world.dir.stopregen());
+    addEventListener('keydown', () => world.dir.regen());
+    addEventListener('mousedown', () => world.dir.regen());
 
     addEventListener("wheel", (e) => { if (e.deltaY < 0) world.dir.grow(); else world.dir.shrink(); });
 
@@ -34,7 +32,7 @@ function update(delta: number, world: World): World {
 function render(delta: number, world: World) {
     const shapes = world.dir.shapes;
     if (world.dir.isNew) {
-        world.render.draw(shapes);
+        world.render.draw(shapes, world.dir.orientation);
         world.dir.isNew = false;
     }
 }
