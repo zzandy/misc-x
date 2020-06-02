@@ -5,9 +5,19 @@ const fg = 'grey';
 
 export class Render {
     private ctx: ICanvasRenderingContext2D;
+    public w: number;
+    public h: number;
+    private d: number = 36;
+    private pad = 50;
+
     constructor() {
         const ctx = this.ctx = fullscreenCanvas();
         ctx.strokeStyle = ctx.fillStyle = fg;
+
+        this.h = ((ctx.canvas.height - 2 * this.pad) / this.d) | 0;
+        this.w = ((ctx.canvas.width - 2 * this.pad) / this.d) | 0;
+
+        this.pad = (ctx.canvas.width - this.w * this.d) / 2;
     }
 
     public draw(lab: Cell[][]) {
@@ -16,15 +26,16 @@ export class Render {
 
         ctx.clearRect(0, 0, width, height);
 
-        const pad = 100;
-        const d = 6 * 8; // divisible by 4
+        const pad = this.pad;
+        const d = this.d;
         const w = (d / 3) | 0;
+
+        const r = Math.sqrt(d * d + w * w) / 2;
+        const a = Math.asin(w / d);
 
         for (let i = 0; i < lab.length; ++i) {
             const line = lab[i];
             const y = (pad + d * i) | 0 + .5;
-            const r = Math.sqrt(d * d + w * w) / 2;
-            const a = Math.asin(w / d);
 
             for (let j = 0; j < line.length; ++j) {
                 const char = line[j];
@@ -50,7 +61,7 @@ export class Render {
                         ctx.clearRect(x - w / 2 + 1, y - d / 2, w - 2, d);
                         break;
                     case '+':
-                        if ((i+j)%2==0) {
+                        if ((i + j) % 2 == 0) {
                             ctx.fillRect(x - d / 2, y - w / 2, d, w);
                             ctx.clearRect(x - d / 2, y - w / 2 + 1, d, w - 2);
 

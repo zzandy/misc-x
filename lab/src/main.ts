@@ -11,16 +11,16 @@ const loop = new Loop(1000, init, update, render);
 loop.start();
 
 function init(): World {
+    const r = new Render();
+
     return {
-        render: new Render(),
-        lab: lab(40, 25)
+        render: r,
+        lab: lab(r.w, r.h)
     };
 }
 
 function update(delta: number, world: World): World {
-
     world.lab = mutate(world.lab);
-
     return world;
 }
 
