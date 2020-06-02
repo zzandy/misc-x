@@ -1,12 +1,13 @@
 import { ICanvasRenderingContext2D, fullscreenCanvas } from "../../lib/canvas";
 import { Cell } from "./replace";
-import { rnd } from "../../lib/util";
+
+const fg = 'grey';
 
 export class Render {
     private ctx: ICanvasRenderingContext2D;
     constructor() {
         const ctx = this.ctx = fullscreenCanvas();
-        ctx.strokeStyle = ctx.fillStyle = '#aaa';
+        ctx.strokeStyle = ctx.fillStyle = fg;
     }
 
     public draw(lab: Cell[][]) {
@@ -49,7 +50,7 @@ export class Render {
                         ctx.clearRect(x - w / 2 + 1, y - d / 2, w - 2, d);
                         break;
                     case '+':
-                        if (rnd() < .5) {
+                        if ((i+j)%2==0) {
                             ctx.fillRect(x - d / 2, y - w / 2, d, w);
                             ctx.clearRect(x - d / 2, y - w / 2 + 1, d, w - 2);
 
@@ -57,11 +58,11 @@ export class Render {
                             ctx.clearRect(x - w / 2 + 1, y - d / 2, w - 2, d);
                         }
                         else {
-                            ctx.fillRect(x - d / 2, y - w / 2, d, w);
-                            ctx.clearRect(x - d / 2, y - w / 2 + 1, d, w - 2);
-
                             ctx.fillRect(x - w / 2, y - d / 2, w, d);
                             ctx.clearRect(x - w / 2 + 1, y - d / 2, w - 2, d);
+
+                            ctx.fillRect(x - d / 2, y - w / 2, d, w);
+                            ctx.clearRect(x - d / 2, y - w / 2 + 1, d, w - 2);
                         }
 
                         break;
@@ -93,8 +94,6 @@ export class Render {
 
                         ctx.clearRect(x, y - w / 2 + 1, -d / 2, w - 2);
                         ctx.clearRect(x - w / 2 + 1, y + w / 2 - 1, w - 2, -d / 2 - w / 2 + 1);
-
-
                         break;
 
                     case ' ':
