@@ -4,16 +4,17 @@ import { Director } from './director';
 
 type World = {
     render: Render,
-    dir: Director
+    dir: Director,
 };
 
-const loop = new Loop(1000 / 15, init, update, render);
+const loop = new Loop(1000 / 24, init, update, render);
 loop.start();
 
 function init(): World {
+    const r = new Render();
     let world = {
-        render: new Render(),
-        dir: new Director()
+        render: r,
+        dir: new Director(r.aspect),
     };
 
     addEventListener('keydown', () => world.dir.startregen());
@@ -31,6 +32,10 @@ function update(delta: number, world: World): World {
 }
 
 function render(delta: number, world: World) {
-    world.render.draw(world.dir.shapes);
+    const shapes = world.dir.shapes;
+    if (world.dir.isNew) {
+        world.render.draw(shapes);
+        world.dir.isNew = false;
+    }
 }
 

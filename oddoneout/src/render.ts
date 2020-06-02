@@ -2,34 +2,50 @@ import { ICanvasRenderingContext2D, fullscreenCanvas } from "../../lib/canvas";
 import { IDrawable } from "./director";
 
 export class Render {
+    public readonly aspect: number;
+
     constructor(private ctx: ICanvasRenderingContext2D = fullscreenCanvas()) {
+        this.aspect = ctx.canvas.width / ctx.canvas.height;
     }
 
-    public draw(shapes: IDrawable[]) {
+    public draw(shapes: IDrawable[][]) {
         const ctx = this.ctx;
-        const { width: w, height: h } = ctx.canvas;
-        const e = Math.min(w, h);
-        const row = Math.sqrt(shapes.length) | 0;
+        const { width, height } = ctx.canvas;
 
+        const w = shapes[0].length;
+        const h = shapes.length;
+
+        const m = .04;
         const p = .2;
 
-        const mar = e * .04;
-        const box = (e - mar * 2) / (1 + (row - 1) * (1 + p));
+        const box = width / w < height / h
+            ? (width - 2 * width * m) / (1 + (1 + p) * (w - 1))
+            : (height - 2 * height * m) / (1 + (1 + p) * (h - 1));
+
+        const mx = (width - box * (1 + (1 + p) * (w - 1))) / 2;
+        const my = (height - box * (1 + (1 + p) * (h - 1))) / 2.5;
+
         const pad = box * p;
-        const auto = w > e ? (w - e) / row : 0;
-        ctx.clearRect(0, 0, w, h);
+        ctx.clearRect(0, 0, width, height);
+
+        ctx.save();
+        ctx.translate(mx, my);
 
         for (let i = 0; i < shapes.length; ++i) {
-            let shape = shapes[i];
-            ctx.save();
+            for (let j = 0; j < shapes[i].length; ++j) {
+                let shape = shapes[i][j];
+                ctx.save();
 
-            ctx.lineWidth = 10 / box;
-            ctx.translate(auto + mar + (pad + box) * (i % row), mar + (pad + box) * ((i / row) | 0));
-            ctx.scale(box, box);
+                ctx.lineWidth = 10 / box;
+                ctx.translate((pad + box) * j, (pad + box) * i);
+                ctx.scale(box, box);
 
-            shape.draw(ctx);
+                shape.draw(ctx);
 
-            ctx.restore();
+                ctx.restore();
+            }
         }
+
+        ctx.restore();
     }
 }

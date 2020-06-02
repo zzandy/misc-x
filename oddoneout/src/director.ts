@@ -34,19 +34,26 @@ const maxsize = 27;
 
 export class Director {
 
-    private _shapes: IDrawable[] | null = null;
+    private _shapes: IDrawable[][] | null = null;
     private size: number = 10;
     private isregen: boolean = false;
 
-    private makeShapes() {
+    public isNew = true;
 
+    constructor(private aspect: number = 1) {
+    }
+
+    private makeShapes() {
         let vary = rnd(['shape', 'color', 'shading', 'size']);
 
         const types = shapeTypes.map(t => t);
         shuffle(types);
         shuffle(colors);
 
-        const len = this.size * this.size;
+        const w = this.size;
+        const h = (this.size / this.aspect) | 0;
+        const len = w * h;
+
         const shapes = pick(types, len, vary == 'shape', rnd() < .5);
         const cols = pick(colors, len, vary == 'color', rnd() < .5);
 
@@ -57,8 +64,15 @@ export class Director {
         const size = pick([f, !f], len, vary == 'size');
 
         var res = [];
-        for (let i = 0; i < len; ++i) {
-            res.push(new Shape(shapes[i], cols[i], fils[i], size[i]));
+
+        for (let i = 0; i < h; ++i) {
+            let row = [];
+            for (let j = 0; j < w; ++j) {
+                let k = i * w + j;
+                row.push(new Shape(shapes[k], cols[k], fils[k], size[k]));
+            }
+
+            res.push(row);
         }
 
         return res;
@@ -67,6 +81,7 @@ export class Director {
     public get shapes() {
         if (this._shapes == null || this.isregen) {
             this._shapes = this.makeShapes();
+            this.isNew = true;
         }
 
         return this._shapes;
@@ -99,8 +114,6 @@ export class Director {
     }
 }
 
-
-
 export interface IDrawable {
     draw(ctx: ICanvasRenderingContext2D): void;
 }
@@ -109,7 +122,6 @@ const tau = Math.PI * 2;
 
 export class Shape implements IDrawable {
     constructor(public readonly type: ShapeType, public readonly color: string, public readonly filled: boolean, private readonly small: boolean) {
-        //this.type = "diamond";
     }
 
     draw(ctx: ICanvasRenderingContext2D): void {
