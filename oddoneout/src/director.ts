@@ -3,7 +3,7 @@ import { ICanvasRenderingContext2D } from "../../lib/canvas";
 import { rnd } from '../../lib/rnd';
 import { shuffle } from '../../lib/util';
 
-export const shapeTypes = ['triangle', 'square', 'hex', 'circle', 't2', 'h2', 'c', 'c2', 'diamond', 'cross', 'x', 'star'] as const;
+export const shapeTypes = ['heart', 'triangle', 'square', 'hex', 'circle', 't2', 'h2', 'c', 'c2', 'diamond', 'cross', 'x', 'star'] as const;
 export type ShapeType = typeof shapeTypes[number];
 
 const colors = [
@@ -125,55 +125,27 @@ export class Shape implements IDrawable {
     }
 
     draw(ctx: ICanvasRenderingContext2D): void {
-        ctx.fillStyle = this.color;
+        ctx.fillStyle = ctx.strokeStyle = this.color;
 
         if (this.small) {
             ctx.translate(.25, .25)
             ctx.scale(.5, .5);
-            ctx.lineWidth *= 2;
+            ctx.lineWidth *= 1.5;
         }
 
         this.path(ctx);
-        ctx.fill();
 
-        if (!this.filled) {
-            ctx.save();
-
-            ctx.translate(.5, .5);
-
-            switch (this.type) {
-                case 'triangle':
-                    ctx.scale(.83, .83);
-                    ctx.translate(-.5, -.47);
-                    break;
-                case 't2':
-                    ctx.scale(.83, .83);
-                    ctx.translate(-.5, -.53);
-                    break;
-                case 'diamond':
-                    ctx.scale(.86, .86);
-                    ctx.translate(-.5, -.5);
-                    break;
-                case 'x':
-                case 'star':
-                    ctx.scale(.82, .82);
-                    ctx.translate(-.5, -.5);
-                    break;
-                default:
-                    ctx.scale(.88, .88);
-                    ctx.translate(-.5, -.5);
-                    break;
-            }
-
-            this.path(ctx, true);
-
-            ctx.globalCompositeOperation = "destination-out";
+        if (this.filled)
             ctx.fill();
+        else {
+            ctx.save();
+            ctx.scale(.7, .7);
+            ctx.stroke();
             ctx.restore();
         }
     }
 
-    path(ctx: ICanvasRenderingContext2D, small: boolean = false) {
+    path(ctx: ICanvasRenderingContext2D) {
         ctx.beginPath();
 
         switch (this.type) {
@@ -213,14 +185,14 @@ export class Shape implements IDrawable {
                 ctx.lineTo(.9, .1);
                 break;
             case "c":
-                const a = small ? .12 : .1
+                const a = .1;
                 ctx.arc(.5, .5, .5, a * tau, (1 - a) * tau);
-                ctx.lineTo(small ? .4 : .5, .5)
+                ctx.lineTo(a ? .4 : .5, .5)
                 break;
             case "c2":
-                const b = small ? .12 : .1
+                const b = .1;
                 ctx.arc(.5, .5, .5, (.5 - b) * tau, (.5 + b) * tau, true);
-                ctx.lineTo(small ? .6 : .5, .5)
+                ctx.lineTo(b ? .6 : .5, .5)
                 break;
             case 'diamond':
                 ctx.moveTo(.5, 0);
@@ -229,7 +201,7 @@ export class Shape implements IDrawable {
                 ctx.lineTo(0, .5);
                 break;
             case 'x':
-                const w = small ? .20 : .25;
+                const w = .25;
 
                 ctx.moveTo(w, 0);
                 ctx.lineTo(.5, .5 - w);
@@ -245,7 +217,7 @@ export class Shape implements IDrawable {
                 ctx.lineTo(0, w);
                 break;
             case 'cross':
-                const z = small ? .16 : .2;
+                const z = .2;
                 ctx.moveTo(.5 - z, 0);
                 ctx.lineTo(.5 + z, 0);
                 ctx.lineTo(.5 + z, .5 - z);
@@ -270,6 +242,17 @@ export class Shape implements IDrawable {
                     ctx.lineTo(.5 + r1 * Math.sin(a1), .5 + r1 * Math.cos(a1));
                     ctx.lineTo(.5 + r2 * Math.sin(a2), .5 + r2 * Math.cos(a2));
                 }
+
+                break;
+            case 'heart':
+                const s = .6;
+                const x = s / Math.sqrt(2);
+
+                ctx.moveTo(.5+x, .5);
+                ctx.lineTo(.5, .5+x);
+                ctx.lineTo(.5-x, .5);
+                ctx.arc(.5-x/2, .5-x/2,s/2,3*tau/8, 7*tau / 8);
+                ctx.arc(.5+x/2, .5-x/2,s/2,5*tau/8, tau / 8);
 
                 break;
         }

@@ -36,10 +36,9 @@ export class Render {
                 let shape = shapes[i][j];
                 ctx.save();
 
-                ctx.lineWidth = 10 / box;
                 ctx.translate((pad + box) * j, (pad + box) * i);
                 ctx.scale(box, box);
-
+                ctx.lineWidth = .1;
                 shape.draw(ctx);
 
                 ctx.restore();
