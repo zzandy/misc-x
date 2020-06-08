@@ -22,7 +22,14 @@ export class Point {
     }
 
     public clamp(xrange: [number, number], yrange: [number, number]) {
-        return new Point(max(min(xrange[1], this.x), xrange[0]), max(min(yrange[1], this.y), yrange[0]));
+
+        const dx = this.x - xrange[0];
+        const wx = xrange[1] - xrange[0];
+
+        const dy = this.y - yrange[0];
+        const wy = yrange[1] - yrange[0];
+
+        return new Point(xrange[0] + (dx + 10 * wx) % wx, yrange[0] + (dy + 10 * wy) % wy);
     }
 }
 

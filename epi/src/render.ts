@@ -1,6 +1,7 @@
 import { ICanvasRenderingContext2D, fullscreenCanvas } from "../../lib/canvas";
 import { Agent } from "./agent";
 import { Vector } from "./geometry";
+import { QuadTree } from "./qt";
 
 export class Render {
     private readonly ctx: ICanvasRenderingContext2D;
@@ -32,7 +33,6 @@ export class Render {
                     : '#aaa';
             const r = agent.progress > 0 && agent.progress < 100 ? 5 : 3;
             ctx.fillCircle(this.padding.x + agent.pos.x * this.size, this.padding.y + agent.pos.y * this.size, r);
-            //ctx.strokeCircle(this.padding.x + agent.pos.x * this.size, this.padding.y + agent.pos.y * this.size, .036*this.size);
         }
     }
 }

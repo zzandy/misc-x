@@ -2,8 +2,8 @@ import { Loop } from '../../lib/loop';
 import { array, rnd } from '../../lib/util';
 import { Render } from './render';
 import { Agent } from './agent';
-import { Point, Vector, newRandomVector } from './geometry';
-import { DllPlugin } from 'webpack';
+import { Point, newRandomVector, Vector } from './geometry';
+import { QuadTree, AABB } from './qt';
 
 type World = {
     render: Render,
@@ -15,41 +15,59 @@ type World = {
 
 const dp = 10;
 
+const n = 1024;
+
+const movement = .001;
+const repulsionIntensity = movement * 5;
+const contagionRange = .5 / Math.sqrt(n);
+const repulsionRange = contagionRange * 1.2;
+
 const loop = new Loop(1000 / 24, init, update, render);
 loop.start();
 
 function init(): World {
-const repulsionIntensity=.02;
-
     return {
         render: new Render(),
         repulsionIntensity,
-        repulsionRange: .05,
-        contagionRange: .03,
-        agents: array(750, 1, (i) => {
-            return new Agent(new Point(rnd(), rnd()), newRandomVector(repulsionIntensity/10), rnd() < .02 ? .1 : 0);
+        repulsionRange,
+        contagionRange,
+        agents: array(n, 1, (_, k) => {
+            const w = Math.sqrt(n) | 0;
+
+            const i = (k % w + .5) / w;
+            const j = (((k / w) | 0) + .5) / w;
+
+            const dx = i-.5;
+            const dy = j-.5;
+
+            return new Agent(new Point(i, j), newRandomVector(movement), (dx*dx+dy*dy)<.01 ? .1+rnd(dp) : 0);
         })[0]
     };
 }
 
 function update(delta: number, world: World): World {
-    const vectors = world.agents.map(agent =>
-        world.agents
-            .filter(a => a != agent && agent.pos.dist(a.pos) < world.repulsionRange)
+    const qt = new QuadTree(0, 0, 1.01, 1.01);
+    const range = Math.max(world.contagionRange, world.repulsionRange);
+
+    world.agents.forEach(a => qt.add(a));
+
+    const vectors = world.agents.map(agent => {
+        return (qt.get(new AABB(agent.x - range, agent.y - range, range * 2, range * 2)) as Agent[])
             .reduce((vec, a) => {
-                if (agent.progress == 0 && a.progress > 0 && rnd() < .1 && agent.pos.dist(a.pos) < world.contagionRange)
-                    agent.progress = .1;
+                if (a == agent) return vec;
 
                 const force = a.pos.to(agent.pos);
-                const revd = (world.repulsionRange - force.length) / world.repulsionRange;
 
-                return vec.add(force.norm.times(revd * revd * world.repulsionIntensity));
-            }, agent.vector)
-    );
+                if (agent.progress == 0 && a.progress > 0 && force.length < world.contagionRange && rnd() < .1)
+                    agent.progress = .1;
+
+                const revd = (world.repulsionRange - force.length) / world.repulsionRange;
+                return vec.add(force.norm.times(revd * revd * world.repulsionIntensity)).norm.times(movement);
+            }, agent.vector);
+    });
 
     world.agents.forEach((agent, i) => {
         if (agent.progress > 0 && agent.progress < 100) agent.progress += delta * dp / 1000;
-        if(rnd()<.01)agent.vector = newRandomVector(world.repulsionIntensity/10)
         agent.move(vectors[i]);
     });
 
