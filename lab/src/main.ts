@@ -15,7 +15,7 @@ function init(): World {
 
     return {
         render: r,
-        lab: lab(r.w, r.h)
+        lab: lab(r.numCols, r.numRows)
     };
 }
 
