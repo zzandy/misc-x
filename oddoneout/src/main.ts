@@ -17,6 +17,8 @@ function init(): World {
         dir: new Director(r.aspect),
     };
 
+    document.body.style.backgroundColor = '#181a1b';
+
     addEventListener('keydown', () => world.dir.regen());
     addEventListener('mousedown', () => world.dir.regen());
 
