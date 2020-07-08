@@ -1,16 +1,14 @@
 const path = require("path");
 const html = require("html-webpack-plugin");
-const { CleanWebpackPlugin } = require("clean-webpack-plugin");
 
 module.exports = {
     mode: 'development',
     entry: ".\\src\\main.ts",
     output: {
         path: path.resolve(__dirname, "dist"),
-        filename: "bundle.js",
-        //      publicPath: "/"
+        filename: "bundle.js"
     },
-    devServer:{
+    devServer: {
         contentBase: './dist',
     },
     resolve: {
@@ -26,6 +24,6 @@ module.exports = {
     },
     plugins:
         [
-            new html({title: 'Odd one out'})//{ template: "./src/index.html" })
+            new html({ title: 'Odd One Out' })
         ]
 };

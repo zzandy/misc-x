@@ -12,46 +12,47 @@ export class Render {
         const ctx = this.ctx;
         const { width, height } = ctx.canvas;
 
-        const w = shapes[0].length* (orientation == "vertical" ? sq32 : 1);
-        const h = shapes.length * (orientation == "horizontal" ? sq32 : 1);
+        const [rows, cols] = [orientation == "rows", orientation == "cols"];
 
-        const m = .04;
-        const p = .15;
+        const sx = rows ? sq32 : 1;
+        const sy = cols ? sq32 : 1;
 
-        const box = width / w < height / h
-            ? (width - 2 * width * m) / (1 + (1 + p) * (w - 1))
-            : (height - 2 * height * m) / (1 + (1 + p) * (h - 1));
+        const ax = !rows && cols ? 0.5 : 0;
+        const ay = !cols && rows ? 0.5 : 0;
 
-        const mx = (width - box * (1 + (1 + p) * (w - 1))) / 2;
-        const my = (height - box * (1 + (1 + p) * (h - 1))) / 2.5;
+        const [nx, ny] = [shapes[0].length, shapes.length];
 
-        const pad = box * p;
+        const m = .01;
+        const p = .1;
+
+        const ex = 1 + ((nx + ax) * (1 + p) - p - 1) * sx;
+        const ey = 1 + ((ny + ay) * (1 + p) - p - 1) * sy;
+
+        const box = ex / ey > this.aspect
+            ? (width - 2 * width * m) / ex
+            : (height - 2 * height * m) / ey;
+
+        const pad = box * (1 + p);
+
+        const [mx, my] = [(width - ex * box) / 2, (height - ey * box) / 2]
+
         ctx.clearRect(0, 0, width, height);
 
         ctx.save();
         ctx.translate(mx, my);
 
-        const sx = orientation == "vertical" ? sq32 : 1;
-        const sy = orientation == "horizontal" ? sq32 : 1;
-
-        for (let i = 0; i < shapes.length; ++i) {
-            for (let j = 0; j < shapes[i].length; ++j) {
-                let shape = shapes[i][j];
+        for (let i = 0; i < ny; ++i) {
+            for (let j = 0; j < nx; ++j) {
                 ctx.save();
 
-                let dx = orientation == "horizontal"
-                    ? ((i % 2) == 0 ? -.25 : .25)
-                    : 0;
+                let dx = cols ? ((i % 2) == 0 ? 0 : .5) : 0;
+                let dy = rows ? ((j % 2) == 0 ? 0 : .5) : 0;
 
-                let dy = orientation == "vertical"
-                    ? ((j % 2) == 0 ? -.25 : .25)
-                    : 0;
-
-                ctx.translate(sx * (pad + box) * (j + dx), sy * (pad + box) * (i + dy));
+                ctx.translate(sx * (pad) * (j + dx), sy * (pad) * (i + dy));
                 ctx.scale(box, box);
 
                 ctx.lineWidth = .06;
-                shape.draw(ctx);
+                shapes[i][j].draw(ctx);
 
                 ctx.restore();
             }

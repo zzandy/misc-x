@@ -1,10 +1,13 @@
 import { ICanvasRenderingContext2D } from "../../lib/canvas";
-import { IDrawable, ShapeType } from "./director";
+import { IDrawable, ShapeType, Shading } from "./director";
 
 const tau = Math.PI * 2;
 
 export class Shape implements IDrawable {
-    constructor(public readonly type: ShapeType, public readonly color: string, public readonly filled: boolean, private readonly small: boolean) {
+    constructor(public readonly type: ShapeType,
+        public readonly color: string,
+        public readonly shading: Shading,
+        private readonly small: boolean) {
     }
 
     draw(ctx: ICanvasRenderingContext2D): void {
@@ -12,26 +15,25 @@ export class Shape implements IDrawable {
         ctx.translate(.5, .5);
 
         if (this.small) {
-            ctx.scale(.5, .5);
-            ctx.lineWidth *= 1.7;
+            ctx.scale(.666, .666);
+            ctx.lineWidth *= 1.5;
         }
 
-        if (!this.filled)
+        if (this.shading != 'solid')
             ctx.scale(.95, .95);
 
         this.path(ctx);
 
-        if (this.filled)
+        if (this.shading != "contour")
             ctx.fill();
-        else {
+
+        if (this.shading != "solid")
             ctx.stroke();
-        }
     }
 
     path(ctx: ICanvasRenderingContext2D) {
         ctx.beginPath();
 
-        const h = .3;
         const a = .1;
         const r1 = .3;
         const r2 = .55;
@@ -152,6 +154,8 @@ export class Shape implements IDrawable {
                     else
                         ctx.lineTo(r1 * Math.sin(a1), r1 * Math.cos(a1));
                     ctx.lineTo(r2 * Math.sin(a2), r2 * Math.cos(a2));
+
+
                 }
 
                 break;
@@ -166,6 +170,63 @@ export class Shape implements IDrawable {
                 ctx.arc(- x / 2, m - x / 2, s / 2, 3 * tau / 8, 7 * tau / 8);
                 ctx.arc(x / 2, m - x / 2, s / 2, 5 * tau / 8, tau / 8);
 
+                break;
+            case "eq":
+                ctx.moveTo(-.45, -.35);
+                ctx.lineTo(.45, -.35);
+                ctx.lineTo(.45, -.05);
+                ctx.lineTo(-.45, -.05);
+
+                ctx.closePath();
+
+                ctx.moveTo(-.45, .05);
+                ctx.lineTo(.45, .05);
+                ctx.lineTo(.45, .35);
+                ctx.lineTo(-.45, .35);
+                break;
+            case 'pause':
+                ctx.moveTo(-.35, -.45);
+                ctx.lineTo(-.35, .45);
+                ctx.lineTo(-.05, .45);
+                ctx.lineTo(-.05, -.45);
+
+                ctx.closePath();
+
+                ctx.moveTo(.05, -.45);
+                ctx.lineTo(.05, .45);
+                ctx.lineTo(.35, .45);
+                ctx.lineTo(.35, -.45);
+                break;
+
+            case 'slash':
+                ctx.moveTo(.1, .45);
+                ctx.lineTo(.45, -.45);
+                ctx.lineTo(-.1, -.45);
+                ctx.lineTo(-.45, .45)
+                break;
+            case 'sl2':
+                ctx.moveTo(.45, .45);
+                ctx.lineTo(.1, -.45);
+                ctx.lineTo(-.45, -.45);
+                ctx.lineTo(-.1, .45)
+                break;
+            case 'd2':
+                ctx.moveTo(0, .5);
+                ctx.lineTo(.5, -.2);
+                ctx.lineTo(.3, -.45);
+                ctx.lineTo(-.3, -.45);
+                ctx.lineTo(-.5, -.2)
+                break;
+            case 'bolt':
+                ctx.moveTo(.1, .6);
+                ctx.lineTo(0, .1);
+                ctx.lineTo(.35, .2);
+                ctx.lineTo(.2, -.45);
+                ctx.lineTo(-.2, -.45);
+                ctx.lineTo(0, -.05)
+                ctx.lineTo(-.4, -.15);
+                break;
+            default:
                 break;
         }
 

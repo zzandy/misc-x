@@ -3,7 +3,7 @@ import { Render } from './render';
 import { Director } from './director';
 
 type World = {
-    render: Render,
+    renderer: Render,
     dir: Director,
 };
 
@@ -13,14 +13,14 @@ loop.start();
 function init(): World {
     const r = new Render();
     let world = {
-        render: r,
+        renderer: r,
         dir: new Director(r.aspect),
     };
 
     addEventListener('keydown', () => world.dir.regen());
     addEventListener('mousedown', () => world.dir.regen());
 
-    addEventListener("wheel", (e) => { if (e.deltaY < 0) world.dir.grow(); else world.dir.shrink(); });
+    addEventListener("wheel", (e) => { if (e.deltaY > 0) world.dir.grow(); else world.dir.shrink(); });
 
     return world;
 }
@@ -30,9 +30,9 @@ function update(delta: number, world: World): World {
 }
 
 function render(delta: number, world: World) {
-    const shapes = world.dir.shapes;
-    if (world.dir.isNew) {
-        world.render.draw(shapes, world.dir.orientation);
+    const { dir: { shapes, isNew, orientation }, renderer } = world;
+    if (isNew) {
+        renderer.draw(shapes, orientation);
         world.dir.isNew = false;
     }
 }
