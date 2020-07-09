@@ -22,14 +22,12 @@
         }
     </script>
     <script type="text/javascript">
-        //const colors = ['#FFD300', '#002366', '#C80815'];
         const colors = ['#8fca32', '#1872cf', '#f7f4e6'];
         const secondary = [1, 2];
         const sq32 = Math.sqrt(3) / 2;
         const tau = Math.PI * 2;
 
         const tile = [0, 0, 0, 0, 0, 0];
-
         const tiles = [];
 
         const p0 = (function (w, h) {
@@ -189,10 +187,10 @@
         }
 
         function draw(tile, i) {
-            const s = 180;
-            const ctx = addCanvas(s, s)
+            const s = 220;
+            const ctx = addCanvas(s * sq32 + 2, s);
 
-            ctx.translate(s / 2, s / 2);
+            ctx.translate(s * sq32 / 2 + 1, s / 2);
 
             ctx.save();
             ctx.beginPath();
@@ -202,10 +200,10 @@
 
                 ctx.rotate(tau / 6);
             }
+            ctx.closePath();
 
             ctx.fillStyle = ctx.createPattern(p0, 'repeat');
             ctx.fill();
-
             ctx.restore();
 
             const patterns = [
@@ -285,6 +283,21 @@
 
                 prev = next;
             }
+
+            ctx.save();
+            ctx.beginPath();
+            for (let i = 0; i < 6; ++i) {
+                if (i == 0) ctx.moveTo(0, s / 2);
+                else ctx.lineTo(0, s / 2);
+
+                ctx.rotate(tau / 6);
+            }
+            ctx.closePath();
+
+            ctx.strokeStyle = 'rgba(0,0,0,.5)'
+            ctx.globalCompositeOperation = 'multiply'
+            ctx.stroke();
+            ctx.restore();
         }
 
     </script>
