@@ -4,18 +4,20 @@
 
 <head>
     <meta charset="utf-8" />
-    <title></title>
+    <title>Fjords</title>
 </head>
 
 <body>
     <script type="text/javascript">
-        function addCanvas(w, h) {
+        function addCanvas(w, h, dontAdd) {
             const canvas = document.createElement('canvas');
 
             canvas.width = w;
             canvas.height = h;
 
-            document.body.appendChild(canvas);
+            if (!dontAdd)
+                document.body.appendChild(canvas);
+
             return canvas.getContext('2d');
         }
     </script>
@@ -28,6 +30,95 @@
 
         const tile = [0, 0, 0, 0, 0, 0];
         const tiles = [];
+
+        const p0 = (function (w, h) {
+            const ctx = addCanvas(w, h, true);
+
+            ctx.fillStyle = colors[0];
+            ctx.fillRect(0, 0, w, h);
+
+            ctx.fillStyle = 'rgba(0,0,0,.4)';
+            ctx.globalCompositeOperation = 'color-burn';
+
+            const coords = [
+                [10, 10, 3, 4],
+                [20, 50, 2, 3],
+                [45, 35, 3, 5],
+                [35, 15, 2, 3]
+            ];
+
+            for (let [x, y, r, h] of coords) {
+                for (let i = 0; i < r; ++i) {
+                    ctx.save();
+                    ctx.translate(x + i * 2, y - i)
+                    ctx.rotate(-tau * (r - i) / 100);
+                    ctx.fillRect(0, 0, 1, h + i);
+                    ctx.restore();
+                }
+
+                for (let i = 0; i < r - 1; ++i) {
+                    ctx.save();
+                    ctx.translate(x + (r + i) * 2, y - r + i + 2);
+                    ctx.rotate(tau * (i + 1) / 100);
+                    ctx.fillRect(0, 0, 1, h + r - i - 2);
+                    ctx.restore();
+                }
+            }
+
+            return ctx.canvas;
+        })(60, 60);
+
+        const p1 = (function (w, h) {
+            const ctx = addCanvas(w, h, true);
+            ctx.fillStyle = ctx.strokeStyle = colors[1];
+            ctx.fillRect(0, 0, w, h);
+
+            ctx.strokeStyle = 'rgba(0,0,0,.4)';
+            ctx.globalCompositeOperation = 'color-burn';
+
+            const coords = [
+                [10, 10, 2, 1],
+                [20, 40, 2, 1],
+                [45, 35, 2, 2],
+                [35, 15, 2, 1],
+                [5, 55, 2, 2],
+            ];
+
+            for (let [x, y, w, h] of coords) {
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.quadraticCurveTo(x + w, y + h, x + 2 * w, y - h);
+                ctx.quadraticCurveTo(x + 3 * w, y + h, x + 4 * w, y);
+                ctx.stroke();
+            }
+
+            return ctx.canvas;
+        })(60, 60);
+
+        const p2 = (function (w, h) {
+            const ctx = addCanvas(w, h, true);
+            ctx.fillStyle = colors[2];
+            ctx.fillRect(0, 0, w, h);
+
+            ctx.fillStyle = 'rgba(0,0,0,.3)';
+            ctx.globalCompositeOperation = 'color-burn';
+
+            const coords = [
+                [10, 10, 3],
+                [20, 40, 3],
+                [45, 35, 4],
+                [35, 15, 3],
+                [5, 55, 4],
+            ];
+
+            for (let [x, y, n] of coords) {
+                for (let i = 0; i < n; ++i) {
+                    ctx.fillRect(x + i * 2, y - (i % 2) * 2, 1, 1)
+                }
+            }
+
+            return ctx.canvas;
+        })(60, 60);
 
         addTile(tile);
 
@@ -110,10 +201,18 @@
 
                 ctx.rotate(tau / 6);
             }
+
+            ctx.translate(Math.random() * s | 0, Math.random() * s | 0);
+            ctx.fillStyle = ctx.createPattern(p0, 'repeat');
+            ctx.fill();
+
             ctx.restore();
 
-            ctx.fillStyle = colors[0];
-            ctx.fill();
+            const patterns = [
+                null,
+                ctx.createPattern(p1, 'repeat'),
+                ctx.createPattern(p2, 'repeat')
+            ];
 
             ctx.save();
 
@@ -149,8 +248,11 @@
                             ctx.bezierCurveTo(c * cos(a), c * sin(a), c * cos(start), c * sin(start), h * cos(start), h * sin(start));
 
                         ctx.closePath();
-                        ctx.fillStyle = colors[prev];
+                        ctx.fillStyle = patterns[prev];
+                        ctx.save();
+                        ctx.translate(Math.random() * s | 0, Math.random() * s | 0);
                         ctx.fill();
+                        ctx.restore();
                     }
                     else {
                         ctx.beginPath();
