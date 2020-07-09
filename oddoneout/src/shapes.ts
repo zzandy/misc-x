@@ -2,6 +2,8 @@ import { ICanvasRenderingContext2D } from "../../lib/canvas";
 import { IDrawable, ShapeType, Shading } from "./director";
 
 const tau = Math.PI * 2;
+const sin = Math.sin;
+const cos = Math.cos;
 
 export class Shape implements IDrawable {
     constructor(public readonly type: ShapeType,
@@ -15,7 +17,7 @@ export class Shape implements IDrawable {
         ctx.translate(.5, .5);
 
         if (this.small) {
-            ctx.scale(.666, .666);
+            ctx.scale(.6, .6);
             ctx.lineWidth *= 1.5;
         }
 
@@ -42,43 +44,50 @@ export class Shape implements IDrawable {
         const at = .2;
 
         switch (this.type) {
-            case "circle":
+            case 'circle':
                 ctx.arc(0, 0, .5, 0, tau);
+                break;
+            case "coin":
+                ctx.arc(0, 0, .5, 0, tau);
+                ctx.moveTo(.15, .15)
+                ctx.lineTo(.15, -.15)
+                ctx.lineTo(-.15, -.15)
+                ctx.lineTo(-.15, .15)
                 break;
             case "triangle":
                 for (let i = 0; i < 3; ++i) {
                     let a1 = tau / 3 * i;
                     if (i == 0)
-                        ctx.moveTo(rt * Math.sin(a1), -at + rt * Math.cos(a1));
+                        ctx.moveTo(rt * sin(a1), -at + rt * cos(a1));
                     else
-                        ctx.lineTo(rt * Math.sin(a1), -at + rt * Math.cos(a1));
+                        ctx.lineTo(rt * sin(a1), -at + rt * cos(a1));
                 }
                 break;
             case 't2':
                 for (let i = 0; i < 3; ++i) {
                     let a1 = tau / 3 * i + tau / 6;
                     if (i == 0)
-                        ctx.moveTo(rt * Math.sin(a1), at + rt * Math.cos(a1));
+                        ctx.moveTo(rt * sin(a1), at + rt * cos(a1));
                     else
-                        ctx.lineTo(rt * Math.sin(a1), at + rt * Math.cos(a1));
+                        ctx.lineTo(rt * sin(a1), at + rt * cos(a1));
                 }
                 break;
             case "hex":
                 for (let i = 0; i < 6; ++i) {
                     let a1 = tau / 6 * i;
                     if (i == 0)
-                        ctx.moveTo(rh * Math.sin(a1), rh * Math.cos(a1));
+                        ctx.moveTo(rh * sin(a1), rh * cos(a1));
                     else
-                        ctx.lineTo(rh * Math.sin(a1), rh * Math.cos(a1));
+                        ctx.lineTo(rh * sin(a1), rh * cos(a1));
                 }
                 break;
             case 'h2':
                 for (let i = 0; i < 6; ++i) {
                     let a1 = tau / 6 * i + tau / 12;
                     if (i == 0)
-                        ctx.moveTo(rh * Math.sin(a1), rh * Math.cos(a1));
+                        ctx.moveTo(rh * sin(a1), rh * cos(a1));
                     else
-                        ctx.lineTo(rh * Math.sin(a1), rh * Math.cos(a1));
+                        ctx.lineTo(rh * sin(a1), rh * cos(a1));
                 }
                 break;
             case "square":
@@ -138,10 +147,10 @@ export class Shape implements IDrawable {
                     let a2 = tau / 10 + tau / 5 * i;
                     let a1 = tau / 5 * i;
                     if (i == 0)
-                        ctx.moveTo(r1 * Math.sin(a1), r1 * Math.cos(a1));
+                        ctx.moveTo(r1 * sin(a1), r1 * cos(a1));
                     else
-                        ctx.lineTo(r1 * Math.sin(a1), r1 * Math.cos(a1));
-                    ctx.lineTo(r2 * Math.sin(a2), r2 * Math.cos(a2));
+                        ctx.lineTo(r1 * sin(a1), r1 * cos(a1));
+                    ctx.lineTo(r2 * sin(a2), r2 * cos(a2));
                 }
 
                 break;
@@ -150,12 +159,10 @@ export class Shape implements IDrawable {
                     let a2 = tau / 6 * i;
                     let a1 = tau / 6 * i - tau / 12;
                     if (i == 0)
-                        ctx.moveTo(r1 * Math.sin(a1), r1 * Math.cos(a1));
+                        ctx.moveTo(r1 * sin(a1), r1 * cos(a1));
                     else
-                        ctx.lineTo(r1 * Math.sin(a1), r1 * Math.cos(a1));
-                    ctx.lineTo(r2 * Math.sin(a2), r2 * Math.cos(a2));
-
-
+                        ctx.lineTo(r1 * sin(a1), r1 * cos(a1));
+                    ctx.lineTo(r2 * sin(a2), r2 * cos(a2));
                 }
 
                 break;
@@ -225,6 +232,25 @@ export class Shape implements IDrawable {
                 ctx.lineTo(-.2, -.45);
                 ctx.lineTo(0, -.05)
                 ctx.lineTo(-.4, -.15);
+                break;
+            case 'clubs':
+
+                let r = .27;
+                for (let i = 0; i < 3; ++i) {
+                    let a = i * tau / 3 + tau / 12;
+
+                    ctx.arc(r * cos(a), .1 + r * sin(a), r, a - tau / 3, a + tau / 3,)
+                }
+
+                break;
+            case 'diamonds':
+
+                ctx.moveTo(0, r2);
+                ctx.quadraticCurveTo(r1 / 2, r1 / 2, r2, 0);
+                ctx.quadraticCurveTo(r1 / 2, -r1 / 2, 0, -r2);
+                ctx.quadraticCurveTo(-r1 / 2, -r1 / 2, -r2, 0);
+                ctx.quadraticCurveTo(-r1 / 2, r1 / 2, 0, r2);
+
                 break;
             default:
                 break;

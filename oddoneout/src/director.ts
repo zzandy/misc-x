@@ -2,8 +2,8 @@ import { ICanvasRenderingContext2D } from "../../lib/canvas";
 import { rnd } from '../../lib/rnd';
 import { Shape } from "./shapes";
 
-export const shapeTypes = ['heart', 'triangle', 'square', 'hex', 'circle',
-    't2', 'h2', 'c', 'c2', 's2', 'diamond', 'd2', 'bolt',
+export const shapeTypes = ['heart', 'triangle', 'square', 'hex', 'circle', 'coin',
+    't2', 'h2', 'c', 'c2', 's2', 'diamond', 'd2', 'bolt', 'clubs', 'diamonds',
     'cross', 'x', 'star', 'eq', 'pause', 'slash', 'sl2'] as const;
 export type ShapeType = typeof shapeTypes[number];
 export type Orientation = 'rows' | 'cols' | 'grid';
@@ -19,27 +19,36 @@ const presets: { [key in Orientation]: ShapeType[][] } = {
         ['heart', 'd2'],
         ['circle', 'c'],
         ['circle', 'c2'],
+        ['circle', 'coin'],
+        ['circle', 'coin', 'c', 'c2'],
         ['triangle', 'd2'],
-        ['eq', 'pause'],
-        ['eq', 'square'],
-        ['square', 'pause', 'cross'],
+        ['triangle', 'clubs'],
+        ['square', 'pause', 'cross', 'eq'],
         ['square', 'slash', 'sl2'],
-        ['cross', 'x', 'diamond']
+        ['cross', 'x', 'diamond'],
+        ['cross', 'x'],
+        ['diamond', 'diamonds'],
+        ['diamonds', 'heart', 'clubs'],
+        ['heart', 'clubs'],
+        ['circle', 'diamonds'],
+        ['s2', 'diamonds']
     ],
 
     'rows': [
-        ['circle', 'h2'],
+        ['circle', 'h2', 'coin'],
         ['hex', 's2'],
         ['h2', 's2'],
+        ['triangle', 'heart']
     ],
 
     'cols': [
-        ['circle', 'hex'],
+        ['circle', 'hex', 'coin'],
         ['t2', 'd2', 'heart'],
         ['hex', 's2'],
         ['h2', 's2'],
     ]
 }
+
 
 function preset(orientation: Orientation): ShapeType[] {
     let set = presets[orientation];
@@ -49,31 +58,49 @@ function preset(orientation: Orientation): ShapeType[] {
         : types;
 }
 
-function badcombo(odd: ShapeType, fill: ShapeType, orientation: Orientation) {
-    const res = orientation == 'rows' && fill == 'triangle'
-        || orientation == 'cols' && fill == 't2';
+const colors = [
+    '#dede0e', // 0
+    '#fad000', // 1
+    '#faa002', // 2
+    '#e66102', // 3
+    '#ed1515', // 4
+    '#ea005e', // 5
+    '#c80d66', // 6
+    '#ff4fbc', // 7
+    '#720C99', // 8
+    '#0d5bc7', // 9
+    '#079ebd', // 10
+    '#88dfbb', // 11
+    '#20cc10', // 12
+    '#00954a', // 13
+    '#fcfcfc', // 14
+];
 
-    return res;
+function presetColor() {
+
+
+    let pick = rnd();
+
+
+    if (pick < .1) {
+        return [colors[colors.length - 1]].concat(colors[rnd(colors.length - 1)])
+    }
+    else if (pick < .2) {
+        let x = rnd(colors.length - 1);
+        return [colors[x], colors[(x + 1) % (colors.length - 1)], colors[(x + 2) % (colors.length - 1)]]
+    }
+    else if (pick < .3) {
+        let x = rnd(colors.length - 1);
+        return colors.filter((_, i) => i != colors.length - 1 && i != x && i != (x + 1) % (colors.length - 1) && i != (x + 2) % (colors.length - 1));
+    }
+
+    return colors;
 }
 
-const colors = [
-    '#dede0e',
-    '#fad000',
-    '#faa002',
-    '#e66102',
-    '#ed1515',
-    '#ea005e',
-    '#c80d66',
-    '#ff4fbc',
-
-    '#720C99',
-    '#0d5bc7',
-    '#079ebd',
-    '#88dfbb',
-    '#20cc10',
-    '#00954a',
-    '#fcfcfc',
-]
+function badcombo(odd: ShapeType, fill: ShapeType, orientation: Orientation) {
+    return fill == 'triangle' && odd != 't2' || fill == 't2' && odd != 'triangle'
+        || odd == 'triangle' && fill != 't2' || odd == 't2' && fill != "triangle";
+}
 
 function badcolor(a: string, b: string) {
     return a == '#dede0e' && b == '#fad000'
@@ -87,13 +114,21 @@ function picker<T>(n: number, options: T[], orientation: Orientation, vary: bool
     if (vary) {
         const t = rnd(n);
 
-        console.log(t, n)
         let i = 0;
 
-        const odd = rnd(options);
+        let odd = rnd(options);
         let other = odd;
-        while (other == odd || badcombo(odd, other, orientation))
+
+        let z = 0;
+        while (other == odd || options.length > 2 && badcombo(odd, other, orientation)) {
+            if (++z > 20) {
+                console.log(odd, other, options)
+                throw 1
+            }
+
+            odd = rnd(options);
             other = rnd(options);
+        }
 
         return () => i++ == t ? odd : other;
     }
@@ -138,7 +173,7 @@ export class Director {
         let pickShape = picker(len, preset(this.orientation), this.orientation, vary == 'shape', rnd() < .4 && this.orientation == "grid", badcombo);
 
 
-        let pickColor = picker(len, colors, this.orientation, vary == 'color', rnd() < .4, badcolor);
+        let pickColor = picker(len, presetColor(), this.orientation, vary == 'color', rnd() < .4, badcolor);
 
         let shadings = ['solid', 'contour'] as Shading[];
 
