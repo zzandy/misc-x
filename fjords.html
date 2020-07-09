@@ -1,167 +1,171 @@
 <!DOCTYPE html>
 
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+
 <head>
     <meta charset="utf-8" />
     <title></title>
 </head>
+
 <body>
     <script type="text/javascript">
-        function makeCanvas(w, h) {
-            var can = document.createElement('canvas');
-            can.width = w;
-            can.height = h;
+        function addCanvas(w, h) {
+            const canvas = document.createElement('canvas');
 
-            return can;
-        }
+            canvas.width = w;
+            canvas.height = h;
 
-        function placeCanvas(w, h) {
-            var can = makeCanvas(w, h);
-            document.body.appendChild(can);
-            return can.getContext('2d');
+            document.body.appendChild(canvas);
+            return canvas.getContext('2d');
         }
     </script>
     <script type="text/javascript">
-        var a = 100;
+        //const colors = ['#FFD300', '#002366', '#C80815'];
+        const colors = ['#8fca32', '#0862bf', '#f7f4e6'];
+        const secondary = [1, 2];
+        const sq32 = Math.sqrt(3) / 2;
+        const tau = Math.PI * 2;
 
-        var q = 1 / Math.sqrt(3);
-        var b = 1;
-        var w = 2 * q * a;
-        var h = a;
+        const tile = [0, 0, 0, 0, 0, 0];
+        const tiles = [];
 
-        var tau = 2 * Math.PI;
+        addTile(tile);
 
-        function circle(ctx, x, y, r) {
-            ctx.beginPath();
-            ctx.arc(x, y, r, 0, tau);
-            ctx.closePath();
-            ctx.stroke();
+        for (let i = 1; i < 6; ++i) {
+            place(tile, i, 6);
         }
 
-        function prepCanvas() {
-            var ctx = placeCanvas(2 * b + w, 2 * b + h)
-            ctx.translate(b + w / 2, b + h / 2);
-            ctx.scale(a,-a);
-            ctx.lineWidth = 1 / a;
-            return ctx;
+        function place(tile, from, to) {
+            if (from >= to) return;
+
+            for (let c of secondary) {
+                let clone = tile.slice();
+                for (let i = from; i < to; ++i) {
+                    clone[i] = c;
+                }
+
+                addTile(clone);
+
+                for (let i = 2; i < from; ++i)
+                    place(clone, 1, i)
+
+                for (let i = 2; i < from; ++i)
+                    place(clone, i, from - 1);
+            }
         }
 
-        var hexv = [
-            [q / 2, 1 / 2],
-            [q, 0],
-            [q / 2, -1 / 2],
-            [-q / 2, -1 / 2],
-            [-q, 0],
-            [-q / 2, 1 / 2]
-        ];
-
-        function plotPath(ctx, path){
-        
-            ctx.beginPath();
-            var n=0;
-
-            ctx.moveTo(path[n][0], path[n][1]);
-            while(++n<path.length){
-                ctx.lineTo(path[n][0], path[n][1]);
+        function canonical(tile) {
+            let tiles = [tile];
+            let clone = tile;
+            for (let i = 1; i < 6; ++i) {
+                clone = clone.slice();
+                clone.unshift(clone.pop());
+                tiles.push(clone);
             }
 
-            ctx.closePath();
+            tiles.sort(byScore);
 
+            return tiles[0];
         }
 
-        function renderHex(ctx) {
-            plotPath(ctx, hexv)
-
-            ctx.stroke();
+        function byScore(a, b) {
+            return score(b) - score(a);
         }
 
+        function score(tile) {
+            const s = tile.reduce((a, t) => {
 
-        var base = '#002366';
-        var colors = [
-            '#C80815',
-            base,
-            '#FFD300',
-            base
-        ];
+                if (t != 0 && t < a.max) ++a.inv;
 
-        function fetch(a, i) {
-            i = i % a.length;
-            while (i < 0)
-                i += a.length;
+                a.max = Math.max(a.max, t);
+                if (a.max == 0) ++a.max0;
+                return a;
+            }, { max0: 0, max: 0, inv: 0 });
 
-            return a[i];
+            return s.max0 - s.inv * 2;
         }
 
-        function add(v1, v2) {
-            return [v1[0] + v2[0], v1[1] + v2[1]];
+        console.log(`${tiles.length} total`)
+
+        tiles.sort(byScore);
+        tiles.map(draw);
+
+        function addTile(tile) {
+            tile = canonical(tile);
+            if (!tiles.some(t => t.every((c, i) => c == tile[i])))
+                tiles.push(tile)
         }
 
-        function mul(s, v) {
-            return [s * v[0], s * v[1]];
-        }
+        function draw(tile) {
+            const s = 144;
+            const ctx = addCanvas(s, s)
 
-        function averagePoint(a, i, j) {
-            return mul(1 / 2, add(fetch(a, i), fetch(a, j)));
-        }
+            ctx.translate(s / 2, s / 2);
 
-        var numRender = 0;
-        function render(s) {
-            console.log(++numRender, s)
+            ctx.save();
+            ctx.beginPath();
+            for (let i = 0; i < 6; ++i) {
+                if (i == 0) ctx.moveTo(0, s / 2);
+                else ctx.lineTo(0, s / 2);
 
-            var ctx = prepCanvas();
-            
+                ctx.rotate(tau / 6);
+            }
+            ctx.restore();
 
-            var n = -1;
-            var l = s.length;
-
-            var k = -1;
-
-            ctx.fillStyle = colors[1];
-            plotPath(ctx, hexv);
+            ctx.fillStyle = colors[0];
             ctx.fill();
 
-            while (++n < l) {
-                ctx.fillStyle = colors[n % colors.length];
-                if (ctx.fillStyle == base) {
-                    k += s[n];
-                    continue;
+            ctx.save();
+
+            let prev = 0;
+            let a = 3 * tau / 12;
+            let start = a;
+            const r = s / 2;
+            const h = sq32 * r;
+            const c = s / 4;
+            const cos = Math.cos;
+            const sin = Math.sin;
+
+            for (let i = 1; i < 7; ++i) {
+                let next = tile[i % 6];
+
+                if (prev != 0) {
+                    ctx.lineTo(r * cos(a), r * sin(a));
                 }
 
-                var path = [];
+                a += tau / 12;
 
-                path.push(averagePoint(hexv, k, k+1));
+                if (prev != next) {
+                    if (prev != 0) {
+                        ctx.lineTo(h * cos(a), h * sin(a));
+                        if (a - start >= tau / 3) {
+                            const b = (a + start) / 2;
+                            const p = [c * cos(b), c * sin(b)]
 
-                for (var i = 0; i < s[n]; ++i) {
-                    ++k;
-                    path.push(hexv[k]);
-                    path.push(averagePoint(hexv, k, k + 1));
-                }
-
-                for (var i = 0; i < s[n]; ++i) {
-                    path.push(mul(.3, hexv[k-i]));
-                }
-
-                plotPath(ctx, path);
-                ctx.fill();
-            }
-        }
-
-        for (var i = 5; i >= 1; --i) {
-            for (var j = 6 - i; j >= 1; --j) {
-                if (i + j < 6)
-                    for (var k = 5 - i - j; k > 0; --k) {
-                        if (i + j + k < 6)
-                            for (var l = 6 - i - j - k; l > 0; --l) {
-                                if (i + j + k + l == 6)
-                                    render([i, j, k, l]);
-                            }
+                            ctx.bezierCurveTo(c * cos(a), c * sin(a), p[0] + c * cos(b + tau / 4) / 2, p[1] + c * sin(b + tau / 4) / 2, p[0], p[1]);
+                            ctx.bezierCurveTo(p[0] - c * cos(b + tau / 4) / 2, p[1] - c * sin(b + tau / 4) / 2, c * cos(start), c * sin(start), h * cos(start), h * sin(start));
+                        }
                         else
-                            render([i, j, k]);
+                            ctx.bezierCurveTo(c * cos(a), c * sin(a), c * cos(start), c * sin(start), h * cos(start), h * sin(start));
+
+                        ctx.closePath();
+                        ctx.fillStyle = colors[prev];
+                        ctx.fill();
                     }
-                else render([i, j]);
+                    else {
+                        ctx.beginPath();
+                        start = a;
+                        ctx.moveTo(h * cos(a), h * sin(a));
+                    }
+                }
+
+                a += tau / 12;
+
+                prev = next;
             }
         }
 
     </script>
 </body>
+
 </html>
