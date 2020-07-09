@@ -23,12 +23,13 @@
     </script>
     <script type="text/javascript">
         //const colors = ['#FFD300', '#002366', '#C80815'];
-        const colors = ['#8fca32', '#0862bf', '#f7f4e6'];
+        const colors = ['#8fca32', '#1872cf', '#f7f4e6'];
         const secondary = [1, 2];
         const sq32 = Math.sqrt(3) / 2;
         const tau = Math.PI * 2;
 
         const tile = [0, 0, 0, 0, 0, 0];
+
         const tiles = [];
 
         const p0 = (function (w, h) {
@@ -77,10 +78,10 @@
             ctx.globalCompositeOperation = 'color-burn';
 
             const coords = [
-                [10, 10, 2, 1],
-                [20, 40, 2, 1],
+                [10, 10, 2, 2],
+                [20, 40, 2, 2],
                 [45, 35, 2, 2],
-                [35, 15, 2, 1],
+                [35, 15, 2, 2],
                 [5, 55, 2, 2],
             ];
 
@@ -100,7 +101,7 @@
             ctx.fillStyle = colors[2];
             ctx.fillRect(0, 0, w, h);
 
-            ctx.fillStyle = 'rgba(0,0,0,.3)';
+            ctx.fillStyle = 'rgba(0,0,0,.4)';
             ctx.globalCompositeOperation = 'color-burn';
 
             const coords = [
@@ -187,8 +188,8 @@
                 tiles.push(tile)
         }
 
-        function draw(tile) {
-            const s = 144;
+        function draw(tile, i) {
+            const s = 180;
             const ctx = addCanvas(s, s)
 
             ctx.translate(s / 2, s / 2);
@@ -202,7 +203,6 @@
                 ctx.rotate(tau / 6);
             }
 
-            ctx.translate(Math.random() * s | 0, Math.random() * s | 0);
             ctx.fillStyle = ctx.createPattern(p0, 'repeat');
             ctx.fill();
 
@@ -225,39 +225,59 @@
             const cos = Math.cos;
             const sin = Math.sin;
 
+            let path = new Path2D();
+
             for (let i = 1; i < 7; ++i) {
                 let next = tile[i % 6];
 
                 if (prev != 0) {
-                    ctx.lineTo(r * cos(a), r * sin(a));
+                    path.lineTo(r * cos(a), r * sin(a));
                 }
 
                 a += tau / 12;
 
                 if (prev != next) {
                     if (prev != 0) {
-                        ctx.lineTo(h * cos(a), h * sin(a));
+                        path.lineTo(h * cos(a), h * sin(a));
+
+                        ctx.beginPath();
+                        ctx.moveTo(h * cos(a), h * sin(a));
+
                         if (a - start >= tau / 3) {
                             const b = (a + start) / 2;
                             const p = [c * cos(b), c * sin(b)]
 
-                            ctx.bezierCurveTo(c * cos(a), c * sin(a), p[0] + c * cos(b + tau / 4) / 2, p[1] + c * sin(b + tau / 4) / 2, p[0], p[1]);
-                            ctx.bezierCurveTo(p[0] - c * cos(b + tau / 4) / 2, p[1] - c * sin(b + tau / 4) / 2, c * cos(start), c * sin(start), h * cos(start), h * sin(start));
-                        }
-                        else
-                            ctx.bezierCurveTo(c * cos(a), c * sin(a), c * cos(start), c * sin(start), h * cos(start), h * sin(start));
+                            const k = a - start > 2 * tau / 3
+                                ? 2 * c
+                                : 2 * c / 3;
 
-                        ctx.closePath();
+                            path.bezierCurveTo(c * cos(a), c * sin(a), p[0] + k * cos(b + tau / 4), p[1] + k * sin(b + tau / 4), p[0], p[1]);
+                            path.bezierCurveTo(p[0] - k * cos(b + tau / 4), p[1] - k * sin(b + tau / 4), c * cos(start), c * sin(start), h * cos(start), h * sin(start));
+
+                            ctx.bezierCurveTo(c * cos(a), c * sin(a), p[0] + k * cos(b + tau / 4), p[1] + k * sin(b + tau / 4), p[0], p[1]);
+                            ctx.bezierCurveTo(p[0] - k * cos(b + tau / 4), p[1] - k * sin(b + tau / 4), c * cos(start), c * sin(start), h * cos(start), h * sin(start));
+                        }
+                        else {
+                            path.bezierCurveTo(c * cos(a), c * sin(a), c * cos(start), c * sin(start), h * cos(start), h * sin(start));
+                            ctx.bezierCurveTo(c * cos(a), c * sin(a), c * cos(start), c * sin(start), h * cos(start), h * sin(start));
+                        }
+
+                        path.closePath();
                         ctx.fillStyle = patterns[prev];
+
+                        ctx.fill(path);
+
+                        ctx.strokeStyle = 'rgba(0,0,0,.5)'
+
                         ctx.save();
-                        ctx.translate(Math.random() * s | 0, Math.random() * s | 0);
-                        ctx.fill();
+                        ctx.globalCompositeOperation = 'multiply'
+                        ctx.stroke();
                         ctx.restore();
                     }
                     else {
-                        ctx.beginPath();
                         start = a;
-                        ctx.moveTo(h * cos(a), h * sin(a));
+                        path = new Path2D();
+                        path.moveTo(h * cos(a), h * sin(a));
                     }
                 }
 
