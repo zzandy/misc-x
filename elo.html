@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Best</title>
+
+    <style type="text/css">
+        #input>* {
+            display: block;
+        }
+
+        #contest>button {
+            min-width: 10em;
+        }
+    </style>
+
+</head>
+
+<body>
+    <div id="input">
+        <label for="input-text">One option per line:</label>
+        <textarea id="input-text" cols="80" rows="10"></textarea>
+        <button onclick="startContest()">Start Contest</button>
+    </div>
+
+    <div id="contest" style="display: none;">
+        <button id="left"></button>
+        <button id="none">Neither</button>
+        <button id="right"></button>
+    </div>
+
+    <div id="results" style="display: none;">
+        <ol id="listing"></ol>
+    </div>
+
+    <script type="text/javascript">
+        const x10diff = 400;
+        const kFactor = 32;
+
+        function updateElo(rating1, rating2, score1, score2) {
+            // Expected
+            let e1 = expectWinLose(rating1, rating2);
+            let e2 = expectWinLose(rating2, rating1);
+
+            // Scores to "Results"
+            let r1 = (score1 + score2) > 0 ? score1 / (score1 + score2) : 0;
+            let r2 = (score1 + score2) > 0 ? score2 / (score1 + score2) : 0;
+
+            return [
+                newRating(rating1, e1, r1),
+                newRating(rating2, e2, r2)
+            ]
+        }
+
+        function expectWinLose(winnerRating, loserRating) {
+            return 1 / (1 + Math.pow(10, (loserRating - winnerRating) / x10diff));
+        }
+
+        function newRating(rating, expected, score) {
+            var delta = kFactor * (score - expected);
+
+            return Math.max(0, rating + kFactor * (score - expected));
+        }
+    </script>
+
+    <script type="text/javascript">
+
+        const input = document.getElementById('input');
+        const contest = document.getElementById('contest');
+        const results = document.getElementById('results');
+
+        const left = document.getElementById('left');
+        const right = document.getElementById('right');
+        const none = document.getElementById('none');
+
+        const listing = document.getElementById('listing');
+
+        function startContest() {
+            const options = document.getElementById('input-text').value.split('\n').map(text => ({ text, rating: 800 }));
+
+            input.style.display = 'none';
+
+            runContest(options);
+        }
+
+        function runContest(options) {
+
+            contest.style.display = '';
+
+            let pairs = [];
+
+            for (let i = 0; i < options.length; ++i) {
+                for (let j = i + 1; j < options.length; ++j) {
+                    if (Math.random() < .5)
+                        pairs.push([options[i], options[j]]);
+                    else
+                        pairs.push([options[j], options[i]]);
+                }
+            }
+
+            for (let i = pairs.length - 1; i >= 0; --i) {
+                let x = (Math.random() * i) | 0;
+                let a = pairs[x];
+                pairs[x] = pairs[i];
+                pairs[i] = a;
+            }
+
+            runPairs(0, pairs, options);
+        }
+
+        function runPairs(index, pairs, options) {
+            if (index >= pairs.length) {
+                contest.style.display = 'none';
+                showResults(options);
+                return;
+            }
+
+            const p = pairs[index];
+
+            left.innerText = p[0].text;
+            right.innerText = p[1].text;
+
+            const clickLeft = () => {
+                const res = updateElo(p[0].rating, p[1].rating, 1, 0);
+                p[0].rating = res[0];
+                p[1].rating = res[1];
+
+                unbind();
+                runPairs(++index, pairs, options);
+            };
+
+            const clickRight = () => {
+                const res = updateElo(p[0].rating, p[1].rating, 0, 1);
+                p[0].rating = res[0];
+                p[1].rating = res[1];
+
+                unbind();
+                runPairs(++index, pairs, options);
+            };
+
+            const clickNone = () => {
+                const res = updateElo(p[0].rating, p[1].rating, 0, 0);
+                p[0].rating = res[0];
+                p[1].rating = res[1];
+
+                unbind();
+                runPairs(++index, pairs, options);
+            };
+
+            const unbind = () => {
+                left.removeEventListener('click', clickLeft)
+                right.removeEventListener('click', clickRight)
+                none.removeEventListener('click', clickNone)
+            }
+
+            left.addEventListener('click', clickLeft)
+            right.addEventListener('click', clickRight)
+            none.addEventListener('click', clickNone)
+        }
+
+        function showResults(options) {
+            results.style.display = '';
+
+            options.sort((a, b) => {
+                return b.rating - a.rating;
+            });
+
+            options.forEach(opt => {
+                const entry = document.createElement('li');
+                entry.innerText = opt.text + ' ' + opt.rating.toFixed(0);
+                listing.appendChild(entry);
+            });
+        }
+    </script>
+</body>
+
+</html>
