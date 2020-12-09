@@ -19,7 +19,7 @@ function init(): World {
 
     document.body.style.backgroundColor = '#181a1b';
 
-    addEventListener('keydown', () => world.dir.regen());
+    //addEventListener('keydown', () => world.dir.regen());
     addEventListener('mousedown', () => world.dir.regen());
 
     addEventListener("wheel", (e) => { if (e.deltaY > 0) world.dir.grow(); else world.dir.shrink(); });

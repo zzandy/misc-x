@@ -29,8 +29,7 @@ function init(): World {
     };
 
     window.addEventListener('keydown', e => {
-        if (e.keyCode == 82) {
-
+        if (e.code == "KeyR" || e.keyCode == 82) {
             world.cells = new HexStore<Cell>(size, (i, j) => ({
                 color: rnd(numColors),
                 spring: new Vector(0, 0),
@@ -92,7 +91,6 @@ function update(delta: number, state: World) {
                 let drop = 1;
                 let n = 0;
                 let prev = cell;
-
 
                 while (tgt >= 0) {
                     ++n;

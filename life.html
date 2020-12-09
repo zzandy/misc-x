@@ -1,0 +1,189 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>Life</title>
+</head>
+
+<body>
+    <script type="text/javascript">
+        // canvas
+        function makeCanvas() {
+            let canvas = document.createElement('canvas');
+
+            canvas.height = window.innerHeight;
+            canvas.width = window.innerWidth;
+            canvas.style.position = 'fixed';
+
+            document.body.style.margin = '0';
+            document.body.appendChild(canvas);
+            return canvas.getContext('2d');
+        }
+    </script>
+    <script type="text/javascript">
+        // loop
+        function loop(fixedDelta, init, update, render) {
+
+            let maxUpdates = 12;
+            let then = Date.now();
+            let acc = fixedDelta;
+
+            let world = init();
+
+            tick();
+
+            function tick() {
+                let now = Date.now();
+                acc += (now - then);
+                then = now;
+
+                let numUpdates = 0;
+
+                while (acc >= fixedDelta && ++numUpdates < maxUpdates) {
+                    acc -= fixedDelta;
+                    world = update(world);
+                }
+
+                if (numUpdates > 0) {
+                    render(world);
+                    if (numUpdates == maxUpdates)
+                        acc = 0;
+                }
+
+                requestAnimationFrame(tick);
+            }
+        }
+
+        function rnd(n) {
+            return Math.floor(n * Math.random())
+        }
+    </script>
+    <script type="text/javascript">
+
+        loop(1000 / 60, init, update, render);
+
+        function init() {
+            let ctx = makeCanvas();
+            let { width, height } = ctx.canvas;
+
+            let k = 4;
+
+            let w = width / k | 0;
+            let h = height / k | 0;
+
+            let data = ctx.createImageData(w, h);
+            let data2 = ctx.createImageData(w, h);
+
+            for (let i = 0; i < h; ++i)
+                for (let j = 0; j < w; ++j) {
+                    let c = coord(i, j, w, h);
+                    data.data[c] = data2.data[c] = rnd(255);
+                    data.data[c + 3] = 255;
+
+                    data2.data[c + 3] = 255;
+                }
+
+            ctx.imageSmoothingEnabled = false;
+
+            let flyover = [];
+
+            ctx.canvas.addEventListener('mousemove', placeFliers);
+            ctx.canvas.addEventListener('mousedown', placeFliers);
+
+
+            function placeFliers(e) {
+
+                if (e.buttons != 1) return;
+
+                let x = e.clientX / k | 0;
+                let y = e.clientY / k | 0;
+
+                switch (rnd(4)) {
+                    case 0:
+                        flyover.push([x - 1, y]);
+                        flyover.push([x, y + 1]);
+                        flyover.push([x + 1, y - 1]);
+                        flyover.push([x + 1, y]);
+                        flyover.push([x + 1, y + 1]);
+                        break;
+
+                    case 1:
+                        flyover.push([x + 1, y]);
+                        flyover.push([x, y - 1]);
+                        flyover.push([x - 1, y - 1]);
+                        flyover.push([x - 1, y]);
+                        flyover.push([x - 1, y + 1]);
+                        break;
+
+                    case 2:
+
+                        flyover.push([x, y - 1]);
+                        flyover.push([x - 1, y]);
+                        flyover.push([x - 1, y + 1]);
+                        flyover.push([x, y + 1]);
+                        flyover.push([x + 1, y + 1]);
+                        break;
+
+                    case 3:
+                        flyover.push([x, y + 1]);
+                        flyover.push([x + 1, y]);
+                        flyover.push([x - 1, y - 1]);
+                        flyover.push([x, y - 1]);
+                        flyover.push([x + 1, y - 1]);
+                        break;
+                }
+            };
+
+            return { ctx, width, height, w, h, data, data2, flyover };
+        }
+
+        function update(world) {
+
+            let { data, data2, flyover, w, h } = world;
+
+            for (let i = 0; i < h; ++i)
+                for (let j = 0; j < w; ++j) {
+                    let sum = (data.data[coord(i - 1, j - 1, w, h)] > 55 ? 1 : 0)
+                        + (data.data[coord(i, j - 1, w, h)] > 55 ? 1 : 0)
+                        + (data.data[coord(i + 1, j - 1, w, h)] > 55 ? 1 : 0)
+                        + (data.data[coord(i - 1, j, w, h)] > 55 ? 1 : 0)
+                        + (data.data[coord(i + 1, j, w, h)] > 55 ? 1 : 0)
+                        + (data.data[coord(i - 1, j + 1, w, h)] > 55 ? 1 : 0)
+                        + (data.data[coord(i, j + 1, w, h)] > 55 ? 1 : 0)
+                        + (data.data[coord(i + 1, j + 1, w, h)] > 55 ? 1 : 0)
+
+                    let x = coord(i, j, w, h);
+
+                    let live = data.data[x] > 55;
+
+                    if (live && (sum < 2 || sum > 3)) data2.data[x] = rnd(55);
+                    else if (!live && sum == 3) data2.data[x] = 200 + rnd(55)
+                    else data2.data[x] = data.data[x];
+                }
+
+            flyover.forEach(([j, i]) => data2.data[coord(i, j, w, h)] = 255);
+            flyover.length = 0;
+
+            world.data = world.data2;
+            world.data2 = data;
+
+            return world;
+        }
+
+        function render(world) {
+            let { ctx, data, width, height, w, h } = world;
+
+            ctx.putImageData(data, 0, 0)
+            if (w != width)
+                ctx.drawImage(ctx.canvas, 0, 0, w, h, 0, 0, width, height);
+        }
+
+        function coord(i, j, w, h) {
+            return (((i + h) % h) * w + ((j + w) % w)) * 4;
+        }
+
+    </script>
+</body>
+
+</html>

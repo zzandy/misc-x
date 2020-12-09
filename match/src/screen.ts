@@ -73,7 +73,7 @@ export class ScreenManager {
         const a = this.scaler.r;
         const sctr = tau / 12;
         const ctx = new Path2D();
-       
+
         [
             this.scaler.storeToScreen(0, 0).add(new Vector(-a, 0)),
             this.scaler.storeToScreen(0, 0),
@@ -103,7 +103,7 @@ export class ScreenManager {
             }
         });
 
-        this.clipPath=ctx;
+        this.clipPath = ctx;
 
         canvas.addEventListener('mousemove', (e) => this.onMove(e));
         canvas.addEventListener('mousedown', (e) => this.onDown(e));
@@ -131,13 +131,13 @@ export class ScreenManager {
         ctx.save();
 
         let a = r0;
-        
+
         ctx.clip(this.clipPath);
 
         world.cells.each((i, j, cell) => {
             const color = cell.color
-
-            ctx.fillStyle = ctx.strokeStyle = colors[color];
+            ctx.strokeStyle = 'white';
+            ctx.fillStyle = colors[color];
 
             const pos = this.scaler.storeToScreen(i, j);
 
@@ -150,6 +150,9 @@ export class ScreenManager {
 
             }
             else {
+                if (this.active != null && this.active[0] == i && this.active[1] == j)
+                    ctx.strokeCircle(pos.x, pos.y, r);
+
                 ctx.fillCircle(pos.x, pos.y, r);
             }
 
