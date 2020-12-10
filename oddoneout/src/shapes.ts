@@ -1,5 +1,5 @@
 import { ICanvasRenderingContext2D } from "../../lib/canvas";
-import { IDrawable, ShapeType, Shading } from "./director";
+import { IDrawable, ShapeType, Shading, sq32 } from "./director";
 
 const tau = Math.PI * 2;
 const sin = Math.sin;
@@ -251,6 +251,43 @@ export class Shape implements IDrawable {
                 ctx.quadraticCurveTo(-r1 / 2, -r1 / 2, -r2, 0);
                 ctx.quadraticCurveTo(-r1 / 2, r1 / 2, 0, r2);
 
+                break;
+            case 'asterisk':
+                let t = .15;
+                ctx.save();
+                ctx.moveTo(-t, rh);
+                for (let i = 0; i < 6; ++i) {
+                    ctx.lineTo(-t, rh);
+                    ctx.lineTo(t, rh);
+                    ctx.lineTo(t, 3 * t / sq32 / 2);
+                    ctx.rotate(-tau / 6);
+                }
+                ctx.restore();
+                break;
+            case 'tripl':
+                let n = .27;
+                ctx.save();
+                ctx.rotate(tau / 6);
+                ctx.moveTo(-n, rh);
+                for (let i = 0; i < 3; ++i) {
+                    ctx.lineTo(-n, rh);
+                    ctx.lineTo(n, rh);
+                    ctx.lineTo(n, n / sq32 / 2);
+                    ctx.rotate(-tau / 3);
+                }
+                ctx.restore();
+                break;
+            case 'y':
+                let e = .25;
+                ctx.save();
+                ctx.moveTo(-e, rh);
+                for (let i = 0; i < 3; ++i) {
+                    ctx.lineTo(-e, rh);
+                    ctx.lineTo(e, rh);
+                    ctx.lineTo(e, e / sq32 / 2);
+                    ctx.rotate(-tau / 3);
+                }
+                ctx.restore();
                 break;
             default:
                 break;

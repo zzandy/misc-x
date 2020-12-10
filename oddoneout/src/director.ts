@@ -2,7 +2,7 @@ import { ICanvasRenderingContext2D } from "../../lib/canvas";
 import { rnd } from '../../lib/rnd';
 import { Shape } from "./shapes";
 
-export const shapeTypes = ['heart', 'triangle', 'square', 'hex', 'circle', 'coin',
+export const shapeTypes = ['heart', 'triangle', 'square', 'hex', 'circle', 'coin', 'tripl', 'y', 'asterisk',
     't2', 'h2', 'c', 'c2', 's2', 'diamond', 'd2', 'bolt', 'clubs', 'diamonds',
     'cross', 'x', 'star', 'eq', 'pause', 'slash', 'sl2'] as const;
 export type ShapeType = typeof shapeTypes[number];
@@ -20,13 +20,18 @@ const presets: { [key in Orientation]: ShapeType[][] } = {
         ['circle', 'c'],
         ['circle', 'c2'],
         ['circle', 'coin'],
+        ['circle', 'asterisk'],
         ['circle', 'coin', 'c', 'c2'],
         ['triangle', 'd2'],
         ['triangle', 'clubs'],
         ['square', 'pause', 'cross', 'eq'],
         ['square', 'slash', 'sl2'],
         ['cross', 'x', 'diamond'],
-        ['cross', 'x'],
+        ['cross', 'x', 'asterisk'],
+        ['x', 'tripl', 'asterisk'],
+        ['x', 'y', 'tripl', 'cross'],
+        ['tripl', 'asterisk'],
+        ['asterisk', 'hex', 'h2'],
         ['diamond', 'diamonds'],
         ['diamonds', 'heart', 'clubs'],
         ['heart', 'clubs'],
@@ -36,19 +41,22 @@ const presets: { [key in Orientation]: ShapeType[][] } = {
 
     'rows': [
         ['circle', 'h2', 'coin'],
-        ['hex', 's2'],
+        ['hex', 's2', 'asterisk'],
         ['h2', 's2'],
-        ['triangle', 'heart']
+        ['triangle', 'heart', 'tripl'],
+        ['tripl', 'asterisk', 'clubs'],
+        ['tripl', "y"],
     ],
 
     'cols': [
         ['circle', 'hex', 'coin'],
-        ['t2', 'd2', 'heart'],
+        ['t2', 'd2', 'heart', 'y'],
         ['hex', 's2'],
         ['h2', 's2'],
+        ['tripl', 'asterisk', 'clubs', "y"],
+        ['tripl', "y"],
     ]
 }
-
 
 function preset(orientation: Orientation): ShapeType[] {
     let set = presets[orientation];
@@ -77,10 +85,7 @@ const colors = [
 ];
 
 function presetColor() {
-
-
     let pick = rnd();
-
 
     if (pick < .1) {
         return [colors[colors.length - 1]].concat(colors[rnd(colors.length - 1)])
@@ -99,7 +104,9 @@ function presetColor() {
 
 function badcombo(odd: ShapeType, fill: ShapeType, orientation: Orientation) {
     return fill == 'triangle' && odd != 't2' || fill == 't2' && odd != 'triangle'
-        || odd == 'triangle' && fill != 't2' || odd == 't2' && fill != "triangle";
+        || odd == 'triangle' && fill != 't2' || odd == 't2' && fill != "triangle"
+        || (fill == 'tripl' || fill == 'y') && orientation == 'grid'
+        || fill == 'cross' && orientation == 'rows';
 }
 
 function badcolor(a: string, b: string) {
@@ -171,7 +178,6 @@ export class Director {
         var res = [];
 
         let pickShape = picker(len, preset(this.orientation), this.orientation, vary == 'shape', rnd() < .4 && this.orientation == "grid", badcombo);
-
 
         let pickColor = picker(len, presetColor(), this.orientation, vary == 'color', rnd() < .4, badcolor);
 
