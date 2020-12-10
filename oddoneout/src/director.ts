@@ -46,6 +46,7 @@ const presets: { [key in Orientation]: ShapeType[][] } = {
         ['triangle', 'heart', 'tripl'],
         ['tripl', 'asterisk', 'clubs'],
         ['tripl', "y"],
+        ['s2', 'asterisk']
     ],
 
     'cols': [
@@ -55,6 +56,7 @@ const presets: { [key in Orientation]: ShapeType[][] } = {
         ['h2', 's2'],
         ['tripl', 'asterisk', 'clubs', "y"],
         ['tripl', "y"],
+        ['s2', 'asterisk']
     ]
 }
 
