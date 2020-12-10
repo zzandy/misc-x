@@ -234,12 +234,10 @@ export class Shape implements IDrawable {
                 ctx.lineTo(-.4, -.15);
                 break;
             case 'clubs':
-
-                let r = .27;
+                let r = .28;
                 for (let i = 0; i < 3; ++i) {
                     let a = i * tau / 3 + tau / 12;
-
-                    ctx.arc(r * cos(a), .1 + r * sin(a), r, a - tau / 3, a + tau / 3,)
+                    ctx.arc(r * cos(a), r * sin(a), r, a - tau / 3, a + tau / 3,)
                 }
 
                 break;
