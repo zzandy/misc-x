@@ -28,12 +28,12 @@
         const inner = [outer[0] * .9 | 0, (dieSize * 3 + 4 * outer[0] * .05) | 0];
         const priceRad = ((outer[1] - inner[1]) * 1.0) | 0;
         const radius = [21, 18, 16];
-        const margin = 20;
+        const margin = 100;
 
         const palette = [
-            ['#61DB3C', '#9CD675', '#8DE1AF', '#123004'],
+            ['#35a4dd', '#70cbec', '#c1e9f7', '#0e2d3d'],
             ['#F6A247', '#FAF754', '#EEFDA0', '#422703'],
-            ['#FF493F', '#FFA749', '#FFE099', '#4C0909'],
+            ['#d93c00', '#e27d5e', '#ecb09e', '#771400'],
             ['#7E3CDB', '#CD48DF', '#E18DDC', '#1D0940'],
         ];
 
@@ -86,7 +86,7 @@
 
             let values = [cards.length, 0, 0, 0, 0, 0, 0];
 
-            // cards.sort(() => Math.random() - .5)
+            cards.sort(() => Math.random() - .5)
 
             for (let card of cards) {
                 card.forEach(die => ++values[die]);
