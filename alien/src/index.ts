@@ -1,8 +1,31 @@
 import { frequency, mark, doublemark } from "./counter";
 
 //calcfreq();
+report();
 calcmark();
 //calcdouble();
+
+async function report() {
+
+    let m = await mark();
+    let total = 0;
+    let counts: [string, number][] = [];
+    for (let key in m) {
+        if (key == '' || key == 'sum') continue;
+
+        total += m[key].sum;
+        counts.push([key, m[key].sum]);
+    }
+
+    counts = counts.map(([k, c]) => [k, 100 * c / total])
+    counts.sort((a, b) => b[1] - a[1])
+
+    let n = 0;
+    for (let [k, c] of counts) {
+
+        console.log(`${++n}. ${k} ${c.toFixed(2)}%`);
+    }
+}
 
 function norm(map: { [key: string]: number }) {
     const sum = map["sum"];
@@ -130,8 +153,7 @@ function calcfreq() {
             for (let key in map) {
                 if (key != "sum")
                     console.log(
-                        `${++n}. ${key}: ${(map[key] * 100).toFixed(2)}%${
-                            map[key] < threshold ? " pass" : ""
+                        `${++n}. ${key}: ${(map[key] * 100).toFixed(2)}%${map[key] < threshold ? " pass" : ""
                         }`
                     );
             }
