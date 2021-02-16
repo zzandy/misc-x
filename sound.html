@@ -8,35 +8,96 @@
 </head>
 
 <body>
-
     <label><input name="mute" type="checkbox" />Mute</label>
-    <label><input name="saw" type="radio" value="sine" />Sine</label>
-    <label><input name="saw" type="radio" value="sawtooth" />Saw</label>
-    <label><input name="saw" type="radio" value="square" />Square</label>
-    <label><input name="saw" type="radio" value="triangle" />Triangle</label>
+
+    <script type="text/javascript">
+        function bindRadial(name, setter) {
+            for (const element of document.getElementsByName(name)) {
+                if (element.checked) setter(element.value);
+                element.addEventListener('click', function (e) {
+                    setter(element.value);
+                });
+            }
+        }
+
+        function bindCheckbox(name, setter) {
+            for (const element of document.getElementsByName(name)) {
+                setter(element.checked);
+                element.addEventListener('click', function (e) {
+                    setter(element.checked);
+                });
+            }
+        }
+
+        function addRange(title, min, max, initial, setter) {
+            let input = document.createElement('input');
+            input.setAttribute('type', 'range')
+            input.setAttribute('min', min)
+            input.setAttribute('max', max)
+            input.setAttribute('value', initial)
+            input.addEventListener('input', e => setter(e.target.value));
+
+
+            let label = document.createElement('label');
+            label.appendChild(input);
+            label.appendChild(document.createTextNode(title))
+
+            let div = document.createElement('div');
+            div.appendChild(label)
+
+            document.body.appendChild(div);
+        }
+
+        let nameCtr = 0;
+
+        function addSelector(values, setter) {
+            let name = "name-" + nameCtr++;
+
+            let div = document.createElement('div');
+
+            for (let value of values) {
+                let input = document.createElement('input');
+                input.setAttribute('type', 'radio')
+                input.setAttribute('name', name)
+                input.setAttribute('value', value)
+                input.addEventListener('input', e => setter(e.target.value));
+
+                let label = document.createElement('label');
+                label.appendChild(input);
+                label.appendChild(document.createTextNode(value))
+
+                div.appendChild(label);
+            }
+            document.body.appendChild(div);
+        }
+
+    </script>
 
     <script type="text/javascript">
         const ctx = new AudioContext();
 
         const oscillator = ctx.createOscillator();
-        const oscillator2 = ctx.createOscillator();
         const gainNode = ctx.createGain();
         const filter = ctx.createBiquadFilter();
 
-        bindRadial('saw', function (value) { oscillator.type = value });
-        document.getElementsByName('mute')[0].addEventListener('change', function(e){if(e.target.checked)gainNode.gain.value = 0;else gainNode.gain.value=1; });
+        //bindRadial('type', value => oscillator.type = value);
+        bindCheckbox('mute', value => gainNode.gain.value = value ? 0 : 1);
 
-        connect(oscillator, filter, gainNode, ctx.destination);
-        connect(oscillator2, filter, gainNode, ctx.destination);
+        addRange("Volume", 0, 1000, 100, x => { gainNode.gain.value = x / 1000 });
 
-        oscillator.type = 'sine';
+        addSelector(['sine', 'sawtooth', 'square', 'triangle'], value => oscillator.type = value)
+
+        addRange('Filter frequency', 0, 10000, 440, x => filter.frequency.value = x);
+        addRange('Filter Q', 0, 20, 0, x => filter.Q.value = x);
+        addRange('Filter gain', -20, 20, 0, x => filter.gain.value = x);
+        addSelector(['lowpass', 'highpass', 'bandpass', 'lowshelf', 'highshelf', 'peaking', 'notch', 'allpass'], value => filter.type = value)
+
+        oscillator.connect(filter);
+        filter.connect(gainNode)
+        gainNode.connect(ctx.destination);
+
         oscillator.frequency.value = 440;
         oscillator.start();
-
-        oscillator2.type = 'sine';
-        oscillator2.frequency.value = 440;
-        oscillator2.start();
-
 
         filter.type = "lowshelf";
         filter.frequency.value = 40;
@@ -64,7 +125,6 @@
 
             return this;
         }
-
 
         var acc = 0;
         const delay = 200;
@@ -95,16 +155,6 @@
                 oscillator.frequency.value = nextFrequency();
             }
         }).start();
-
-
-        function bindRadial(name, setter) {
-            for (const element of document.getElementsByName(name)) {
-                if (element.checked) setter(element.value);
-                element.addEventListener('click', function (e) {
-                    setter(element.value);
-                });
-            }
-        }
 
         function connect() {
             var prev = arguments[0];
