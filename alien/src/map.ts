@@ -1,17 +1,16 @@
 export function getMap(): [{ [key: string]: number }, { [key: string]: string }] {
-    const keys = "THE AND ING th ST TO HE IN ER AN RE ES ON EN AT ED OR AR IT EX QU"
+    const keys = "THE AND HE IN ER RE ON AT ED IT"
         .toLowerCase()
         .split(" ");
 
-    const letters = "abcidefghlmnoprstuvwykqjxz".split("");
+    const letters = "abcidefghlmnoprstuvwyk".split("");
     const shift: { [key: string]: string } = {
         // k: 'k/q',
-        // q: 'k/q',
         // k: "k/q/j/x/z",
-        // q: "k/q/j/x/z",
-        // j: "k/q/j/x/z",
-        // x: "k/q/j/x/z",
-        // z: "k/q/j/x/z"
+        q: "q/j/x/z",
+        j: "q/j/x/z",
+        x: "q/j/x/z",
+        z: "q/j/x/z"
     };
 
     const map = keys.concat(letters).reduce(
