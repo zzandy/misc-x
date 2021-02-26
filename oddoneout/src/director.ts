@@ -1,6 +1,6 @@
 import { ICanvasRenderingContext2D } from "../../lib/canvas";
 import { rnd } from '../../lib/rnd';
-import { Shape } from "./shapes";
+import { Fade, Shape } from "./shapes";
 
 export const shapeTypes = ['heart', 'triangle', 'square', 'hex', 'circle', 'coin', 'tripl', 'y', 'asterisk',
     't2', 'h2', 'c', 'c2', 's2', 'diamond', 'd2', 'bolt', 'clubs', 'diamonds',
@@ -193,7 +193,7 @@ export class Director {
         for (let i = 0; i < ny; ++i) {
             let row = [];
             for (let j = 0; j < nx; ++j) {
-                row.push(new Shape(pickShape(), pickColor(), pickShade(), pickSize()))
+                row.push(new Shape(pickShape(), pickColor(), pickShade(), pickSize(), new Fade(rnd(100), 100)))
             }
 
             res.push(row);
@@ -232,6 +232,7 @@ export class Director {
 
 export interface IDrawable {
     draw(ctx: ICanvasRenderingContext2D): void;
+    getFade(): Fade;
 }
 
 

@@ -4,13 +4,57 @@ import { IDrawable, ShapeType, Shading, sq32 } from "./director";
 const tau = Math.PI * 2;
 const sin = Math.sin;
 const cos = Math.cos;
+const min = Math.min;
+
+export class Fade {
+    private _value: number = 0;
+    private readonly vpms: number
+    constructor(private leadInMs: number, private durationMs: number) {
+        this.vpms = 1 / durationMs;
+    }
+
+    get value() {
+        return this._value;
+    }
+
+    update(deltaMs: number): boolean {
+        let hasSettled = true;
+
+        if (this.leadInMs > 0) {
+            const leadIn = this.leadInMs > deltaMs
+                ? deltaMs
+                : this.leadInMs;
+
+            this.leadInMs -= leadIn;
+            deltaMs -= leadIn;
+
+            hasSettled = this.leadInMs <= 0;
+        }
+
+        if (deltaMs > 0 && this.durationMs > 0) {
+            const growth = this.durationMs > deltaMs
+                ? deltaMs
+                : this.durationMs;
+
+            this._value += this.vpms * growth;
+            this.durationMs -= growth;
+
+            hasSettled = this.durationMs <= 0;
+        }
+
+        return !hasSettled;
+    }
+}
 
 export class Shape implements IDrawable {
     constructor(public readonly type: ShapeType,
         public readonly color: string,
         public readonly shading: Shading,
-        private readonly small: boolean) {
+        private readonly small: boolean,
+        public readonly fade: Fade) {
     }
+
+    getFade() { return this.fade; }
 
     draw(ctx: ICanvasRenderingContext2D): void {
         ctx.fillStyle = ctx.strokeStyle = this.color;

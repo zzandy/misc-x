@@ -43,16 +43,21 @@ export class Render {
 
         for (let i = 0; i < ny; ++i) {
             for (let j = 0; j < nx; ++j) {
+
+                let shape = shapes[i][j];
+                let fade = fadefn(shape.getFade().value);
+
                 ctx.save();
 
                 let dx = cols ? ((i % 2) == 0 ? 0 : .5) : 0;
                 let dy = rows ? ((j % 2) == 0 ? 0 : .5) : 0;
 
                 ctx.translate(sx * (pad) * (j + dx), sy * (pad) * (i + dy));
-                ctx.scale(box, box);
+                ctx.globalAlpha = fade;
+                ctx.scale(box*fade, box*fade);
 
                 ctx.lineWidth = .06;
-                shapes[i][j].draw(ctx);
+                shape.draw(ctx);
 
                 ctx.restore();
             }
@@ -60,4 +65,8 @@ export class Render {
 
         ctx.restore();
     }
+}
+
+function fadefn(w: number) {
+    return ((w * (w * 6.0 - 15.0) + 10.0) * w * w * w)
 }
