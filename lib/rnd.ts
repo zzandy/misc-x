@@ -6,7 +6,9 @@ export function rnd(a: number, b: number, noint: boolean): number;
 export function rnd<T>(a?: T[] | number, b?: number | boolean, c?: boolean): T | number {
     if (a !== undefined && b !== undefined) {
         if (c !== undefined)
-            return <number>b + (<number>a - <number>b) * Math.random();
+            return !!c
+                ? <number>b + (<number>a - <number>b) * Math.random()
+                : (<number>b + (<number>a - <number>b) * Math.random() | 0);
 
         return typeof b === "boolean"
             ? <number>a * Math.random()
