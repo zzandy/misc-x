@@ -1,5 +1,35 @@
 import { ICanvasRenderingContext2D, fullscreenCanvas } from "../../lib/canvas";
-import { IDrawable, Orientation, sq32 } from "./director";
+import { IDrawable, Orientation, sq32, fadefn } from "./director";
+
+const scalers: ((ctx: ICanvasRenderingContext2D, fade: number, seed: number) => void)[] = [
+    (ctx, fade, seed) => {
+
+        fade = fadefn(fade);
+
+        ctx.globalAlpha = fade;
+        ctx.scale(fade, fade);
+
+        const trn = 4;//seed % 5;
+
+        ctx.translate((1 - fade), (1 - fade))
+        ctx.translate(0, (1 - fade));
+
+        const d2 = seed / 10 % 10;
+        const d3 = seed / 100 % 10;
+
+        const x = d2 < 3
+            ? 2
+            : d2 < 4
+                ? 2 : 0;
+
+        const y = d3 < 2
+            ? 1
+            : d3 < 4
+                ? 2 : 0;
+
+        ctx.translate((1 - fade) * x / 2, (1 - fade) * y / 2);
+    }
+]
 
 export class Render {
     public readonly aspect: number;
@@ -8,7 +38,7 @@ export class Render {
         this.aspect = ctx.canvas.width / ctx.canvas.height;
     }
 
-    public draw(shapes: IDrawable[][], orientation: Orientation) {
+    public draw(shapes: IDrawable[][], orientation: Orientation, seed: number) {
         const ctx = this.ctx;
         const { width, height } = ctx.canvas;
 
@@ -40,21 +70,23 @@ export class Render {
 
         ctx.save();
         ctx.translate(mx, my);
+        const scaler = scalers[seed % scalers.length];
 
         for (let i = 0; i < ny; ++i) {
             for (let j = 0; j < nx; ++j) {
 
                 let shape = shapes[i][j];
-                let fade = fadefn(shape.getFade().value);
+                let fade = shape.getFade().value;
 
                 ctx.save();
 
                 let dx = cols ? ((i % 2) == 0 ? 0 : .5) : 0;
                 let dy = rows ? ((j % 2) == 0 ? 0 : .5) : 0;
 
-                ctx.translate(sx * (pad) * (j + dx), sy * (pad) * (i + dy));
-                ctx.globalAlpha = fade;
-                ctx.scale(box*fade, box*fade);
+                ctx.translate(sx * pad * (j + dx), sy * pad * (i + dy));
+                ctx.scale(box, box);
+
+                scaler(ctx, fade, seed);
 
                 ctx.lineWidth = .06;
                 shape.draw(ctx);
@@ -65,8 +97,4 @@ export class Render {
 
         ctx.restore();
     }
-}
-
-function fadefn(w: number) {
-    return ((w * (w * 6.0 - 15.0) + 10.0) * w * w * w)
 }

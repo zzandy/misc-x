@@ -34,7 +34,7 @@ function render(delta: number, world: World) {
     const { dir: { shapes, isNew, orientation }, renderer } = world;
     if (isNew) {
         world.dir.isNew = shapes.reduce(checkRowNeedsUpdate, false);
-        renderer.draw(shapes, orientation);
+        renderer.draw(shapes, orientation, world.dir.seed);
     }
 
     function checkNeedsUpdate(needsUpdate: boolean, shape: IDrawable) {

@@ -150,6 +150,33 @@ function picker<T>(n: number, options: T[], orientation: Orientation, vary: bool
 const minsize = 2;
 const maxsize = 30;
 
+const fadein = 150;
+const fade1n = 60;
+const fr = (n: number) => fadefn(rnd() * rnd() * rnd()) * n;
+const jr = (n: number) => rnd(n * .9, n * 1.1, false)
+
+const fadeGenerators: ((i: number, j: number, h: number, w: number) => Fade)[] = [
+    () => new Fade(rnd(fadein), jr(fade1n)),
+    () => new Fade(fr(fadein), jr(fade1n)),
+    () => new Fade(rnd(fadein), jr(fade1n)),
+    () => new Fade(fr(fadein), jr(fade1n)),
+    () => new Fade(rnd(fadein), jr(fade1n)),
+    () => new Fade(fr(fadein), jr(fade1n)),
+    () => new Fade(rnd(fadein), jr(fade1n)),
+    () => new Fade(fr(fadein), jr(fade1n)),
+
+    (i, j, h, w) => new Fade((i * w + j) * (fadein / (h * w)), jr(fade1n)),
+    (i, j, h, w) => new Fade(((h - i) * w + j) * (fadein / (h * w)), jr(fade1n)),
+    (i, j, h, w) => new Fade((i + j * h) * (fadein / (h * w)), jr(fade1n)),
+    (i, j, h, w) => new Fade((i + (w - j) * h) * (fadein / (h * w)), jr(fade1n)),
+
+    (i, j, h, w) => new Fade(i * fadein / h + fr(fadein / 6), jr(fade1n)),
+    (i, j, h, w) => new Fade((h - i) * fadein / h + fr(fadein / 6), jr(fade1n)),
+
+    (i, j, h, w) => new Fade(j * fadein / w + fr(fadein / 6), jr(fade1n)),
+    (i, j, h, w) => new Fade((w - j) * fadein / w + fr(fadein / 6), jr(fade1n)),
+]
+
 export class Director {
 
     private _shapes: IDrawable[][] | null = null;
@@ -157,13 +184,14 @@ export class Director {
     public orientation: Orientation = 'grid';
 
     public isNew = true;
+    public seed: number = 0;
 
     constructor(private aspect: number = 1) {
     }
 
     private makeShapes() {
         let vary = rnd(['shape', 'shape', 'shape', 'shape', 'color', 'color', 'color', 'shading', 'size']);
-
+        this.seed = rnd(1000000, 10000000, false);
         this.orientation = rnd(['rows', 'cols', 'grid', 'grid', 'grid']);
 
         const [ver, hor] = [this.orientation == "rows", this.orientation == "cols"];
@@ -190,10 +218,12 @@ export class Director {
         const f = rnd() < .5;
         let pickSize = picker(len, vary == 'size' || rnd() < .2 ? [f, !f] : [false], this.orientation, vary == 'size')
 
+        const fade = rnd(fadeGenerators);
+
         for (let i = 0; i < ny; ++i) {
             let row = [];
             for (let j = 0; j < nx; ++j) {
-                row.push(new Shape(pickShape(), pickColor(), pickShade(), pickSize(), new Fade(rnd(100), 100)))
+                row.push(new Shape(pickShape(), pickColor(), pickShade(), pickSize(), fade(i, j, ny, nx)))
             }
 
             res.push(row);
@@ -236,3 +266,6 @@ export interface IDrawable {
 }
 
 
+export function fadefn(w: number) {
+    return ((w * (w * 6.0 - 15.0) + 10.0) * w * w * w)
+}
