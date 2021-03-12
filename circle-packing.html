@@ -93,12 +93,10 @@
         }
 
         function updateSize() {
-            renderCircles.apply(null, 'w,h'.split(',').map(id => parseInt(document.getElementById(id).value, 10)));
+            render.apply(null, 'w,h'.split(',').map(id => parseInt(document.getElementById(id).value, 10)));
         }
 
-        function renderCircles(w, h) {
-            const sq32 = Math.sqrt(3) / 2;
-
+        function render(w, h) {
             const width = ctx.canvas.width;
             const height = ctx.canvas.height;
 
@@ -116,25 +114,33 @@
 
             const oy = height / 2 - s * h / 2;
 
-            // render rect
-            paintRect(ctx, palette.plate, pad, oy, s * w, s * h);
+            ctx.save();
+            ctx.translate(pad, oy);
 
-            for (let i = 0; i < w; ++i) {
-                for (let j = 0; j < h; ++j) {
-                    paintCircle(ctx, palette.circle, pad + i * s + s / 2, oy + s * j + s / 2, s / 2);
-                }
-            }
+            renderSquarePacking(ctx, s, w, h);
 
-            // render hex
-            let n = w * h;
-            let extra = 0;
+            ctx.restore();
+
+            const mar = pad * 2 + w * s;
+
+            ctx.save();
+            ctx.translate(mar, oy);
+
+            renderHexPacking(ctx, s, w, h);
+
+            ctx.restore();
+        }
+
+        function renderHexPacking(ctx, s, w, h) {
+            const sq32 = Math.sqrt(3) / 2;
+
+            drawRect(ctx, palette.plate, 0, 0, s * w, s * h);
 
             let i = 0;
             let j = 0;
 
-            const mar = pad * 2 + w * s;
-
-            paintRect(ctx, palette.plate, mar, oy, s * w, s * h);
+            let n = w * h;
+            let extra = 0;
 
             let activePlette = palette.circle;
             while (true) {
@@ -146,13 +152,13 @@
 
                 n--;
 
-                let y = oy + s * j * sq32 + s / 2;
+                let y = s * j * sq32 + s / 2;
 
                 if (n < 0 && j * sq32 + 1 > h) {
 
                     if (extra >= 0) {
                         let edge = y - s * sq32 + s / 2;
-                        paintRect(ctx, palette.extraSpace, mar, edge, s * w, s * h - (edge - oy));
+                        drawRect(ctx, palette.extraSpace, 0, edge, s * w, s * h - edge);
                     }
                     break;
                 }
@@ -162,7 +168,7 @@
                 if (extra < 0)
                     activePlette = palette.circleLost;
 
-                paintCircle(ctx, activePlette, mar + s / 2 + j % 2 * s / 2 + s * i, y, s / 2);
+                drawCircle(ctx, activePlette, s / 2 + j % 2 * s / 2 + s * i, y, s / 2);
                 ++i;
 
                 if (n == 0) {
@@ -176,7 +182,17 @@
             document.getElementById('hex').innerHTML = (w * h + extra) + ' = ' + w * h + ' ' + (extra > 0 ? '+' : '-') + ' ' + Math.abs(extra);
         }
 
-        function paintRect(ctx, palette, x, y, w, h) {
+        function renderSquarePacking(ctx, s, w, h) {
+            drawRect(ctx, palette.plate, 0, 0, s * w, s * h);
+
+            for (let i = 0; i < w; ++i) {
+                for (let j = 0; j < h; ++j) {
+                    drawCircle(ctx, palette.circle, i * s + s / 2, s * j + s / 2, s / 2);
+                }
+            }
+        }
+
+        function drawRect(ctx, palette, x, y, w, h) {
             ctx.strokeStyle = palette.border;
             ctx.fillStyle = palette.background;
 
@@ -184,7 +200,7 @@
             ctx.strokeRect(x, y, w, h);
         }
 
-        function paintCircle(ctx, palette, x, y, r) {
+        function drawCircle(ctx, palette, x, y, r) {
             ctx.strokeStyle = palette.border;
             ctx.fillStyle = palette.background;
 
