@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>Circles</title>
+    <style type="text/css">
+        html,
+        body {
+            background-color: #232220;
+            color: #dad6d0;
+            font-size: 14pt;
+        }
+    </style>
+</head>
+
+<body>
+    <div style="position: fixed; z-index: 10;">
+        <div>
+            <label>Width:
+                <input id="w" type="range" min="2" max="24" value="12" />
+            </label>
+            <label>Height:
+                <input id="h" type="range" min="1" max="24" value="12" />
+            </label>
+        </div>
+
+        <div>
+            <label>Square:
+                <span id="square"></span>
+            </label>
+        </div>
+
+        <div>
+            <label>Hex:
+                <span id="hex"></span>
+            </label>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        (function () {
+            document.createElement('canvas');
+            var c = document.createElement('canvas');
+            ctx = c.getContext('2d');
+
+            ctx.w = ctx.canvas.width = window.innerWidth;
+            ctx.h = ctx.canvas.height = window.innerHeight;
+            ctx.canvas.style.position = 'absolute';
+            ctx.canvas.style.top = 0;
+            ctx.canvas.style.left = 0;
+
+            document.body.appendChild(c);
+        })();
+    </script>
+
+    <script type="text/javascript">
+        const tau = Math.PI * 2;
+
+        CanvasRenderingContext2D.prototype.fillCircle = function (x, y, r) {
+            this.beginPath();
+            this.arc(x, y, r, 0, tau, false)
+            this.closePath();
+            this.fill();
+        }
+
+        CanvasRenderingContext2D.prototype.strokeCircle = function (x, y, r) {
+            this.beginPath();
+            this.arc(x, y, r, 0, tau, false)
+            this.closePath();
+            this.stroke();
+        }
+    </script>
+
+    <script type="text/javascript">
+
+        const palette = {
+            plate: { border: 'silver', background: 'transparent' },
+            extraSpace: { border: 'transparent', background: 'silver' },
+            circle: { border: 'silver', background: 'transparent' },
+            circleGained: { border: 'lime', background: 'transparent' },
+            circleLost: { border: 'red', background: 'transparent' },
+        }
+
+        main();
+
+        function main() {
+            ['w', 'h'].map(id => document.getElementById(id)).forEach(e => {
+                e.addEventListener('input', updateSize);
+            });
+            updateSize();
+        }
+
+        function updateSize() {
+            renderCircles.apply(null, 'w,h'.split(',').map(id => parseInt(document.getElementById(id).value, 10)));
+        }
+
+        function renderCircles(w, h) {
+            const sq32 = Math.sqrt(3) / 2;
+
+            const width = ctx.canvas.width;
+            const height = ctx.canvas.height;
+
+            const pad = width * .03;
+
+            const rw = (width - 3 * pad) / 2;
+            const rh = height - 2 * pad;
+
+            const sar = w / h;
+            const tar = rw / rh;
+
+            const s = sar > tar ? rw / w : rh / h;
+
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+            const oy = height / 2 - s * h / 2;
+
+            // render rect
+            paintRect(ctx, palette.plate, pad, oy, s * w, s * h);
+
+            for (let i = 0; i < w; ++i) {
+                for (let j = 0; j < h; ++j) {
+                    paintCircle(ctx, palette.circle, pad + i * s + s / 2, oy + s * j + s / 2, s / 2);
+                }
+            }
+
+            // render hex
+            let n = w * h;
+            let extra = 0;
+
+            let i = 0;
+            let j = 0;
+
+            const mar = pad * 2 + w * s;
+
+            paintRect(ctx, palette.plate, mar, oy, s * w, s * h);
+
+            let activePlette = palette.circle;
+            while (true) {
+                if (i >= w - j % 2) {
+                    j += 1;
+
+                    i = 0;
+                }
+
+                n--;
+
+                let y = oy + s * j * sq32 + s / 2;
+
+                if (n < 0 && j * sq32 + 1 > h) {
+
+                    if (extra >= 0) {
+                        let edge = y - s * sq32 + s / 2;
+                        paintRect(ctx, palette.extraSpace, mar, edge, s * w, s * h - (edge - oy));
+                    }
+                    break;
+                }
+
+                if (j * sq32 + 1 > h) extra--;
+
+                if (extra < 0)
+                    activePlette = palette.circleLost;
+
+                paintCircle(ctx, activePlette, mar + s / 2 + j % 2 * s / 2 + s * i, y, s / 2);
+                ++i;
+
+                if (n == 0) {
+                    activePlette = palette.circleGained;
+                }
+                if (n < 0) extra++;
+
+            }
+
+            document.getElementById('square').innerHTML = w * h;
+            document.getElementById('hex').innerHTML = (w * h + extra) + ' = ' + w * h + ' ' + (extra > 0 ? '+' : '-') + ' ' + Math.abs(extra);
+        }
+
+        function paintRect(ctx, palette, x, y, w, h) {
+            ctx.strokeStyle = palette.border;
+            ctx.fillStyle = palette.background;
+
+            ctx.fillRect(x, y, w, h);
+            ctx.strokeRect(x, y, w, h);
+        }
+
+        function paintCircle(ctx, palette, x, y, r) {
+            ctx.strokeStyle = palette.border;
+            ctx.fillStyle = palette.background;
+
+            ctx.fillCircle(x, y, r);
+            ctx.strokeCircle(x, y, r);
+        }
+    </script>
+</body>
+
+</html>
