@@ -9,8 +9,9 @@
         html,
         body {
             background-color: #232220;
-            color: #dad6d0;
+            color: white;
             font-size: 14pt;
+            text-shadow: 0.05em 0.05em black;
         }
     </style>
 </head>
@@ -18,12 +19,14 @@
 <body>
     <div style="position: fixed; z-index: 10;">
         <div>
-            <label>Width:
+            <div>Width:
                 <input id="w" type="range" min="2" max="24" value="12" />
-            </label>
-            <label>Height:
+                <span id="width"></span>
+            </div>
+            <div>Height:
                 <input id="h" type="range" min="1" max="24" value="12" />
-            </label>
+                <span id="height"></span>
+            </div>
         </div>
 
         <div>
@@ -97,42 +100,79 @@
         }
 
         function render(w, h) {
-            const width = ctx.canvas.width;
-            const height = ctx.canvas.height;
+            document.getElementById('width').innerHTML = w;
+            document.getElementById('height').innerHTML = h;
 
-            const pad = width * .03;
-
-            const rw = (width - 3 * pad) / 2;
-            const rh = height - 2 * pad;
-
-            const sar = w / h;
-            const tar = rw / rh;
-
-            const s = sar > tar ? rw / w : rh / h;
+            let [s, ox1, oy1, ox2, oy2] = layout(ctx.canvas.width, ctx.canvas.height, w, h);
 
             ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
-            const oy = height / 2 - s * h / 2;
-
             ctx.save();
-            ctx.translate(pad, oy);
-
+            ctx.translate(ox1, oy1);
             renderSquarePacking(ctx, s, w, h);
-
             ctx.restore();
-
-            const mar = pad * 2 + w * s;
 
             ctx.save();
-            ctx.translate(mar, oy);
-
+            ctx.translate(ox2, oy2);
             renderHexPacking(ctx, s, w, h);
-
             ctx.restore();
+        }
+
+        function log(n) {
+            return Math.log(n) / Math.log(2);
+        }
+
+        function layout(width, height, w, h) {
+            const margin = width * .03;
+
+            width = width - margin * 2;
+            height = height - margin * 2;
+
+            const canvasAspect = width / height;
+            const subjectAspect = w / h;
+
+            const sideBySideAspect = subjectAspect * 2
+            const overUnderAspect = subjectAspect / 2;
+
+            const midpoint = (log(sideBySideAspect) + log(overUnderAspect)) / 2;
+
+            let rw, ox1, ox2, oy1, oy2;
+
+            if (log(canvasAspect) < midpoint) {
+                // over/under layout
+                [_, rw, oy1, oy2, ox1, ox2] = getDimensions(height, width, margin, subjectAspect);
+            }
+            else {
+                // side-by-side layout
+                [rw, _, ox1, ox2, oy1, oy2] = getDimensions(width, height, margin, 1 / subjectAspect);
+            }
+
+            return [rw / w, ox1 + margin, oy1 + margin, ox2 + margin, oy2 + margin];
+        }
+
+        function getDimensions(ext1, ext2, margin, aspect) {
+            let d1 = (ext1 - margin) / 2;
+            let d2 = d1 * aspect;
+
+            if (d2 > ext2) {
+                const s = ext2 / d2;
+                d1 *= s;
+                d2 *= s;
+            }
+
+            const a = (ext1 - margin) / 2 - d1;
+            const b = (ext1 + margin) / 2;
+
+            const c = (margin + ext2 - d2) / 2;
+
+            return [d1, d2, a, b, c, c];
         }
 
         function renderHexPacking(ctx, s, w, h) {
             const sq32 = Math.sqrt(3) / 2;
+
+            const area = w * h;
+            let savedArea = 0;
 
             drawRect(ctx, palette.plate, 0, 0, s * w, s * h);
 
@@ -158,6 +198,8 @@
 
                     if (extra >= 0) {
                         let edge = y - s * sq32 + s / 2;
+
+                        savedArea = w * (h - edge / s);
                         drawRect(ctx, palette.extraSpace, 0, edge, s * w, s * h - edge);
                     }
                     break;
@@ -179,7 +221,7 @@
             }
 
             document.getElementById('square').innerHTML = w * h;
-            document.getElementById('hex').innerHTML = (w * h + extra) + ' = ' + w * h + ' ' + (extra > 0 ? '+' : '-') + ' ' + Math.abs(extra);
+            document.getElementById('hex').innerHTML = (w * h + extra) + ' = ' + w * h + ' ' + (extra > 0 ? '+' : '-') + ' ' + Math.abs(extra) + ' (+' + (100 * savedArea / area).toFixed(2) + '% extra space)';
         }
 
         function renderSquarePacking(ctx, s, w, h) {
