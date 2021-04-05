@@ -22,22 +22,23 @@
         }
     </script>
     <script type="text/javascript">
-        const frame = [1690, 1100];
+        const frame = [4444, 4300];
         const cardAspect = 0.62;
 
         const w = 3;
         const margin = w * 20;
+        const lineWidth = .01;
 
         const palette = [
-            ['hsl(125, 100%, 40%)', 'hsl(105, 90%, 70%)', 'hsl(125, 50%, 80%)', 'hsl(125, 100%, 10%)'],
-            ['hsl(350, 100%, 35%)', 'hsl(10, 100%, 70%)', 'hsl(350, 50%, 90%)', 'hsl(350, 100%, 20%)'],
-            ['hsl(35, 100%, 50%)', 'hsl(45, 100%, 70%)', 'hsl(35, 50%, 85%)', 'hsl(35, 100%, 20%)'],
-            ['hsl(290, 100%, 35%)', 'hsl(270, 100%, 65%)', 'hsl(290, 50%, 85%)', 'hsl(290, 100%, 15%)']
+            ['hsl(125, 100%, 40%)', 'hsl(105, 90%, 70%)', 'hsl(125, 50%, 80%)', 'hsl(125, 100%, 10%)', 'hsl(105, 70%, 60%)'],
+            ['hsl(350, 100%, 35%)', 'hsl(10, 100%, 70%)', 'hsl(350, 50%, 90%)', 'hsl(350, 100%, 20%)', 'hsl(10, 100%, 60%)'],
+            ['hsl(35, 100%, 50%)', 'hsl(45, 100%, 70%)', 'hsl(35, 50%, 85%)', 'hsl(35, 100%, 20%)', 'hsl(45, 100%, 60%)'],
+            ['hsl(290, 100%, 35%)', 'hsl(270, 100%, 65%)', 'hsl(290, 50%, 85%)', 'hsl(290, 100%, 15%)', 'hsl(270, 100%, 55%)']
         ];
 
-        const rows = 5; // rows as in for portrait then 2 landscape
-        const sides = 2;
-        const cols = 4;
+        // const rows = 5; // rows as in for portrait then 2 landscape
+        // const sides = 2;
+        // const cols = 4;
 
         const deck = [
             [1, 2, 3, 4, 5, 6],
@@ -80,7 +81,60 @@
         deck.sort(() => Math.random() - .5)
 
         //fourOverTwo(frame, cardAspect, deck);
-        threeBy(frame, cardAspect, deck);
+        //threeBy(frame, cardAspect, deck);
+        twoByThree(frame, cardAspect, deck);
+
+        function twoByThree(frame, cardAspect, cards) {
+
+            const m = 1;
+            const [w, h] = frame;
+
+            const width = (h - 2 * m) / (3 * (lineWidth + 1));
+            const height = (w / 2 - m) / (1 + lineWidth / cardAspect);
+
+            const outer = [0, 0];
+
+            if (width > height * cardAspect) {
+                outer[0] = height * cardAspect;
+                outer[1] = height;
+            }
+            else {
+                outer[0] = width;
+                outer[1] = width / cardAspect;
+            }
+
+            const dieSize = outer[0] * .34 | 0;
+            const inner = [outer[0] * .9 | 0, outer[1] * .82 | 0];
+            const radius = [outer[0] / 20, inner[0] / 20];
+            const pad = outer[0] * lineWidth;
+
+            function newCanvas() {
+                const ctx = addCanvas(frame[0], frame[1]);
+                return ctx;
+            }
+
+            let ctx = newCanvas();
+
+            let pos = 0;
+            let row = 0;
+            for (let card of cards) {
+                ctx.save();
+                ctx.translate(pos * (pad + outer[1]), (row + 1) * outer[0] + (row + 1) * pad);
+                ctx.rotate(-Math.PI / 2);
+
+                drawCard(ctx, [0, pad], card, outer, inner, radius, dieSize);
+
+                ctx.restore();
+
+                if (++pos >= 2) {
+                    pos = 0;
+                    if (++row % 3 == 0) {
+                        row = 0;
+                        ctx = newCanvas();
+                    }
+                }
+            }
+        }
 
         function threeBy(frame, cardAspect, cards) {
             let width = (frame[0] - 2 * w) / 3;
@@ -161,7 +215,7 @@
             // card
             ctx.save();
             ctx.strokeStyle = colors[3];
-            ctx.lineWidth = dieSize / 100;
+            ctx.lineWidth = outer[0] * lineWidth;//dieSize / 50;
             ctx.translate(pos[0], pos[1])
 
             roundedRect(ctx, 0, 0, outer[0], outer[1], radius[0]);
@@ -172,11 +226,14 @@
             roundedRect(ctx, pad, pad, inner[0], inner[1], radius[1]);
             ctx.fillStyle = colors[1];
             ctx.fill();
-            ctx.stroke();
+
+            ctx.save();
+            ctx.fillStyle = colors[4];
+            ctx.clip();
 
             // dice
-            let offst = dice.length == 2 ? .25 : dice.length == 3 ? -.4 : 0;
-            let offs2 = dice.length == 2 ? .5 : dice.length == 3 ? -.4 : 0;
+            let offst = dice.length == 2 ? -.25 : dice.length == 3 ? -.4 : 0;
+            let offs2 = dice.length == 2 ? -.5 : dice.length == 3 ? -.4 : 0;
 
             let rowLen = dice.length > 3 ? 2 : 1;
 
@@ -186,18 +243,34 @@
 
             let n = 0;
             for (let die of dice) {
+                drawDiceShadow(ctx, -dieSize * offst + dieSize * offs2 * n + pad + diePad + n % rowLen * (dieSize + diePad), pad + dieVPad + ((n / rowLen) | 0) * (dieSize + dieVPad), die, dieSize);
+                ++n;
+            }
+
+            ctx.fillStyle = pattern(ctx, dice.length);
+            ctx.globalAlpha = .18;
+            ctx.fill();
+            ctx.restore();
+
+            ctx.stroke();
+
+            n = 0;
+            for (let die of dice) {
                 drawDice(ctx, -dieSize * offst + dieSize * offs2 * n + pad + diePad + n % rowLen * (dieSize + diePad), pad + dieVPad + ((n / rowLen) | 0) * (dieSize + dieVPad), die, dieSize);
                 ++n;
             }
 
+            ctx.restore();
+
             // Price circle
             circle(ctx, outer[0] / 2, outer[1] - pad / 2 - priceRad / 2, priceRad / 2);
-
             ctx.fillStyle = colors[2];
+            ctx.strokeStyle = colors[3];
+            ctx.lineWidth = outer[0] * lineWidth / 2;
             ctx.fill();
             ctx.stroke();
 
-            ctx.font = ' ' + ((priceRad * 0.9) | 0) + 'px Candara';
+            ctx.font = ' ' + ((priceRad * 1.2) | 0) + 'px Gabriola';
             const measure = ctx.measureText(price);
 
             ctx.fillStyle = colors[3];
@@ -206,52 +279,78 @@
             ctx.restore();
         }
 
+        function drawDiceShadow(ctx, x, y, value, dieSize) {
+            ctx.save();
+            ctx.translate(x + dieSize / 2, y + dieSize / 2);
+            ctx.rotate(Math.PI / 4);
+
+            const w = dieSize * 1.34;
+            ctx.fillRect(0, -w / 2, dieSize * 1000, w);
+
+            ctx.restore();
+        }
+
         function drawDice(ctx, x, y, value, dieSize) {
             ctx.save();
-            ctx.translate(x, y)
+            ctx.translate(x, y);
 
             roundedRect(ctx, 0, 0, dieSize, dieSize, dieSize / 10);
-            ctx.fillStyle = "ivory";
+            ctx.fillStyle = "#ece5c9";
             ctx.fill()
 
-            ctx.lineWidth = dieSize / 100;
+            roundedRect(ctx, dieSize / 40, +dieSize / 40, dieSize - dieSize / 20, dieSize - dieSize / 20, dieSize / 4);
+            ctx.fillStyle = "rgba(255, 255, 255, .3)";
+            ctx.fill()
+
+            roundedRect(ctx, 0, 0, dieSize, dieSize, dieSize / 10);
+            ctx.lineWidth = dieSize / 80;
             ctx.strokeStyle = 'black';
             ctx.stroke();
 
-            ctx.fillStyle = 'black';
+            ellipse(ctx, dieSize / 9.5, dieSize / 9.5, dieSize / 15, dieSize / 90, Math.PI * 3 / 4);
+
+            ctx.fillStyle = "white";
+            ctx.fill()
+
+            const k = 4;
+            const r = dieSize / 8.5;
 
             if (value % 2 == 1) {
-                circle(ctx, dieSize / 2, dieSize / 2, dieSize / 10)
-                ctx.fill();
+                dot(ctx, dieSize / 2, dieSize / 2, r)
             }
 
-            const k = 5;
-
             if (value > 1) {
-                circle(ctx, dieSize / k, dieSize / k, dieSize / 10)
-                ctx.fill();
-
-                circle(ctx, dieSize - dieSize / k, dieSize - dieSize / k, dieSize / 10)
-                ctx.fill();
+                dot(ctx, dieSize / k, dieSize / k, r)
+                dot(ctx, dieSize - dieSize / k, dieSize - dieSize / k, r)
             }
 
             if (value > 3) {
-                circle(ctx, dieSize - dieSize / k, dieSize / k, dieSize / 10)
-                ctx.fill();
-
-                circle(ctx, dieSize / k, dieSize - dieSize / k, dieSize / 10)
-                ctx.fill();
+                dot(ctx, dieSize - dieSize / k, dieSize / k, r)
+                dot(ctx, dieSize / k, dieSize - dieSize / k, r)
             }
 
             if (value == 6) {
-                circle(ctx, dieSize / k, dieSize / 2, dieSize / 10)
-                ctx.fill();
-
-                circle(ctx, dieSize - dieSize / k, dieSize / 2, dieSize / 10)
-                ctx.fill();
+                dot(ctx, dieSize / k, dieSize / 2, r)
+                dot(ctx, dieSize - dieSize / k, dieSize / 2, r)
             }
 
             ctx.restore();
+        }
+
+        function dot(ctx, x, y, r) {
+            circle(ctx, x, y, r);
+            ctx.fillStyle = 'black';
+            ctx.fill();
+
+            ellipse(ctx, x + r / 2, y + r / 2, r / 8, r / 20, Math.PI * 3 / 4);
+            ctx.fillStyle = 'white';
+            ctx.fill();
+        }
+
+        function ellipse(ctx, x, y, r1, r2, a) {
+            ctx.beginPath()
+            ctx.ellipse(x, y, r1, r2, a, 0, 2 * Math.PI);
+            ctx.closePath();
         }
 
         function circle(ctx, x, y, r) {
@@ -272,6 +371,61 @@
             ctx.lineTo(x + radius, y);
             ctx.arcTo(x, y, x, y + radius, radius);
             ctx.closePath();
+        }
+
+        function pattern(p, n) {
+            const s = 128;
+            const ctx = addCanvas(s, s, true);
+
+            ctx.scale(2, 2);
+
+            ctx.lineWidth = 2;
+            ctx.fillStyle = ctx.strokeStyle = 'white';
+            switch (n) {
+                case 2:
+                    ctx.lineWidth = 4;
+                    for (let i = 0; i <= 4; ++i)
+                        for (let j = 0; j <= 4; ++j)
+                            ctx.strokeRect(i * 32, j * 32, 12, 12);
+                    break;
+
+                case 3:
+                    for (let i = 0; i <= 4; ++i)
+                        for (let j = 0; j <= 4; ++j) {
+                            ctx.fillRect(i * 32 - 4, j * 32 + 1, 16, 6);
+                            ctx.fillRect(i * 32 + 1, j * 32 - 4, 6, 16);
+                        }
+
+                    break;
+
+                case 4:
+                    ctx.lineWidth = 6;
+                    for (let i = 0; i <= 4; ++i) {
+                        ctx.beginPath();
+                        ctx.moveTo(-32, i * 32);
+
+                        for (let j = 0; j <= 4; ++j) {
+
+                            ctx.lineTo(j * 32, i * 32 + 16);
+                            ctx.lineTo(j * 32 + 16, i * 32);
+                        }
+
+                        ctx.stroke();
+                    }
+
+                    break;
+
+                case 6:
+                    for (let i = 0; i <= 4; ++i)
+                        for (let j = 0; j <= 4; ++j) {
+                            circle(ctx, i * 32 + 16 * (j % 2), j * 32, 8);
+                            ctx.stroke();
+                        }
+
+                    break;
+            }
+
+            return p.createPattern(ctx.canvas, 'repeat');
         }
 
     </script>
