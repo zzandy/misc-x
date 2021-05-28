@@ -162,23 +162,6 @@
             return (r * r / c / c) | 0;
         }
 
-        // for (var i = 0; i < n; ++i) {
-        //     var prime = i == 1 || i == 2 || i == 3 || !!(i % 2);
-        //     var s = sqrt(i)
-        //     if (prime) {
-        //         for (var k = 3; k < s; k += 2) {
-        //             if (primes[k] && !(i % k)) {
-        //                 prime = false;
-        //                 break;
-        //             }
-        //         }
-
-        //         if (prime)
-        //             primes[i] = true;
-        //     }
-        // }
-
-
         function find(min, max, fn) {
 
             if (max < min)
@@ -198,7 +181,7 @@
             }
         }
 
-        split(n, sqrt(n/10)|0, render);
+        split(n, sqrt(n / 10) | 0, render);
 
         function split(total, perFrame, fn) {
             const numPages = total / perFrame;
@@ -214,8 +197,6 @@
 
                 if (frameNo < perFrame)
                     requestAnimationFrame(function () { frame(frameNo + 1) });
-
-                //console.log((100 * (frameNo) / perFrame).toFixed(2) + '%');
             }
 
             frame(0);
@@ -237,37 +218,15 @@
         }
 
         function isPrime(n) {
-            //return true;
-            return isPrime2(n);
-            return primes[n]
-
-            var s = sqrt(n);
-
-            var prime = (n % 2);
-
-            if (prime)
-                for (var i = 3; i < s; i += 2)
-                    if (!(n % i)) return false;
-
-            return prime;
-        }
-        // for(let i=1000;i<1100;++i){
-        //     console.log(i,isPrime2(i))
-        // }
-
-
-
-        function isPrime2(n) {
 
             // 5 7 11 13
             const testedNumbers = [true, true, true, true, true];
 
-            isPrime2 = (n) => {
+            isPrime = (n) => {
                 if (n < 4) return true;
                 if (n % 2 == 0 || n % 3 == 0) return false;
 
                 const idx = Math.round((n - 5) / 3);
-                // console.log('testing', n, idx)
 
                 if (testedNumbers.length > idx && testedNumbers[idx] !== undefined)
                     return testedNumbers[idx];
@@ -278,21 +237,17 @@
                 for (let i = 0; i < idx2; ++i) {
                     let n2 = 5 + 3 * i - i % 2;
 
-                    if (isPrime2(n2) && n % n2 == 0) {
+                    if (isPrime(n2) && n % n2 == 0) {
                         prime = false;
                         break;
                     }
                 }
 
-                // console.log('setting', n, idx, prime)
                 testedNumbers[idx] = prime;
-
-                // console.log(n, testedNumbers)
-
                 return prime;
             }
 
-            return isPrime2(n);
+            return isPrime(n);
         }
 
     </script>
