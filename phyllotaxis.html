@@ -82,7 +82,6 @@
 
     </script>
 
-
     <!-- canvas -->
     <script type="text/javascript">
         "use strict";
@@ -135,64 +134,49 @@
     <script type="text/javascript">
         "use strict";
 
+        const sqrt = Math.sqrt;
+        const sin = Math.sin;
+        const cos = Math.cos;
+
         var ctx = fullscreenCanvas();
 
-        var w = ctx.canvas.width;
-        var h = ctx.canvas.height;
-
-        var sqrt = Math.sqrt;
-        var sin = Math.sin;
-        var cos = Math.cos;
+        const w = ctx.canvas.width;
+        const h = ctx.canvas.height;
 
         var a = Math.PI * (3 - Math.sqrt(5));
         var ba = Math.random() * Math.PI * 2;
-        var c = .8;
+        var c = 1;
         var primes = [];
 
         ctx.save();
         ctx.translate(w / 2, h / 2);
 
-        var targetR = sqrt(w * w + h * h) / 2;
+        const targetR = sqrt(w * w + h * h) / 2;
+        const n = getn(targetR, c);
 
         function getr(n, c) {
             return c * sqrt(n);
         }
 
-        var nf = 1;
-        var np = nf;
-
-        while (getr(nf, c) < targetR) {
-            np = nf;
-            nf *= 2;
+        function getn(r, c) {
+            return (r * r / c / c) | 0;
         }
 
-        console.log(targetR, getr(np, c), getr(nf, c))
+        // for (var i = 0; i < n; ++i) {
+        //     var prime = i == 1 || i == 2 || i == 3 || !!(i % 2);
+        //     var s = sqrt(i)
+        //     if (prime) {
+        //         for (var k = 3; k < s; k += 2) {
+        //             if (primes[k] && !(i % k)) {
+        //                 prime = false;
+        //                 break;
+        //             }
+        //         }
 
-        var n = find(np, nf, function (n) {
-            var r = getr(n, c);
-            return r > targetR
-                ? -1
-                : r < targetR
-                    ? 1 : 0;
-        });
-
-        console.log(n)
-
-        for (var i = 0; i < n; ++i) {
-            var prime = i == 1 || i == 2 || i == 3 || !!(i % 2);
-            var s = sqrt(i)
-            if (prime) {
-                for (var k = 3; k < s; k += 2) {
-                    if (primes[k] && !(i % k)) {
-                        prime = false;
-                        break;
-                    }
-                }
-
-                if (prime)
-                    primes[i] = true;
-            }
-        }
+        //         if (prime)
+        //             primes[i] = true;
+        //     }
+        // }
 
 
         function find(min, max, fn) {
@@ -214,23 +198,24 @@
             }
         }
 
-        split(n, 1000, function (i) { render(i) });
+        split(n, sqrt(n/10)|0, render);
 
-        function split(n, m, fn) {
+        function split(total, perFrame, fn) {
+            const numPages = total / perFrame;
 
-            function frame(k) {
+            function frame(frameNo) {
 
-                for (var i = 0; i < m; ++i) {
-                    var j = k + i * m;
-                    if (j > n)
+                for (let i = 0; i < numPages; ++i) {
+                    const j = frameNo + i * perFrame;
+                    if (j > total)
                         break;
                     fn(j);
                 }
 
-                if (k < m - 1)
-                    window.requestAnimationFrame(function () { frame(k + 1) });
+                if (frameNo < perFrame)
+                    requestAnimationFrame(function () { frame(frameNo + 1) });
 
-                console.log((100 * k / m).toFixed(2) + '%');
+                //console.log((100 * (frameNo) / perFrame).toFixed(2) + '%');
             }
 
             frame(0);
@@ -252,6 +237,8 @@
         }
 
         function isPrime(n) {
+            //return true;
+            return isPrime2(n);
             return primes[n]
 
             var s = sqrt(n);
@@ -262,8 +249,50 @@
                 for (var i = 3; i < s; i += 2)
                     if (!(n % i)) return false;
 
-
             return prime;
+        }
+        // for(let i=1000;i<1100;++i){
+        //     console.log(i,isPrime2(i))
+        // }
+
+
+
+        function isPrime2(n) {
+
+            // 5 7 11 13
+            const testedNumbers = [true, true, true, true, true];
+
+            isPrime2 = (n) => {
+                if (n < 4) return true;
+                if (n % 2 == 0 || n % 3 == 0) return false;
+
+                const idx = Math.round((n - 5) / 3);
+                // console.log('testing', n, idx)
+
+                if (testedNumbers.length > idx && testedNumbers[idx] !== undefined)
+                    return testedNumbers[idx];
+
+                const idx2 = Math.round((sqrt(n) - 5) / 3);
+
+                let prime = true;
+                for (let i = 0; i < idx2; ++i) {
+                    let n2 = 5 + 3 * i - i % 2;
+
+                    if (isPrime2(n2) && n % n2 == 0) {
+                        prime = false;
+                        break;
+                    }
+                }
+
+                // console.log('setting', n, idx, prime)
+                testedNumbers[idx] = prime;
+
+                // console.log(n, testedNumbers)
+
+                return prime;
+            }
+
+            return isPrime2(n);
         }
 
     </script>
