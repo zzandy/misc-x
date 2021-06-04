@@ -22,17 +22,17 @@
         }
     </script>
     <script type="text/javascript">
-        const frame = [4444, 4300];
+        const frame = [4444 * 1.9 | 0, 4300 * 1.9 | 0];
         const cardAspect = 0.62;
 
-        const w = 3;
+        const w = 5;
         const margin = w * 20;
         const lineWidth = .01;
 
         const palette = [
             ['hsl(125, 100%, 40%)', 'hsl(105, 90%, 70%)', 'hsl(125, 50%, 80%)', 'hsl(125, 100%, 10%)', 'hsl(105, 70%, 60%)'],
             ['hsl(350, 100%, 35%)', 'hsl(10, 100%, 70%)', 'hsl(350, 50%, 90%)', 'hsl(350, 100%, 20%)', 'hsl(10, 100%, 60%)'],
-            ['hsl(35, 100%, 50%)', 'hsl(45, 100%, 70%)', 'hsl(35, 50%, 85%)', 'hsl(35, 100%, 20%)', 'hsl(45, 100%, 60%)'],
+            ['hsl(35, 100%, 50%)', 'hsl(45, 100%, 70%)', 'hsl(35, 50%, 90%)', 'hsl(35, 100%, 20%)', 'hsl(45, 100%, 60%)'],
             ['hsl(290, 100%, 35%)', 'hsl(270, 100%, 65%)', 'hsl(290, 50%, 85%)', 'hsl(290, 100%, 15%)', 'hsl(270, 100%, 55%)']
         ];
 
@@ -104,7 +104,7 @@
             }
 
             const dieSize = outer[0] * .34 | 0;
-            const inner = [outer[0] * .9 | 0, outer[1] * .82 | 0];
+            const inner = [outer[0] * .88 | 0, outer[1] * .82 | 0];
             const radius = [outer[0] / 20, inner[0] / 20];
             const pad = outer[0] * lineWidth;
 
@@ -299,7 +299,7 @@
             ctx.fill()
 
             roundedRect(ctx, dieSize / 40, +dieSize / 40, dieSize - dieSize / 20, dieSize - dieSize / 20, dieSize / 4);
-            ctx.fillStyle = "rgba(255, 255, 255, .3)";
+            ctx.fillStyle = "rgba(255, 255, 255, .5)";
             ctx.fill()
 
             roundedRect(ctx, 0, 0, dieSize, dieSize, dieSize / 10);
@@ -307,9 +307,9 @@
             ctx.strokeStyle = 'black';
             ctx.stroke();
 
-            ellipse(ctx, dieSize / 9.5, dieSize / 9.5, dieSize / 15, dieSize / 90, Math.PI * 3 / 4);
+            ellipse(ctx, dieSize / 9.9, dieSize / 9.9, dieSize / 15, dieSize / 90, Math.PI * 3 / 4);
 
-            ctx.fillStyle = "white";
+            ctx.fillStyle = "rgb(255, 255, 255, .9)";
             ctx.fill()
 
             const k = 4;
@@ -342,7 +342,7 @@
             ctx.fillStyle = 'black';
             ctx.fill();
 
-            ellipse(ctx, x + r / 2, y + r / 2, r / 8, r / 20, Math.PI * 3 / 4);
+            ellipse(ctx, x + r / 2, y + r / 2, r / 6, r / 17, Math.PI * 3 / 4);
             ctx.fillStyle = 'white';
             ctx.fill();
         }
@@ -374,12 +374,12 @@
         }
 
         function pattern(p, n) {
-            const s = 128;
+            const s = 256;
             const ctx = addCanvas(s, s, true);
 
-            ctx.scale(2, 2);
+            ctx.scale(4, 4);
 
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 4;
             ctx.fillStyle = ctx.strokeStyle = 'white';
             switch (n) {
                 case 2:
@@ -395,7 +395,6 @@
                             ctx.fillRect(i * 32 - 4, j * 32 + 1, 16, 6);
                             ctx.fillRect(i * 32 + 1, j * 32 - 4, 6, 16);
                         }
-
                     break;
 
                 case 4:
@@ -412,16 +411,14 @@
 
                         ctx.stroke();
                     }
-
                     break;
 
                 case 6:
                     for (let i = 0; i <= 4; ++i)
                         for (let j = 0; j <= 4; ++j) {
-                            circle(ctx, i * 32 + 16 * (j % 2), j * 32, 8);
+                            circle(ctx, (i+(j%2)/2) * 32, j * 32, 8);
                             ctx.stroke();
                         }
-
                     break;
             }
 

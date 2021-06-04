@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" style="background-color: white;">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Sand Toy</title>
+</head>
+
+<body>
+    <script type="text/javascript">
+        function addCanvas(w, h, dontAdd) {
+            const canvas = document.createElement('canvas');
+
+            canvas.width = w;
+            canvas.height = h;
+
+            if (!dontAdd)
+                document.body.appendChild(canvas);
+
+            return canvas.getContext('2d');
+        }
+
+        function loop(fps, init, update, render) {
+
+            let targetDelay = 1000 / fps;
+            let world = init();
+
+            let time = targetDelay + 1;
+
+            let doRender = true;
+
+            let then = Date.now();
+
+            window.requestAnimationFrame(frame);
+
+            function frame() {
+                let now = Date.now();
+                time += now - then;
+                then = now;
+
+                while (time > targetDelay) {
+                    time -= targetDelay;
+                    world = update(world);
+                    doRender = true;
+                }
+
+                if (doRender) {
+                    doRender = false;
+                    render(world);
+                }
+
+                window.requestAnimationFrame(frame);
+            }
+        }
+    </script>
+
+    <script type="text/javascript">
+
+        class Button {
+            static n = 0;
+            static size = 32;
+
+            constructor(title, fillStyle, generator) {
+                this.title = title;
+                this.fillStyle = fillStyle;
+                this.generator = generator;
+
+                this.x = 1.3 * Button.n * Button.size + Button.size / 2;
+                this.y = Button.size / 2;
+
+                this.w = this.h = Button.size;
+
+                ++Button.n;
+            }
+        }
+
+        class Pixel {
+            static air = Symbol();
+            static sand = Symbol();
+            static water = Symbol();
+            static acid = Symbol();
+            static fire = Symbol();
+            static wood = Symbol();
+            static steam = Symbol();
+
+            constructor(type) {
+                this.type = type || Pixel.air;
+                this.seed = Math.random();
+            }
+
+            get color() {
+                switch (this.type) {
+                    case Pixel.wood:
+                        return [0x99 + 10 - 20 * this.seed, 0x33 + 10 - 20 * this.seed, 0x33 + 10 - 20 * this.seed, 255];
+                    case Pixel.fire:
+                        return [0xff - 10 * this.seed, 0x28 + 10 - 20 * this.seed, 0x00 + 10 * this.seed, 255];
+                    case Pixel.water:
+                        return [0x11 + 10 - 20 * this.seed, 0x64 + 10 - 20 * this.seed, 0xb4 + 10 - 20 * this.seed, 255];
+                    case Pixel.acid:
+                        return [0xcc + 10 - 20 * this.seed, 0xff - 10 * this.seed, 0x00 + 10 * this.seed, 255];
+                    case Pixel.steam:
+                        return [0x99 + 10 - 20 * this.seed, 0x99 + 10 - 20 * this.seed, 0x99 + 10 - 20 * this.seed, 255];
+                    case Pixel.sand:
+                        return [0xf7 + 10 - 20 * this.seed, 0xe9 + 10 - 20 * this.seed, 0x8e + 10 - 20 * this.seed, 255];
+                    default:
+                        const k = 0;
+                        return [k, k, k, 0];
+                }
+            }
+        }
+
+        loop(30, init, update, render);
+
+        function init() {
+
+            const [w, h] = [window.innerWidth, window.innerHeight];
+            const ctx = addCanvas(w, h);
+
+            ctx.canvas.style.position = 'absolute';
+            ctx.canvas.style.top = '0';
+            ctx.canvas.style.left = '0';
+
+            ctx.imageSmoothingEnabled = false;
+
+            const k = 4
+            const [wid, hei] = [w / k | 0, h / k | 0];
+            const buf = addCanvas(wid, hei, true);
+            const img = buf.getImageData(0, 0, wid, hei);
+
+            const data = [];
+
+            for (let i = 0; i < wid * hei; ++i)data.push(new Pixel());
+
+            const buttons = [
+                new Button('sand', '#f7e98e', Pixel.sand),
+                new Button('fire', '#ff2800', Pixel.fire),
+                new Button('water', '#1164b4', Pixel.water),
+                new Button('steam', '#999999', Pixel.steam),
+                new Button('acid', '#ccff00', Pixel.acid),
+                new Button('wood', '#993333', Pixel.wood),
+                new Button('air', 'black', Pixel.air)
+            ];
+
+            const world = { data, ctx, buf, img, w, h, buttons, activeButton: 0 };
+
+            let isMouseDown = false;
+
+            ctx.canvas.addEventListener('click', e => {
+                for (let i in buttons) {
+                    let button = buttons[i];
+                    if (i != world.activeButton && button.x <= e.clientX && button.x + button.w >= e.clientX && button.y <= e.clientY && button.y + button.h >= e.clientY) {
+                        world.activeButton = i;
+                        return;
+                    }
+                }
+
+                add(data, wid, e.clientX / k | 0, e.clientY / k | 0, world.buttons[world.activeButton].generator);
+            });
+
+            ctx.canvas.addEventListener('mousedown', e => {
+                isMouseDown = true;
+            });
+
+            ctx.canvas.addEventListener('mouseup', e => {
+                isMouseDown = false;
+            });
+
+            ctx.canvas.addEventListener('mouseenter', e => {
+                if (isMouseDown && e.buttons != 1)
+                    isMouseDown = false;
+            });
+
+            ctx.canvas.addEventListener('mousemove', e => {
+                if (isMouseDown) {
+                    add(data, wid, e.clientX / k | 0, e.clientY / k | 0, world.buttons[world.activeButton].generator);
+                }
+            });
+
+            return world;
+        }
+
+        function update(world) {
+            return world;
+        }
+
+        function render(world) {
+            const { ctx, img, buf, w, h } = world;
+
+            let data = img.data;
+
+            let i = 0;
+            for (const pixel of world.data) {
+                [data[i * 4], data[i * 4 + 1], data[i * 4 + 2], data[i++ * 4 + 3]] = pixel.color;
+            }
+
+            ctx.clearRect(0, 0, w, h);
+
+            buf.putImageData(img, 0, 0);
+            ctx.drawImage(buf.canvas, 0, 0, w, h);
+
+            i = 0;
+            for (let button of world.buttons) {
+                ctx.fillStyle = button.fillStyle;
+                ctx.fillRect(button.x, button.y, button.w, button.h);
+
+                ctx.strokeStyle = i++ == world.activeButton
+                    ? 'white'
+                    : 'black';
+
+                ctx.strokeRect(button.x + .5, button.y + .5, button.w, button.h);
+            }
+        }
+
+        function add(data, w, x, y, type) {
+            const r = 6;
+            const threshold = type == Pixel.air ? 1 : .2;
+
+            switch (type) {
+                default:
+                    for (let i = 0; i < r * 2; ++i) {
+                        for (let j = 0; j < r * 2; ++j) {
+
+                            const dx = - r + j;
+                            const dy = - r + i;
+
+                            if (Math.random() < threshold) {
+                                const d = (dx * dx + dy * dy) / (r * r);
+
+
+                                if (d < 1 && (1 - d) * (1 - d) > Math.random())
+                                    put(data, w, x + dx, y + dy, type);
+                            }
+
+
+
+
+                        }
+                    }
+                    break;
+            }
+        }
+
+        function put(data, w, x, y, type) {
+            if (x >= 0 && x < w && y >= 0 && y * w + x < data.length && (type == Pixel.air || data[y * w + x].type == Pixel.air))
+                data[y * w + x] = new Pixel(type);
+        }
+    </script>
+</body>
+
+</html>
