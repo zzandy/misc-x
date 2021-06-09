@@ -194,7 +194,7 @@
 
         function displaces(type1, type2) {
             return type2 == Pixel.air
-                || type2 == Pixel.steam && type1 != Pixel.steam
+                || type2 == Pixel.steam
                 || type1 == Pixel.sand && type2 == Pixel.water
                 || type1 == Pixel.water && type2 == Pixel.acid
         }
@@ -208,6 +208,7 @@
         }
 
         function update(world) {
+
             ++world.tick;
             const { mouse, tick, simulationWidth: w, data, next } = world;
 
@@ -258,27 +259,20 @@
 
                     case Pixel.steam:
                         if (--pixel.decay <= 0) {
-                            pixel.type = Pixel.water;
+                            pixel.type = Math.random() < .4 ? Pixel.water : Pixel.air;
                             pixel.color = Pixel.getColor(pixel.type);
                             break;
                         }
 
-                        if (i - w >= 0 && displaces(pixel.type, data[i - w].type)) {
-                            target = i - w;
-                        }
-                        else if (x + a < w && x + a >= 0 && i - w + a >= 0 && displaces(pixel.type, data[i - w + a].type)) {
-                            target = i - w + a;
-                        }
-                        else if (x - a < w && x - a >= 0 && i - w - a >= 0 && displaces(pixel.type, data[i - w - a].type)) {
-                            target = i - w - a;
-                        }
-                        else if (!lazy && x + a < w && x + a >= 0 && i + a >= 0 && displaces(pixel.type, data[i + a].type)) {
-                            target = i + a;
-                        }
-                        else if (!lazy && x - a < w && x - a >= 0 && i - a >= 0 && displaces(pixel.type, data[i - a].type)) {
-                            target = i - a;
-                        }
+                        moves = [i - w, i - w + a, i - w - a, i - a, i + a];
+                        moves.sort(() => Math.random() - .5);
 
+                        for (let move of moves) {
+                            if (move >= 0 && move < l && Math.abs(x - move % w) < 5 && displaces(pixel.type, data[move].type)) {
+                                target = move;
+                                break;
+                            }
+                        }
                         break;
 
                     case Pixel.sand:
