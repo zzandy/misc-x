@@ -18,7 +18,7 @@
             if (!dontAdd)
                 document.body.appendChild(canvas);
 
-            return canvas.getContext('2d');
+            return canvas.getContext('2d', { alpha: false });
         }
 
         function loop(fps, init, update, render) {
