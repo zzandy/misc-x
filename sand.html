@@ -85,33 +85,35 @@
         }
 
         class Pixel {
-            static air = Symbol();
-            static sand = Symbol();
-            static water = Symbol();
-            static acid = Symbol();
-            static fire = Symbol();
-            static wood = Symbol();
-            static steam = Symbol();
+            static air = Symbol('air');
+            static sand = Symbol('sand');
+            static water = Symbol('water');
+            static acid = Symbol('acid');
+            static fire = Symbol('fire');
+            static wood = Symbol('wood');
+            static steam = Symbol('steam');
 
             constructor(type) {
+                var seed = Math.random();
+                this.tick = -1;
                 this.type = type || Pixel.air;
-                this.seed = Math.random();
+                this.color = Pixel.getColor(seed, this.type);
             }
 
-            get color() {
-                switch (this.type) {
+            static getColor(seed, type) {
+                switch (type) {
                     case Pixel.wood:
-                        return [0x99 + 10 - 20 * this.seed, 0x33 + 10 - 20 * this.seed, 0x33 + 10 - 20 * this.seed, 255];
+                        return [0x99 + 10 - 20 * seed, 0x33 + 10 - 20 * seed, 0x33 + 10 - 20 * seed, 255];
                     case Pixel.fire:
-                        return [0xff - 10 * this.seed, 0x28 + 10 - 20 * this.seed, 0x00 + 10 * this.seed, 255];
+                        return [0xff - 10 * seed, 0x28 + 10 - 20 * seed, 0x00 + 10 * seed, 255];
                     case Pixel.water:
-                        return [0x11 + 10 - 20 * this.seed, 0x64 + 10 - 20 * this.seed, 0xb4 + 10 - 20 * this.seed, 255];
+                        return [0x11 + 10 - 20 * seed, 0x64 + 10 - 20 * seed, 0xb4 + 10 - 20 * seed, 255];
                     case Pixel.acid:
-                        return [0xcc + 10 - 20 * this.seed, 0xff - 10 * this.seed, 0x00 + 10 * this.seed, 255];
+                        return [0xcc + 10 - 20 * seed, 0xff - 10 * seed, 0x00 + 10 * seed, 255];
                     case Pixel.steam:
-                        return [0x99 + 10 - 20 * this.seed, 0x99 + 10 - 20 * this.seed, 0x99 + 10 - 20 * this.seed, 255];
+                        return [0x99 + 10 - 20 * seed, 0x99 + 10 - 20 * seed, 0x99 + 10 - 20 * seed, 255];
                     case Pixel.sand:
-                        return [0xf7 + 10 - 20 * this.seed, 0xe9 + 10 - 20 * this.seed, 0x8e + 10 - 20 * this.seed, 255];
+                        return [0xf7 + 10 - 20 * seed, 0xe9 + 10 - 20 * seed, 0x8e + 10 - 20 * seed, 255];
                     default:
                         const k = 0;
                         return [k, k, k, 0];
