@@ -215,88 +215,85 @@
 
             const l = data.length;
 
+            const a = Math.random() < .5 ? 1 : -1;
             const k = 8;
-            for (let ki = 0; ki < 8; ++ki) {
-                for (let t = 0; t < l / k; ++t) {
-                    let i = t * k + ki;
-                    if (i >= l) continue;
 
-                    let x = i % w;
-                    let y = i / w | 0
+            let start = tick % 2 == 0 ? 0 : (l - 1);
+            let step = tick % 2 == 0 ? 1 : -1;
 
-                    const a = Math.random() < .5 ? 1 : -1;
+            for (let i = start; i < l && i > 0; i += step) {
+                let x = i % w;
+                let y = i / w | 0
 
-                    const pixel = data[i];
+                const pixel = data[i];
 
-                    if (pixel.type != Pixel.air && pixel.tick == tick) continue;
+                if (pixel.type != Pixel.air && pixel.tick == tick) continue;
 
-                    const lazy = noop(pixel.type);
-                    let target = i;
+                const lazy = noop(pixel.type);
+                let target = i;
 
-                    switch (pixel.type) {
-                        case Pixel.water:
-                        case Pixel.acid:
-                        case Pixel.fire:
-                            if (i + w < l && displaces(pixel.type, data[i + w].type)) {
-                                target = i + w;
-                            }
-                            else if (x + a < w && x + a >= 0 && i + w + a < l && displaces(pixel.type, data[i + w + a].type)) {
-                                target = i + w + a;
-                            }
-                            else if (x - a < w && x - a >= 0 && i + w - a < l && displaces(pixel.type, data[i + w - a].type)) {
-                                target = i + w - a;
-                            }
-                            else if (!lazy && x + a < w && x + a >= 0 && i + a < l && displaces(pixel.type, data[i + a].type)) {
-                                target = i + a;
-                            }
-                            else if (!lazy && x - a < w && x - a >= 0 && i - a < l && displaces(pixel.type, data[i - a].type)) {
-                                target = i - a;
-                            }
+                switch (pixel.type) {
+                    case Pixel.water:
+                    case Pixel.acid:
+                    case Pixel.fire:
+                        if (i + w < l && displaces(pixel.type, data[i + w].type)) {
+                            target = i + w;
+                        }
+                        else if (x + a < w && x + a >= 0 && i + w + a < l && displaces(pixel.type, data[i + w + a].type)) {
+                            target = i + w + a;
+                        }
+                        else if (x - a < w && x - a >= 0 && i + w - a < l && displaces(pixel.type, data[i + w - a].type)) {
+                            target = i + w - a;
+                        }
+                        else if (!lazy && x + a < w && x + a >= 0 && i + a < l && displaces(pixel.type, data[i + a].type)) {
+                            target = i + a;
+                        }
+                        else if (!lazy && x - a < w && x - a >= 0 && i - a < l && displaces(pixel.type, data[i - a].type)) {
+                            target = i - a;
+                        }
 
-                            break;
+                        break;
 
-                        case Pixel.steam:
-                            if (i - w >= 0 && displaces(pixel.type, data[i - w].type)) {
-                                target = i - w;
-                            }
-                            else if (x + a < w && x + a >= 0 && i - w + a >= 0 && displaces(pixel.type, data[i - w + a].type)) {
-                                target = i - w + a;
-                            }
-                            else if (x - a < w && x - a >= 0 && i - w - a >= 0 && displaces(pixel.type, data[i - w - a].type)) {
-                                target = i - w - a;
-                            }
-                            else if (!lazy && x + a < w && x + a >= 0 && i + a >= 0 && displaces(pixel.type, data[i + a].type)) {
-                                target = i + a;
-                            }
-                            else if (!lazy && x - a < w && x - a >= 0 && i - a >= 0 && displaces(pixel.type, data[i - a].type)) {
-                                target = i - a;
-                            }
+                    case Pixel.steam:
+                        if (i - w >= 0 && displaces(pixel.type, data[i - w].type)) {
+                            target = i - w;
+                        }
+                        else if (x + a < w && x + a >= 0 && i - w + a >= 0 && displaces(pixel.type, data[i - w + a].type)) {
+                            target = i - w + a;
+                        }
+                        else if (x - a < w && x - a >= 0 && i - w - a >= 0 && displaces(pixel.type, data[i - w - a].type)) {
+                            target = i - w - a;
+                        }
+                        else if (!lazy && x + a < w && x + a >= 0 && i + a >= 0 && displaces(pixel.type, data[i + a].type)) {
+                            target = i + a;
+                        }
+                        else if (!lazy && x - a < w && x - a >= 0 && i - a >= 0 && displaces(pixel.type, data[i - a].type)) {
+                            target = i - a;
+                        }
 
-                            break;
+                        break;
 
-                        case Pixel.sand:
-                            if (i + w < l && displaces(pixel.type, data[i + w].type)) {
-                                target = i + w;
-                            }
-                            else if (!lazy && x + a < w && x + a >= 0 && i + w + a < l && displaces(pixel.type, data[i + w + a].type)) {
-                                target = i + w + a;
-                            }
-                            else if (!lazy && x + a < w && x + a >= 0 && i + w - a < l && displaces(pixel.type, data[i + w - a].type)) {
-                                target = i + w - a;
-                            }
+                    case Pixel.sand:
+                        if (i + w < l && displaces(pixel.type, data[i + w].type)) {
+                            target = i + w;
+                        }
+                        else if (!lazy && x + a < w && x + a >= 0 && i + w + a < l && displaces(pixel.type, data[i + w + a].type)) {
+                            target = i + w + a;
+                        }
+                        else if (!lazy && x + a < w && x + a >= 0 && i + w - a < l && displaces(pixel.type, data[i + w - a].type)) {
+                            target = i + w - a;
+                        }
 
-                            break;
-                    }
-
-                    if (target != i) {
-                        [data[i], data[target]] = [data[target], data[i]]
-                        data[target].tick = tick;
-                    }
-
-                    data[i].tick = tick;
+                        break;
                 }
-            }
 
+                if (target != i) {
+                    [data[i], data[target]] = [data[target], data[i]]
+                    data[target].tick = tick;
+                }
+
+                data[i].tick = tick;
+            }
 
             return world;
         }
