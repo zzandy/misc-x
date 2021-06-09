@@ -50,7 +50,7 @@
                         console.log('overload')
                         time = 0;
                         break;
-                }
+                    }
                 }
 
 
@@ -121,7 +121,7 @@
             }
         }
 
-        loop(30, init, update, render);
+        loop(100, init, update, render);
 
         function init() {
 
@@ -140,8 +140,9 @@
             const img = buf.getImageData(0, 0, wid, hei);
 
             const data = [];
+            const next = [];
 
-            for (let i = 0; i < wid * hei; ++i)data.push(new Pixel());
+            for (let i = 0; i < wid * hei; ++i) data.push(new Pixel());
 
             const buttons = [
                 new Button('sand', '#f7e98e', Pixel.sand),
@@ -153,7 +154,8 @@
                 new Button('air', 'black', Pixel.air)
             ];
 
-            const world = { data, ctx, buf, img, w, h, buttons, activeButton: 0 };
+            const mouse = { isDown: false, x: 0, y: 0 }
+            const world = { tick: 0, data, ctx, buf, img, renderWidth: w, renderHeight: h, simulationWidth: wid, simulationHeight: hei, buttons, activeButton: 0, mouse };
 
             let isMouseDown = false;
 
@@ -165,38 +167,142 @@
                         return;
                     }
                 }
-
-                add(data, wid, e.clientX / k | 0, e.clientY / k | 0, world.buttons[world.activeButton].generator);
             });
 
             ctx.canvas.addEventListener('mousedown', e => {
-                isMouseDown = true;
+                mouse.isDown = true;
             });
 
             ctx.canvas.addEventListener('mouseup', e => {
-                isMouseDown = false;
+                mouse.isDown = false;
             });
 
             ctx.canvas.addEventListener('mouseenter', e => {
-                if (isMouseDown && e.buttons != 1)
-                    isMouseDown = false;
+                if (mouse.isDown && e.buttons != 1)
+                    mouse.isDown = false;
             });
 
             ctx.canvas.addEventListener('mousemove', e => {
-                if (isMouseDown) {
-                    add(data, wid, e.clientX / k | 0, e.clientY / k | 0, world.buttons[world.activeButton].generator);
-                }
+                mouse.x = e.clientX / k | 0;
+                mouse.y = e.clientY / k | 0;
             });
 
             return world;
         }
 
+        function displaces(type1, type2) {
+            return type2 == Pixel.air
+                || type2 == Pixel.steam && type1 != Pixel.steam
+                || type1 == Pixel.sand && type2 == Pixel.water
+                || type1 == Pixel.water && type2 == Pixel.acid
+        }
+
+        function noop(type) {
+            return Math.random() < (
+                type == Pixel.sand ? .2
+                    : type == Pixel.water ? .1
+                        : -1
+            );
+        }
+
         function update(world) {
+            ++world.tick;
+            const { mouse, tick, simulationWidth: w, data, next } = world;
+
+            if (mouse.isDown) {
+                add(data, w, mouse.x, mouse.y, world.buttons[world.activeButton].generator);
+            }
+
+            const l = data.length;
+
+            const k = 8;
+            for (let ki = 0; ki < 8; ++ki) {
+                for (let t = 0; t < l / k; ++t) {
+                    let i = t * k + ki;
+                    if (i >= l) continue;
+
+                    let x = i % w;
+                    let y = i / w | 0
+
+                    const a = Math.random() < .5 ? 1 : -1;
+
+                    const pixel = data[i];
+
+                    if (pixel.type != Pixel.air && pixel.tick == tick) continue;
+
+                    const lazy = noop(pixel.type);
+                    let target = i;
+
+                    switch (pixel.type) {
+                        case Pixel.water:
+                        case Pixel.acid:
+                        case Pixel.fire:
+                            if (i + w < l && displaces(pixel.type, data[i + w].type)) {
+                                target = i + w;
+                            }
+                            else if (x + a < w && x + a >= 0 && i + w + a < l && displaces(pixel.type, data[i + w + a].type)) {
+                                target = i + w + a;
+                            }
+                            else if (x - a < w && x - a >= 0 && i + w - a < l && displaces(pixel.type, data[i + w - a].type)) {
+                                target = i + w - a;
+                            }
+                            else if (!lazy && x + a < w && x + a >= 0 && i + a < l && displaces(pixel.type, data[i + a].type)) {
+                                target = i + a;
+                            }
+                            else if (!lazy && x - a < w && x - a >= 0 && i - a < l && displaces(pixel.type, data[i - a].type)) {
+                                target = i - a;
+                            }
+
+                            break;
+
+                        case Pixel.steam:
+                            if (i - w >= 0 && displaces(pixel.type, data[i - w].type)) {
+                                target = i - w;
+                            }
+                            else if (x + a < w && x + a >= 0 && i - w + a >= 0 && displaces(pixel.type, data[i - w + a].type)) {
+                                target = i - w + a;
+                            }
+                            else if (x - a < w && x - a >= 0 && i - w - a >= 0 && displaces(pixel.type, data[i - w - a].type)) {
+                                target = i - w - a;
+                            }
+                            else if (!lazy && x + a < w && x + a >= 0 && i + a >= 0 && displaces(pixel.type, data[i + a].type)) {
+                                target = i + a;
+                            }
+                            else if (!lazy && x - a < w && x - a >= 0 && i - a >= 0 && displaces(pixel.type, data[i - a].type)) {
+                                target = i - a;
+                            }
+
+                            break;
+
+                        case Pixel.sand:
+                            if (i + w < l && displaces(pixel.type, data[i + w].type)) {
+                                target = i + w;
+                            }
+                            else if (!lazy && x + a < w && x + a >= 0 && i + w + a < l && displaces(pixel.type, data[i + w + a].type)) {
+                                target = i + w + a;
+                            }
+                            else if (!lazy && x + a < w && x + a >= 0 && i + w - a < l && displaces(pixel.type, data[i + w - a].type)) {
+                                target = i + w - a;
+                            }
+
+                            break;
+                    }
+
+                    if (target != i) {
+                        [data[i], data[target]] = [data[target], data[i]]
+                        data[target].tick = tick;
+                    }
+
+                    data[i].tick = tick;
+                }
+            }
+
+
             return world;
         }
 
         function render(world) {
-            const { ctx, img, buf, w, h } = world;
+            const { ctx, img, buf, renderWidth: w, renderHeight: h } = world;
 
             let data = img.data;
 
@@ -238,14 +344,9 @@
                             if (Math.random() < threshold) {
                                 const d = (dx * dx + dy * dy) / (r * r);
 
-
                                 if (d < 1 && (1 - d) * (1 - d) > Math.random())
                                     put(data, w, x + dx, y + dy, type);
                             }
-
-
-
-
                         }
                     }
                     break;
