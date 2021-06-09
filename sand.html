@@ -94,13 +94,15 @@
             static steam = Symbol('steam');
 
             constructor(type) {
-                var seed = Math.random();
                 this.tick = -1;
                 this.type = type || Pixel.air;
-                this.color = Pixel.getColor(seed, this.type);
+                this.color = Pixel.getColor(this.type);
+                this.vetor = 0;
+                this.decay = this.type == Pixel.steam ? (500 + 100 * Math.random()) : -1;
             }
 
-            static getColor(seed, type) {
+            static getColor(type) {
+                var seed = Math.random();
                 switch (type) {
                     case Pixel.wood:
                         return [0x99 + 10 - 20 * seed, 0x33 + 10 - 20 * seed, 0x33 + 10 - 20 * seed, 255];
@@ -111,7 +113,7 @@
                     case Pixel.acid:
                         return [0xcc + 10 - 20 * seed, 0xff - 10 * seed, 0x00 + 10 * seed, 255];
                     case Pixel.steam:
-                        return [0x99 + 10 - 20 * seed, 0x99 + 10 - 20 * seed, 0x99 + 10 - 20 * seed, 255];
+                        return [0x99 + 10 - 20 * seed, 0x99 + 20 - 40 * seed, 0x99 + 20 - 40 * seed, 255];
                     case Pixel.sand:
                         return [0xf7 + 10 - 20 * seed, 0xe9 + 10 - 20 * seed, 0x8e + 10 - 20 * seed, 255];
                     default:
@@ -255,6 +257,12 @@
                         break;
 
                     case Pixel.steam:
+                        if (--pixel.decay <= 0) {
+                            pixel.type = Pixel.water;
+                            pixel.color = Pixel.getColor(pixel.type);
+                            break;
+                        }
+
                         if (i - w >= 0 && displaces(pixel.type, data[i - w].type)) {
                             target = i - w;
                         }
