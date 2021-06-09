@@ -39,11 +39,20 @@
                 time += now - then;
                 then = now;
 
+                let numLoops = 0;
+
                 while (time > targetDelay) {
                     time -= targetDelay;
                     world = update(world);
                     doRender = true;
+
+                    if (++numLoops > 100) {
+                        console.log('overload')
+                        time = 0;
+                        break;
                 }
+                }
+
 
                 if (doRender) {
                     doRender = false;
