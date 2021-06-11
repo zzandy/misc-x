@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" style="background-color: white;">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Mosaic</title>
+</head>
+
+<body>
+    <script type="text/javascript">
+        function fullscreenCanvas() {
+            const can = document.createElement('canvas');
+            const ctx = can.getContext('2d');
+
+            ctx.canvas.width = window.innerWidth - 1;
+            ctx.canvas.height = window.innerHeight - 1;
+            ctx.canvas.style.position = 'absolute';
+            ctx.canvas.style.top = 0;
+            ctx.canvas.style.left = 0;
+
+            document.body.appendChild(can);
+
+            return ctx;
+        }
+    </script>
+    <script type="text/javascript">
+
+        const ctx = fullscreenCanvas();
+
+        const w = 32;
+        const h = 32;
+
+        ctx.fillStyle = 'silver'
+
+        for (let i = 0; i < ctx.canvas.height / h; ++i)
+            for (let j = 0; j < ctx.canvas.width / w; ++j) {
+
+                ctx.save();
+
+                ctx.translate(j * w, i * h);
+                ctx.scale(w, h);
+
+                render();
+
+                ctx.restore();
+            }
+
+        function render() {
+            ctx.beginPath();
+
+            const a = Math.random() < .5;
+            const b = Math.random() < .5;
+
+            if (a && b) {
+                ctx.moveTo(0, 0);
+                ctx.lineTo(1, 0);
+                ctx.lineTo(0, 1);
+            } else if (a && !b) {
+                ctx.moveTo(0, 0);
+                ctx.lineTo(1, 0);
+                ctx.lineTo(1, 1);
+            } else if (!a && b) {
+                ctx.moveTo(1, 0);
+                ctx.lineTo(1, 1);
+                ctx.lineTo(0, 1);
+            } else {
+                ctx.moveTo(0, 0);
+                ctx.lineTo(1, 1);
+                ctx.lineTo(0, 1);
+            }
+
+            ctx.closePath();
+            ctx.fill();
+        }
+
+    </script>
+</body>
+
+</html>
