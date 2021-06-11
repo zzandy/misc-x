@@ -33,14 +33,15 @@
             ['hsl(125, 100%, 40%)', 'hsl(105, 90%, 70%)', 'hsl(125, 50%, 80%)', 'hsl(125, 100%, 10%)', 'hsl(105, 70%, 60%)'],
             ['hsl(350, 100%, 35%)', 'hsl(10, 100%, 70%)', 'hsl(350, 50%, 90%)', 'hsl(350, 100%, 20%)', 'hsl(10, 100%, 60%)'],
             ['hsl(35, 100%, 50%)', 'hsl(45, 100%, 70%)', 'hsl(35, 50%, 90%)', 'hsl(35, 100%, 20%)', 'hsl(45, 100%, 60%)'],
-            ['hsl(290, 100%, 35%)', 'hsl(270, 100%, 65%)', 'hsl(290, 50%, 85%)', 'hsl(290, 100%, 15%)', 'hsl(270, 100%, 55%)']
+            ['hsl(290, 100%, 35%)', 'hsl(270, 100%, 65%)', 'hsl(290, 50%, 85%)', 'hsl(290, 100%, 15%)', 'hsl(270, 100%, 55%)'],
+            ['hsl(190, 30%, 65%)', 'hsl(190, 30%, 65%)', 'hsl(190, 50%, 85%)', 'hsl(190, 80%, 15%)', 'hsl(190, 100%, 45%)'],
         ];
 
         // const rows = 5; // rows as in for portrait then 2 landscape
         // const sides = 2;
         // const cols = 4;
 
-        const deck = [
+        let deck = [
             [1, 2, 3, 4, 5, 6],
             [1, 1, 1, 1, 1, 1],
             [3, 6, 3, 6, 3, 6],
@@ -79,6 +80,9 @@
         ];
 
         deck.sort(() => Math.random() - .5)
+
+
+        deck = [0, 0, 0, 0, 0, 0, ...deck];
 
         //fourOverTwo(frame, cardAspect, deck);
         //threeBy(frame, cardAspect, deck);
@@ -206,11 +210,12 @@
         }
 
         function drawCard(ctx, pos, dice, outer, inner, radius, dieSize) {
-            const colors = palette[dice.length < 3 ? 0 : dice.length > 4 ? 3 : (dice.length - 2)];
+            const colors = palette[dice == 0 ? 4 : dice.length < 3 ? 0 : dice.length > 4 ? 3 : (dice.length - 2)];
             const price = dice.length < 3 ? 2 : dice.length > 4 ? 15 : dice.length == 4 ? 10 : 5;
 
             const pad = (outer[0] - inner[0]) / 2;
             const priceRad = ((outer[1] - inner[1]) * 1.1) | 0;
+
 
             // card
             ctx.save();
@@ -219,62 +224,84 @@
             ctx.translate(pos[0], pos[1])
 
             roundedRect(ctx, 0, 0, outer[0], outer[1], radius[0]);
+
             ctx.fillStyle = colors[0];
-            ctx.fill();
-            ctx.stroke();
 
-            roundedRect(ctx, pad, pad, inner[0], inner[1], radius[1]);
-            ctx.fillStyle = colors[1];
             ctx.fill();
 
-            ctx.save();
-            ctx.fillStyle = colors[4];
-            ctx.clip();
-
-            // dice
-            let offst = dice.length == 2 ? -.25 : dice.length == 3 ? -.4 : 0;
-            let offs2 = dice.length == 2 ? -.5 : dice.length == 3 ? -.4 : 0;
-
-            let rowLen = dice.length > 3 ? 2 : 1;
-
-            let numRows = (dice.length / rowLen) | 0;
-            let diePad = (inner[0] - rowLen * dieSize) / (rowLen + 1);
-            let dieVPad = (inner[1] - numRows * dieSize) / (numRows + 1) * (numRows == 2 ? .8 : 1);
-
-            let n = 0;
-            for (let die of dice) {
-                drawDiceShadow(ctx, -dieSize * offst + dieSize * offs2 * n + pad + diePad + n % rowLen * (dieSize + diePad), pad + dieVPad + ((n / rowLen) | 0) * (dieSize + dieVPad), die, dieSize);
-                ++n;
+            if (dice == 0) {
+                ctx.fillStyle = pattern(ctx, 0);
+                ctx.save();
+                ctx.globalAlpha = .2;
+                ctx.rotate(.3)
+                ctx.fill();
+                ctx.restore();
             }
 
-            ctx.fillStyle = pattern(ctx, dice.length);
-            ctx.globalAlpha = .18;
-            ctx.fill();
-            ctx.restore();
-
             ctx.stroke();
 
-            n = 0;
-            for (let die of dice) {
-                drawDice(ctx, -dieSize * offst + dieSize * offs2 * n + pad + diePad + n % rowLen * (dieSize + diePad), pad + dieVPad + ((n / rowLen) | 0) * (dieSize + dieVPad), die, dieSize);
-                ++n;
+
+
+            if (dice != 0) {
+                roundedRect(ctx, pad, pad, inner[0], inner[1], radius[1]);
+                ctx.fillStyle = colors[1];
+                ctx.fill();
+
+                ctx.save();
+                ctx.fillStyle = colors[4];
+                ctx.clip();
+
+                // dice
+                let offst = dice.length == 2 ? -.25 : dice.length == 3 ? -.4 : 0;
+                let offs2 = dice.length == 2 ? -.5 : dice.length == 3 ? -.4 : 0;
+
+                let rowLen = dice.length > 3 ? 2 : 1;
+
+                let numRows = (dice.length / rowLen) | 0;
+                let diePad = (inner[0] - rowLen * dieSize) / (rowLen + 1);
+                let dieVPad = (inner[1] - numRows * dieSize) / (numRows + 1) * (numRows == 2 ? .8 : 1);
+
+                if (dice == 0) {
+
+
+                    let n = 0;
+                    for (let die of dice) {
+                        drawDiceShadow(ctx, -dieSize * offst + dieSize * offs2 * n + pad + diePad + n % rowLen * (dieSize + diePad), pad + dieVPad + ((n / rowLen) | 0) * (dieSize + dieVPad), die, dieSize);
+                        ++n;
+                    }
+                }
+
+                ctx.fillStyle = pattern(ctx, dice.length);
+                ctx.globalAlpha = .18;
+                ctx.fill();
+                ctx.restore();
+
+                ctx.stroke();
+
+                n = 0;
+
+                for (let die of dice) {
+                    drawDice(ctx, -dieSize * offst + dieSize * offs2 * n + pad + diePad + n % rowLen * (dieSize + diePad), pad + dieVPad + ((n / rowLen) | 0) * (dieSize + dieVPad), die, dieSize);
+                    ++n;
+                }
+
+                ctx.restore();
+
+                // Price circle
+                circle(ctx, outer[0] / 2, outer[1] - pad / 2 - priceRad / 2, priceRad / 2);
+                ctx.fillStyle = colors[2];
+                ctx.strokeStyle = colors[3];
+                ctx.lineWidth = outer[0] * lineWidth / 2;
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.font = ' ' + ((priceRad * 1.2) | 0) + 'px Gabriola';
+                const measure = ctx.measureText(price);
+
+                ctx.fillStyle = colors[3];
+                ctx.fillText(price, outer[0] / 2 - measure.width / 2, outer[1] - pad / 2 - priceRad / 2 + measure.actualBoundingBoxAscent / 2);
+
             }
-
-            ctx.restore();
-
-            // Price circle
-            circle(ctx, outer[0] / 2, outer[1] - pad / 2 - priceRad / 2, priceRad / 2);
-            ctx.fillStyle = colors[2];
-            ctx.strokeStyle = colors[3];
-            ctx.lineWidth = outer[0] * lineWidth / 2;
-            ctx.fill();
-            ctx.stroke();
-
-            ctx.font = ' ' + ((priceRad * 1.2) | 0) + 'px Gabriola';
-            const measure = ctx.measureText(price);
-
-            ctx.fillStyle = colors[3];
-            ctx.fillText(price, outer[0] / 2 - measure.width / 2, outer[1] - pad / 2 - priceRad / 2 + measure.actualBoundingBoxAscent / 2);
 
             ctx.restore();
         }
@@ -382,6 +409,12 @@
             ctx.lineWidth = 4;
             ctx.fillStyle = ctx.strokeStyle = 'white';
             switch (n) {
+                case 0:
+                    ctx.fillStyle = ctx.strokeStyle = 'hsl(190, 100%, 5%)';
+                    ctx.lineWidth = 8;
+                    for (let i = 0; i <= 4; ++i)
+                        for (let j = 0; j <= 4; ++j)
+                            ctx.strokeRect(i * 32, j * 32, 12, 12);
                 case 2:
                     ctx.lineWidth = 4;
                     for (let i = 0; i <= 4; ++i)
@@ -416,7 +449,7 @@
                 case 6:
                     for (let i = 0; i <= 4; ++i)
                         for (let j = 0; j <= 4; ++j) {
-                            circle(ctx, (i+(j%2)/2) * 32, j * 32, 8);
+                            circle(ctx, (i + (j % 2) / 2) * 32, j * 32, 8);
                             ctx.stroke();
                         }
                     break;
