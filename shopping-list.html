@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" style="background-color: white;">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Shopping List</title>
+    <style type="text/css">
+        #items {
+            display: grid;
+            grid-template-columns: 2em 2em 2em 2em 1fr 2em 2em 2em;
+        }
+
+        #list span {
+            display: block;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="container"></div>
+
+    <script type="text/javascript">
+
+        function to(id) {
+            const e = document.getElementById(id);
+
+            return {
+                add: function (...contents) {
+                    for (let child of contents.flat()) {
+                        e.appendChild(child);
+                    }
+                }
+            }
+        }
+
+        function empty(id) {
+            const e = document.getElementById(id);
+            e.innerHTML = '';
+
+            return {
+                add: function (...contents) {
+                    for (let child of contents.flat()) {
+                        e.appendChild(child);
+                    }
+                }
+            }
+        }
+
+        function span(id, ...contents) {
+            const e = document.createElement('span');
+            e.id = id;
+
+            for (let child of contents.flat()) {
+                if (typeof child === 'string')
+                    child = document.createTextNode(child)
+
+                e.appendChild(child);
+            }
+
+            return e;
+        }
+
+        function div(id, ...contents) {
+            const e = document.createElement('div');
+            e.id = id;
+
+            for (let child of contents.flat()) {
+                if (typeof child === 'string')
+                    child = document.createTextNode(child)
+
+                e.appendChild(child);
+            }
+
+            return e;
+        }
+
+        function button(id, click) {
+            const e = document.createElement('button');
+            e.innerText = id[0].toUpperCase() + id.slice(1);
+            e.id = id;
+            e.addEventListener('click', click);
+
+            return e;
+        }
+
+        function check() {
+            const e = document.createElement('input');
+            e.type = 'checkbox';
+            return e;
+        }
+
+        function text() {
+            return document.createElement('textarea');
+        }
+
+        function hide(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+
+        function show(id) {
+            document.getElementById(id).style.display = '';
+        }
+    </script>
+
+    <script type="text/javascript">
+
+        function record(text) {
+            return {
+                title: text,
+                active: true,
+                amount: 1
+            }
+        }
+
+    </script>
+
+    <script type="text/javascript">
+
+        const items = load();
+
+        to('container').add(
+            div('selector',
+                button('add', add),
+                button('send', exp)
+            ),
+            div('list', div('items', ...items.map(render)))
+        );
+
+        function exp() { }
+
+        function add() {
+            hide('add');
+            hide('send');
+            to('selector').add(text(), button('save', addItems))
+        }
+
+        function addItems(e) {
+            const text = e.target.parentElement.getElementsByTagName('textarea')[0];
+
+            items.push(...text.value
+                .split('\n')
+                .map(clean)
+                .filter(valid)
+                .map(record));
+
+
+
+            save();
+
+            show('add');
+            show('send')
+
+            text.parentElement.removeChild(text);
+            e.target.parentElement.removeChild(e.target);
+        }
+        5
+        function load() {
+            return JSON.parse(localStorage.getItem('items') || '[]');
+        }
+
+        function save() {
+            localStorage.setItem('items', JSON.stringify(items));
+            empty('list').add(div('items', ...items.map(render)));
+        }
+
+        function render(item) {
+            const cb = check();
+            cb.checked = item.active;
+            const txt = span('', item.amount.toString());
+
+            return [
+                addClick(cb, () => toggle(item, cb)),
+                button('-', () => less(item, txt)),
+                txt,
+                button('+', () => more(item, txt)),
+                addClick(div('text', item.title), () => toggle(item, cb)),
+                button('⮝', () => up(item)),
+                button('⮟', () => down(item)),
+                button('x', () => del(item))
+            ]
+        }
+
+        function renderChecklist(item) {
+            return [
+                check(),
+                button('-', less),
+                div('', '1'),
+                button('+', more),
+                addClick(div('text', item), toggle)
+            ];
+        }
+
+        function up(item, txt) {
+            let index = items.indexOf(item);
+            if (index > 0) {
+                [items[index - 1], items[index]] = [items[index], items[index - 1]]
+            }
+
+            save();
+        }
+
+        function down(item, txt) {
+
+            let index = items.indexOf(item);
+            if (index < items.length - 1) {
+                [items[index + 1], items[index]] = [items[index], items[index + 1]]
+            }
+
+            save();
+        }
+
+        function del(item) {
+            items = items.filter(i => i != item)
+            save();
+        }
+
+        function clean(item) {
+            return item.trim();
+        }
+
+        function valid(item) {
+            return item.length > 0 && !load().some(i => i.title.toLowerCase() == item.toLowerCase());
+        }
+
+        function toggle(item, cb) {
+            item.active = !item.active;
+            cb.checked = item.active;
+            save();
+        }
+
+        function more(item, text) {
+            item.amount++;
+            text.innerText = item.amount;
+            save();
+        }
+
+        function less(item, text) {
+            if (item.amount > 1) item.amount--;
+            text.innerText = item.amount;
+            save();
+        }
+
+        function addClick(e, click) {
+            e.addEventListener('click', click);
+            return e;
+        }
+    </script>
+</body>
+
+</html>
