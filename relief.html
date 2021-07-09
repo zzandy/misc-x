@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>Relief</title>
+</head>
+
+<body>
+    <script type="text/javascript">
+        const tau = Math.PI * 2;
+
+        function newCanvas(height) {
+            console.log(height, window.innerHeight)
+
+            height = Math.max(height, window.innerHeight);
+
+            console.log(height, window.innerHeight)
+
+            const c = document.createElement('canvas');
+            const ctx = c.getContext('2d');
+
+            ctx.canvas.width = window.innerWidth;
+            ctx.canvas.height = height;
+            ctx.canvas.style.position = 'absolute';
+            ctx.canvas.style.top = 0;
+            ctx.canvas.style.left = 0;
+
+            document.body.replaceChild(c, document.body.firstChild);
+
+            return ctx;
+        }
+    </script>
+
+    <script type="text/javascript">
+
+        const numLayers = 20;
+        const numPoints = numLayers * 2 / 3 | 0;
+
+        const layers = [];
+
+        const points = [];
+        let flatMode = false;
+        let x = Math.random() * tau;
+
+        document.addEventListener('keypress', onKeyPress)
+
+        for (let i = 0; i < numPoints; ++i) {
+            points.push(x);
+            x += Math.random() * tau / 6;
+        }
+
+        for (let i = 0; i < numLayers; ++i) {
+
+            let layer = [];
+            for (let j = 0; j < numPoints; ++j) {
+                layer.push(((Math.sin(points[j]) + 1) / 2) * .5 + .5);
+                points[j] += Math.random() * tau / 12;
+            }
+
+            layers.push(layer);
+        }
+
+        render();
+
+        function render() {
+            const dx = window.innerWidth / (numLayers + 2);
+            const a = 130
+
+            renderImpl(flatMode
+                ? { a, dx, skew: 0, sx: 00, oy: a, sy: a + 10, oc: 100 }
+                : { a, dx, skew: .3, sx: 20, oy: 600, sy: 10, oc: 10 })
+        }
+
+        function renderImpl(params) {
+            const ctx = newCanvas(params.oy + params.sy * numLayers);
+
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+            const dx = params.dx;
+            const a = params.a;
+
+            let i = 0;
+
+            for (let layer of layers) {
+
+                ctx.save();
+
+                ctx.translate(10 + (++i) * params.sx, params.oy + i * params.sy);
+                ctx.transform(1, -params.skew, 0, 1, 0, 0);
+                ctx.fillStyle = 'hsl(0, 0%, ' + (params.oc + (100 - params.oc) * (i / numLayers)) + '%)';
+                ctx.strokeStyle = 'red'
+
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+
+                let prev = null;
+
+                for (let p of layer) {
+                    let v = -a * p;
+
+                    if (prev == null) {
+                        ctx.lineTo(0, v);
+                    }
+                    else {
+                        ctx.translate(dx, 0);
+                        ctx.bezierCurveTo(-dx * 3 / 4, prev, -dx / 4, v, 0, v);
+                    }
+
+                    prev = v;
+                }
+
+                ctx.lineTo(0, 0);
+                ctx.closePath();
+                ctx.fill();
+                //ctx.stroke();
+
+                ctx.restore();
+            }
+
+
+        }
+
+        function onKeyPress(e) {
+            if (e.code == 'Space') { flatMode = !flatMode; render(); }
+        }
+
+    </script>
+</body>
+
+</html>
