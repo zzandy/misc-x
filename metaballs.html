@@ -1,8 +1,9 @@
-<!DOCTYPE HTML
-    PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
 
 <head>
+    <meta charset="utf-8" />
     <title>Metaballs</title>
     <style type="text/css">
         html,
@@ -20,6 +21,7 @@
         <button onclick="toggleGrid()">Grid</button>
         <button onclick="toggleLepr()">LEPR</button>
         <button onclick="toggleOnion()">Onion</button>
+        <button onclick="toggleBalls()">Cores</button>
         <div id="fps"></div>
     </div>
 
@@ -149,7 +151,6 @@
 
                 data.push(row);
             }
-
 
             return [origin, data];
         }
@@ -294,7 +295,7 @@
         }
     </script>
 
-    <!-- Fullscreen canvas and drawhex -->
+    <!-- Fullscreen canvas -->
     <script type="text/javascript">
         function fullscreenCanvas(id) {
             const c = window.document.getElementById(id);
@@ -314,36 +315,6 @@
         const h = ctx.canvas.height;
 
         const q = 1 / Math.sqrt(3);
-
-        ctx.pathHex = function (h) {
-            const dx = q * h / 2;
-            const dy = h / 2;
-
-            this.beginPath();
-            this.moveTo(2 * dx, 0);
-            this.lineTo(dx, -dy);
-            this.lineTo(-dx, -dy);
-            this.lineTo(-2 * dx, 0);
-            this.lineTo(-dx, dy);
-            this.lineTo(dx, dy);
-            this.closePath();
-        };
-
-        ctx.fillHex = function (x, y, h) {
-            this.save();
-            this.translate(x, y);
-            this.pathHex(h);
-            this.fill();
-            this.restore();
-        };
-
-        ctx.strokeHex = function (x, y, h) {
-            this.save();
-            this.translate(x, y);
-            this.pathHex(h);
-            this.stroke();
-            this.restore();
-        };
 
         ctx.translate(ctx.canvas.width / 2, ctx.canvas.height / 2);
         ctx.scale(1, -1);
@@ -446,6 +417,39 @@
 
     </script>
 
+    <!-- Loop -->
+    <script type="text/javascript">
+        function loop(targetFps, init, update, render) {
+            let world = init();
+            let then = performance.now();
+            let delta = 1000 / targetFps;
+            let time = delta;
+
+            requestAnimationFrame(tick)
+
+            function tick(now) {
+                time += now - then;
+                then = now;
+
+                const maxRuns = 50;
+                let numRuns = 0;
+                let rerenderRequired = false;
+
+                while (time > delta && numRuns++ < maxRuns) {
+                    time -= delta;
+                    world = update(world);
+                    rerenderRequired = true;
+                }
+
+                if (rerenderRequired) {
+                    render(world);
+                }
+
+                requestAnimationFrame(tick)
+            }
+        }
+    </script>
+
     <!-- Balls -->
     <script type="text/javascript">
         function Ball(pos, r, v) {
@@ -460,64 +464,7 @@
         const cos = Math.cos;
         const sin = Math.sin;
 
-        const rank = 20;
-        const supercell = new SuperCell(0, 0, rank);
-        const extremes = supercell.getCorners();
-
-        function dist(p, q) {
-            const dx = (p.x - q.x);
-            const dy = (p.y - q.y);
-            return Math.sqrt(dx * dx + dy * dy);
-        }
-
         const zero = new Point(0, 0);
-
-        const zoom = Math.min(w, h) / extremes.reduce(function (max, c) { return Math.max(max, dist(zero, c)) }, 0) * sq32;
-
-        function CellValue(v) {
-            this.v = v;
-        }
-
-        function CloneCellValue(arg) {
-            return new CellValue(arg.v);
-        }
-
-
-
-        const maxd = extremes.reduce(function (max, c) { return Math.max(max, dist(zero, c)) }, 0) / 2;
-        const mind = maxd / 2;
-
-        const balls = (function (maxd, mind) {
-            const minballs = 10;
-            const maxballs = 15;
-            const minr = maxd / 15;
-            const maxr = maxd / 3;
-            const balls = [];
-
-            // generate metaballs
-            for (let i = 0; i < rnd(minballs, maxballs); ++i) {
-                let a = rnd(tau);
-                const d = rnd(mind, maxd);
-                const pos = new Point(d * cos(a), d * sin(a));
-                a = rnd(tau);
-                const v = new Point(mind * cos(a) / 100, mind * sin(a) / 100);
-                const r = rnd(minr, maxr);
-
-                balls.push(new Ball(pos, r, v));
-            }
-
-            return balls;
-        })(maxd, mind);
-
-        function MakeCellValue(arg) {
-            if (supercell.contains(arg)) {
-                return new CellValue(0);
-            }
-
-            return null;
-        }
-
-        let store = new MakeHexStore(extremes, MakeCellValue, CloneCellValue);
 
         const ps = [
             new Point(0, 0),
@@ -527,18 +474,116 @@
             new Point(-sq32, -.5)
         ];
 
-        function getk(a, b) {
-            a = a < 1 ? 0 : a;
-        }
+        const numColors = 10;
+        const colors = [];
+        for (let i = 0; i < numColors; ++i)
+            colors[i] = hcy2rgb(360 * i / numColors, 1, .5, 1);
 
         let enableLepr = true;
         let oneOnly = false;
         let showGrid = false;
+        let showBalls = false;
 
-        let numFrames = 0;
-        let numLastFpsCounting = null;
+        loop(50, init, update, render);
 
-        function draw(store, clear) {
+        function init() {
+            const state = {};
+
+            const rank = 20;
+            const supercell = new SuperCell(0, 0, rank);
+            const extremes = supercell.getCorners();
+
+            const maxd = extremes.reduce(function (max, c) { return Math.max(max, dist(zero, c)) }, 0) / 2;
+            const mind = maxd / 3;
+
+            state.minBallDistance = mind;
+            state.maxBallDistance = maxd;
+            state.balls = (function (maxd, mind) {
+                const minballs = 10;
+                const maxballs = 15;
+                const minr = maxd / 15;
+                const maxr = maxd / 3;
+                const balls = [];
+
+                // generate metaballs
+                for (let i = 0; i < rnd(minballs, maxballs); ++i) {
+                    let a = rnd(tau);
+                    const d = rnd(mind, maxd);
+                    const pos = new Point(d * cos(a), d * sin(a));
+                    a = rnd(tau);
+                    const v = new Point(mind * cos(a) / 70, mind * sin(a) / 70);
+                    const r = rnd(minr, maxr);
+
+                    balls.push(new Ball(pos, r, v));
+                }
+
+                return balls;
+            })(maxd, mind);
+
+
+            state.zoom = Math.min(w, h) / extremes.reduce(function (max, c) { return Math.max(max, dist(zero, c)) }, 0) * sq32;
+
+            function CellValue(v) {
+                this.v = v;
+            }
+
+            function CloneCellValue(arg) {
+                return new CellValue(arg.v);
+            }
+
+            function MakeCellValue(arg) {
+                if (supercell.contains(arg)) {
+                    return new CellValue(0);
+                }
+
+                return null;
+            }
+
+            state.store = new MakeHexStore(extremes, MakeCellValue, CloneCellValue);
+
+            return state;
+        }
+
+        function update(state) {
+            const balls = state.balls;
+            const ballSpeed = state.minBallDistance;
+            const maxd = state.maxBallDistance;
+
+            state.store = state.store.nextGen(function (oldCell, newCell, pos, oldStore, newStore) {
+
+                if (oldCell != null) {
+                    const p = world(pos);
+                    const sum = balls.reduce(function (s, b) {
+                        const d = dist(p, b.pos) / b.r / 2;
+
+                        if (d > 1) return s;
+
+                        return s + fade(1 - d);
+                    }, 0);
+
+                    newCell.v = sum;
+                }
+            });
+
+            for (const b of state.balls) {
+                let nextpos = b.pos.plus(b.v);
+
+                while (dist(nextpos, zero) > maxd) {
+                    const a = rnd(tau);
+                    b.v = new Point(ballSpeed * cos(a) / 70, ballSpeed * sin(a) / 70);
+                    nextpos = b.pos.plus(b.v);
+                }
+
+                b.pos = nextpos;
+            }
+
+            return state;
+        }
+
+        function render(state) {
+
+            const store = state.store;
+            const zoom = state.zoom;
 
             function z(a, b, c) {
                 return (a >= 1 && b < 1 && c < 1) || (a < 1 && b >= 1 && c >= 1);
@@ -552,8 +597,6 @@
             }
 
             function line(dc, dk, a1, a2, b1, b2, ka, kb) {
-                if (!enableLepr) ka = kb = .5;
-
                 const a = calcpoint(dk + a1, dk + a2, ka);
                 const b = calcpoint(dk + b1, dk + b2, kb);
 
@@ -564,7 +607,9 @@
             }
 
             function getk(v0, v1) {
-                return (1 - v0) / (v1 - v0);
+                return enableLepr
+                    ? (1 - v0) / (v1 - v0)
+                    : .5;
             }
 
             function triangle(a, b, c, t, x) {
@@ -578,8 +623,6 @@
 
                 if ((a == 0 && b == 0 && c == 0) || (a != 0 && b != 0 && c != 0))
                     return;
-
-                ctx.strokeStyle = hcy2rgb(360 * t, 1, .5, 1);
 
                 if (z(a, b, c)) line(0, x, 0, 2, 0, 3, getk(va, vb), getk(va, vc));
                 else if (z(b, c, a)) line(1, x, 0, 2, 2, 3, getk(va, vb), getk(vb, vc));
@@ -599,17 +642,17 @@
                 const c = store.get(pos, dirdl);
 
                 if (oneOnly) {
+                    ctx.strokeStyle = colors[numColors / 2 | 0];
                     triangle(cell, a, b, .5, 0);
                     triangle(cell, b, c, .5, 1);
                 }
                 else {
-                    const n = 10;
-                    for (let i = 0; i < n; ++i) {
-                        triangle(cell, a, b, i / (n - 1), 0);
-                        triangle(cell, b, c, i / (n - 1), 1);
+                    for (let i = 0; i < numColors; ++i) {
+                        ctx.strokeStyle = colors[i];
+                        triangle(cell, a, b, i / (numColors - 1), 0);
+                        triangle(cell, b, c, i / (numColors - 1), 1);
                     }
                 }
-
 
                 if (showGrid) {
                     ctx.fillStyle = 'white';
@@ -619,8 +662,7 @@
                 ctx.restore();
             }
 
-            if (clear)
-                ctx.clearRect(-ctx.canvas.width / 2, -ctx.canvas.height / 2, ctx.canvas.width, ctx.canvas.height);
+            ctx.clearRect(-ctx.canvas.width / 2, -ctx.canvas.height / 2, ctx.canvas.width, ctx.canvas.height);
 
             ctx.save();
             ctx.scale(zoom, zoom);
@@ -629,77 +671,62 @@
             ctx.strokeStyle = '#fff';
             store.forEach(drawCell);
 
+            if (showBalls) state.balls.forEach(renderBall);
+
             ctx.restore();
+
+            logFrame();
         }
 
-        const csr = new Point(0, 0);
+        function renderBall(ball) {
+            ctx.beginPath();
 
-        function fl(n) { return Math.floor(n); }
+            ctx.arc(ball.pos.x, ball.pos.y, ball.r, 0, tau);
+
+
+            ctx.strokeStyle = 'silver';
+            ctx.stroke();
+        }
+
+        function dist(p, q) {
+            const dx = (p.x - q.x);
+            const dy = (p.y - q.y);
+            return Math.sqrt(dx * dx + dy * dy);
+        }
 
         function fade(t) { return t * t * t * (t * (t * 6 - 15) + 10); }
 
-        function tick() {
-            store = store.nextGen(function (oldCell, newCell, pos, oldStore, newStore) {
-
-                if (oldCell != null) {
-                    const p = world(pos);
-                    const sum = balls.reduce(function (s, b) {
-                        const d = dist(p, b.pos) / b.r / 2;
-
-                        if (d > 1) return s;
-
-                        return s + fade(1 - d);
-                    }, 0);
-
-                    newCell.v = sum;
-
-                }
-            });
-
-            balls.forEach(function (b) {
-
-                let nextpos = b.pos.plus(b.v);
-
-                while (dist(nextpos, zero) > maxd) {
-                    const a = rnd(tau);
-                    b.v = new Point(mind * cos(a) / 50, mind * sin(a) / 50);
-                    nextpos = b.pos.plus(b.v);
-                }
-
-                b.pos = nextpos;
-
-            });
-
-            draw(store, true);
-            ++numFrames;
-
-            window.requestAnimationFrame(tick);
-        }
-
-        tick();
-
-        countFps();
-
-        function countFps() {
+        function logFrame() {
             const target = document.getElementById('fps');
-            countFps = function () {
+            const bufferLen = 30;
+            const frames = new Int8Array(bufferLen);
+            let idx = 0;
+            let then = performance.now();
 
-                const now = (new Date).getTime();
-                const timePassed = now - lastFpsCountging;
+            logFrame = function () {
+                const now = performance.now();
+                frames[idx] = now - then;
+                then = now;
 
-                target.innerHTML = (1000 * numFrames / timePassed).toFixed(1);
+                if (++idx >= bufferLen)
+                    idx = 0;
 
-                lastFpsCountging = now;
-                numFrames = 0;
+                if (idx == 0) {
+                    let avg = 0;
+                    for (let i = 0; i < bufferLen; ++i)avg += frames[i] / bufferLen;
+
+                    if (avg > 0)
+                        target.innerText = (1000 / avg).toFixed(1);
+                }
             };
 
-            lastFpsCountging = (new Date).getTime();
-            window.setInterval(countFps, 500);
+            logFrame();
         }
 
         function toggleLepr() { enableLepr = !enableLepr; }
         function toggleGrid() { showGrid = !showGrid; }
         function toggleOnion() { oneOnly = !oneOnly; }
+        function toggleBalls() { showBalls = !showBalls; }
 
     </script>
 </body>
