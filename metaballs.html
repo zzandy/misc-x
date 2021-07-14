@@ -1,17 +1,21 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE HTML
+    PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
+
 <head>
     <title>Metaballs</title>
     <style type="text/css">
-        html, body {
+        html,
+        body {
             background-color: #232220;
             color: #dad6d0;
         }
     </style>
 </head>
+
 <body>
     <canvas id="can"></canvas>
-    
+
     <div style="position: absolute">
         <button onclick="toggleGrid()">Grid</button>
         <button onclick="toggleLepr()">LEPR</button>
@@ -23,10 +27,10 @@
     <script type="text/javascript">
 
         /** rnd() random value from 0 to 1
-		 *  rnd(n) random from 0 to n
-		 *  rnd(n, m) random between n and m
-		 *  rnd(array) random element
-		 */
+         *  rnd(n) random from 0 to n
+         *  rnd(n, m) random between n and m
+         *  rnd(array) random element
+         */
         function rnd(a, b) {
             switch (arguments.length) {
                 case 0:
@@ -83,7 +87,7 @@
             this.j = j;
         }
 
-        var sq32 = Math.sqrt(3) / 2;
+        const sq32 = Math.sqrt(3) / 2;
 
         function world(i, j) {
             if (arguments.length == 1) {
@@ -100,16 +104,16 @@
                 x = x.x;
             }
 
-            var j = x / sq32;
+            const j = x / sq32;
 
             return new GridPoint(y + j / 2, j);
         }
 
         function MakeData(extremes, initFn) {
 
-            var minmax = extremes.reduce(function (current, point) {
-                var i = point.y;
-                var j = point.x;
+            const minmax = extremes.reduce(function (current, point) {
+                const i = point.y;
+                const j = point.x;
 
                 return current == null
                     ? [i, j, i, j]
@@ -121,24 +125,24 @@
                     ];
             }, null);
 
-            var mini = minmax[0];
-            var minj = minmax[1];
-            var maxi = minmax[2];
-            var maxj = minmax[3];
+            const mini = minmax[0];
+            const minj = minmax[1];
+            const maxi = minmax[2];
+            const maxj = minmax[3];
 
             // x, y (getStore(origin) -> 0 0)
-            var origin = [-mini, -minj];
+            const origin = [-mini, -minj];
 
             // max i, max j
-            var n = maxi - mini + 1;
-            var m = maxj - minj + 1;
+            const n = maxi - mini + 1;
+            const m = maxj - minj + 1;
 
-            var data = [];
+            const data = [];
 
-            var i = -1;
+            let i = -1;
             while (++i < n) {
-                var row = [];
-                var j = -1;
+                const row = [];
+                let j = -1;
                 while (++j < m) {
                     row.push(initFn(new GridPoint(i - origin[1], j - origin[0])));
                 }
@@ -151,7 +155,7 @@
         }
 
         function MakeHexStore(extremes, initFn, cloneFn) {
-            var originData = MakeData(extremes, initFn);
+            const originData = MakeData(extremes, initFn);
 
             return new HexStore(originData[0], originData[1], initFn, cloneFn);
         }
@@ -164,44 +168,44 @@
         }
 
         HexStore.prototype.set = function (pos, value) {
-            var n = this.data.length;
-            var m = this.data[0].length;
+            const n = this.data.length;
+            const m = this.data[0].length;
 
-            var xo = this.origin[0];
-            var yo = this.origin[1];
+            const xo = this.origin[0];
+            const yo = this.origin[1];
 
-            var j = pos.j + xo;
-            var i = pos.i + yo;
+            const j = pos.j + xo;
+            const i = pos.i + yo;
 
             if (i >= 0 && j >= 0 && i < n && j < m) this.data[i][j] = value;
         }
 
         HexStore.prototype.forEach = function (processFn) {
 
-            var n = this.data.length;
-            var m = this.data[0].length;
+            const n = this.data.length;
+            const m = this.data[0].length;
 
-            var xo = this.origin[0];
-            var yo = this.origin[1];
+            const xo = this.origin[0];
+            const yo = this.origin[1];
 
-            var i = -1;
+            let i = -1;
             while (++i < n) {
-                var j = -1;
+                let j = -1;
                 while (++j < m)
                     if (this.data[i][j] != null)
                         processFn(this.data[i][j], new GridPoint(i - yo, j - xo));
             }
         }
 
-        var dirdr = 0;
-        var dirur = 1;
-        var dirup = 2;
-        var dirul = 3;
-        var dirdl = 4;
-        var durdn = 5;
+        const dirdr = 0;
+        const dirur = 1;
+        const dirup = 2;
+        const dirul = 3;
+        const dirdl = 4;
+        const durdn = 5;
 
         // dx dy
-        var dirsdeltas = [
+        const dirsdeltas = [
             [/*down-right*/ 1, 0],
             [/*up-right*/ 1, 1],
             [/*up*/ 0, 1],
@@ -216,34 +220,34 @@
         }
 
         HexStore.prototype.get = function (pos, dir) {
-            var i = pos.i + this.origin[1];
-            var j = pos.j + this.origin[0];
+            const i = pos.i + this.origin[1];
+            const j = pos.j + this.origin[0];
 
-            var data = this.data;
-            var n = this.data.length;
-            var m = this.data[0].length;
+            const data = this.data;
+            const n = data.length;
+            const m = data[0].length;
 
-            var id = i + dirsdeltas[dir][1];
-            var jd = j + dirsdeltas[dir][0];
+            const id = i + dirsdeltas[dir][1];
+            const jd = j + dirsdeltas[dir][0];
 
             return (id >= 0 && jd >= 0 && id < n && jd < m) ? this.data[id][jd] : null
         }
 
         HexStore.prototype.adjacent = function (pos) {
 
-            var i = pos.i + this.origin[1];
-            var j = pos.j + this.origin[0];
+            const i = pos.i + this.origin[1];
+            const j = pos.j + this.origin[0];
 
-            var data = this.data;
-            var n = this.data.length;
-            var m = this.data[0].length;
+            const data = this.data;
+            const n = this.data.length;
+            const m = this.data[0].length;
 
             return dirsdeltas.map(function (d, dir) {
-                var dx = d[0];
-                var dy = d[1];
+                const dx = d[0];
+                const dy = d[1];
 
-                var id = i + dy;
-                var jd = j + dx;
+                const id = i + dy;
+                const jd = j + dx;
 
                 return new Adjacent(dir, (id >= 0 && jd >= 0 && id < n && jd < m) ? data[id][jd] : null);
             });
@@ -252,15 +256,15 @@
 
         HexStore.prototype.copy = function () {
 
-            var n = this.data.length;
-            var m = this.data[0].length;
+            const n = this.data.length;
+            const m = this.data[0].length;
 
-            var copy = [];
+            const copy = [];
 
-            for (var i = 0; i < n; ++i) {
-                var row = [];
-                for (var j = 0; j < m; ++j) {
-                    var val = this.data[i][j];
+            for (let i = 0; i < n; ++i) {
+                const row = [];
+                for (let j = 0; j < m; ++j) {
+                    const val = this.data[i][j];
                     row.push(val == null ? null : this.cloneFn(val));
                 }
                 copy.push(row);
@@ -271,17 +275,17 @@
 
         HexStore.prototype.nextGen = function (cellCellStoreStoreFunc) {
 
-            var newStore = this.copy();
+            const newStore = this.copy();
 
-            var n = this.data.length;
-            var m = this.data[0].length;
+            const n = this.data.length;
+            const m = this.data[0].length;
 
-            var xo = this.origin[0];
-            var yo = this.origin[1];
+            const xo = this.origin[0];
+            const yo = this.origin[1];
 
-            for (var i = 0; i < n; ++i) {
-                for (var j = 0; j < m; ++j) {
-                    var pos = new GridPoint(i - yo, j - xo);
+            for (let i = 0; i < n; ++i) {
+                for (let j = 0; j < m; ++j) {
+                    const pos = new GridPoint(i - yo, j - xo);
                     cellCellStoreStoreFunc(this.data[i][j], newStore.data[i][j], pos, this, newStore);
                 }
             }
@@ -293,8 +297,8 @@
     <!-- Fullscreen canvas and drawhex -->
     <script type="text/javascript">
         function fullscreenCanvas(id) {
-            var c = window.document.getElementById(id);
-            var ctx = c.getContext('2d');
+            const c = window.document.getElementById(id);
+            const ctx = c.getContext('2d');
 
             ctx.canvas.width = window.innerWidth;
             ctx.canvas.height = window.innerHeight;
@@ -305,15 +309,15 @@
             return ctx;
         }
 
-        var ctx = fullscreenCanvas('can');
-        var w = ctx.canvas.width;
-        var h = ctx.canvas.height;
+        const ctx = fullscreenCanvas('can');
+        const w = ctx.canvas.width;
+        const h = ctx.canvas.height;
 
-        var q = 1 / Math.sqrt(3);
+        const q = 1 / Math.sqrt(3);
 
         ctx.pathHex = function (h) {
-            var dx = q * h / 2;
-            var dy = h / 2;
+            const dx = q * h / 2;
+            const dy = h / 2;
 
             this.beginPath();
             this.moveTo(2 * dx, 0);
@@ -348,7 +352,7 @@
     <!-- Supercell -->
     <script type="text/javascript">
         /* Hexagonal area with same tiling properties as underlying cells.
-		 */
+         */
         function SuperCell(x, y, rank) {
             this.x = x;
             this.y = y;
@@ -356,36 +360,36 @@
         }
 
         SuperCell.prototype.getCorners = function () {
-            var r = this.rank;
+            const r = this.rank;
 
             return [new Point(2 * r, r - 1),
-                new Point(2 * r, r),
-                new Point(r, 2 * r),
-                new Point(r - 1, 2 * r),
-                new Point(-r + 1, r + 1),
-                new Point(-r, r),
-                new Point(-2 * r, -r),
-                new Point(-2 * r, -r - 1),
-                new Point(-r - 1, -2 * r),
-                new Point(-r, -2 * r),
-                new Point(r, -r),
-                new Point(r + 1, -r + 1)
+            new Point(2 * r, r),
+            new Point(r, 2 * r),
+            new Point(r - 1, 2 * r),
+            new Point(-r + 1, r + 1),
+            new Point(-r, r),
+            new Point(-2 * r, -r),
+            new Point(-2 * r, -r - 1),
+            new Point(-r - 1, -2 * r),
+            new Point(-r, -2 * r),
+            new Point(r, -r),
+            new Point(r + 1, -r + 1)
             ];
         };
 
         SuperCell.prototype.contains = function (point) {
-            var x = point.j - this.x;
-            var y = point.i - this.y;
+            const x = point.j - this.x;
+            const y = point.i - this.y;
 
-            var a = this.rank * 3 + 1;
-            var b = this.rank * 3;
+            const a = this.rank * 3 + 1;
+            const b = this.rank * 3;
 
-            var leftup = 2 * x + b;
-            var top = (x + a) / 2;
-            var rightup = b - x;
-            var rightdown = 2 * x - a;
-            var bottom = (x - b) / 2;
-            var leftdown = -x - a;
+            const leftup = 2 * x + b;
+            const top = (x + a) / 2;
+            const rightup = b - x;
+            const rightdown = 2 * x - a;
+            const bottom = (x - b) / 2;
+            const leftdown = -x - a;
 
             return leftup >= y
                 && top >= y
@@ -403,40 +407,39 @@
         // hue Chroma luma
         function hcy2rgb(h, c, y, a) {
             // 601
-            var r = .3;
-            var g = .59;
-            var b = .11;
+            const r = .3;
+            const g = .59;
+            const b = .11;
 
-            var h0 = h;
+            const h0 = h;
             h /= 60;
 
-            var k = (1 - Math.abs((h % 2) - 1));
+            const k = (1 - Math.abs((h % 2) - 1));
 
-            var K = h < 1 ? r + k * g
+            const K = h < 1 ? r + k * g
                 : h < 2 ? g + k * r
-                : h < 3 ? g + k * b
-                : h < 4 ? b + k * g
-                : h < 5 ? b + k * r
-                : r + k * b;
+                    : h < 3 ? g + k * b
+                        : h < 4 ? b + k * g
+                            : h < 5 ? b + k * r
+                                : r + k * b;
 
-            var cmax = 1;
+            let cmax = 1;
 
             if (y <= 0 || y >= 1) cmax = 0;
             else cmax *= K < y ? (y - 1) / (K - 1) : K > y ? y / K : 1;
-            //c *= cmax;
             c = Math.min(c, cmax);
 
-            var x = c * k;
-            var rgb = h < 1 ? [c, x, 0]
+            const x = c * k;
+            const rgb = h < 1 ? [c, x, 0]
                 : h < 2 ? [x, c, 0]
-                : h < 3 ? [0, c, x]
-                : h < 4 ? [0, x, c]
-                : h < 5 ? [x, 0, c]
-                : [c, 0, x];
+                    : h < 3 ? [0, c, x]
+                        : h < 4 ? [0, x, c]
+                            : h < 5 ? [x, 0, c]
+                                : [c, 0, x];
 
-            var m = y - (r * rgb[0] + g * rgb[1] + b * rgb[2]);
+            const m = y - (r * rgb[0] + g * rgb[1] + b * rgb[2]);
 
-            var rgbdata = [rgb[0] + m, rgb[1] + m, rgb[2] + m];
+            const rgbdata = [rgb[0] + m, rgb[1] + m, rgb[2] + m];
             return 'rgba(' + (rgbdata[0] * 255).toFixed(0) + ',' + (rgbdata[1] * 255).toFixed(0) + ',' + (rgbdata[2] * 255).toFixed(0) + ', ' + (a || 1) + ')';
 
         }
@@ -453,20 +456,23 @@
     </script>
 
     <script type="text/javascript">
+        const tau = 2 * Math.PI;
+        const cos = Math.cos;
+        const sin = Math.sin;
 
-        var rank = 20;
-        var supercell = new SuperCell(0, 0, rank);
-        var extremes = supercell.getCorners();
+        const rank = 20;
+        const supercell = new SuperCell(0, 0, rank);
+        const extremes = supercell.getCorners();
 
         function dist(p, q) {
-            var dx = (p.x - q.x);
-            var dy = (p.y - q.y);
+            const dx = (p.x - q.x);
+            const dy = (p.y - q.y);
             return Math.sqrt(dx * dx + dy * dy);
         }
 
-        var zero = new Point(0, 0);
+        const zero = new Point(0, 0);
 
-        var zoom = Math.min(w, h) / extremes.reduce(function (max, c) { return Math.max(max, dist(zero, c)) }, 0) * sq32;
+        const zoom = Math.min(w, h) / extremes.reduce(function (max, c) { return Math.max(max, dist(zero, c)) }, 0) * sq32;
 
         function CellValue(v) {
             this.v = v;
@@ -476,34 +482,30 @@
             return new CellValue(arg.v);
         }
 
-        var tau = 2 * Math.PI;
-        var cos = Math.cos;
-        var sin = Math.sin;
 
-        var maxd = extremes.reduce(function (max, c) { return Math.max(max, dist(zero, c)) }, 0) / 2;
-        var mind = maxd/2;
-        
-        var balls = (function(maxd, mind){
-            var minballs = 10;
-            var maxballs = 15;
-            var minr = maxd / 15;
-            var maxr = maxd / 3;
-            var balls = [];
+
+        const maxd = extremes.reduce(function (max, c) { return Math.max(max, dist(zero, c)) }, 0) / 2;
+        const mind = maxd / 2;
+
+        const balls = (function (maxd, mind) {
+            const minballs = 10;
+            const maxballs = 15;
+            const minr = maxd / 15;
+            const maxr = maxd / 3;
+            const balls = [];
 
             // generate metaballs
-            for (var i = 0; i < rnd(minballs, maxballs) ; ++i) {
-                var a = rnd(tau);
-                var d = rnd(mind, maxd);
-                var pos = new Point(d * cos(a), d * sin(a));
+            for (let i = 0; i < rnd(minballs, maxballs); ++i) {
+                let a = rnd(tau);
+                const d = rnd(mind, maxd);
+                const pos = new Point(d * cos(a), d * sin(a));
                 a = rnd(tau);
-                var v = new Point(mind * cos(a) / 100, mind * sin(a) / 100);
-                var r = rnd(minr, maxr);
-                
-                //if(rnd(100)<20)r=-r;
+                const v = new Point(mind * cos(a) / 100, mind * sin(a) / 100);
+                const r = rnd(minr, maxr);
 
                 balls.push(new Ball(pos, r, v));
             }
-            
+
             return balls;
         })(maxd, mind);
 
@@ -515,9 +517,9 @@
             return null;
         }
 
-        var store = new MakeHexStore(extremes, MakeCellValue, CloneCellValue);
+        let store = new MakeHexStore(extremes, MakeCellValue, CloneCellValue);
 
-        var ps = [
+        const ps = [
             new Point(0, 0),
             new Point(0, 0),
             new Point(0, 1),
@@ -529,12 +531,12 @@
             a = a < 1 ? 0 : a;
         }
 
-        var enableLepr = true;
-        var oneOnly = false;
-        var showGrid = false;
-        
-        var numFrames = 0;
-        var numLastFpsCounting = null;
+        let enableLepr = true;
+        let oneOnly = false;
+        let showGrid = false;
+
+        let numFrames = 0;
+        let numLastFpsCounting = null;
 
         function draw(store, clear) {
 
@@ -543,8 +545,8 @@
             }
 
             function calcpoint(a, b, k) {
-                var a = ps[a];
-                var b = ps[b];
+                a = ps[a];
+                b = ps[b];
 
                 return a.plus(b.plus(a.times(-1)).times(k))
             }
@@ -552,8 +554,8 @@
             function line(dc, dk, a1, a2, b1, b2, ka, kb) {
                 if (!enableLepr) ka = kb = .5;
 
-                var a = calcpoint(dk + a1, dk + a2, ka);
-                var b = calcpoint(dk + b1, dk + b2, kb);
+                const a = calcpoint(dk + a1, dk + a2, ka);
+                const b = calcpoint(dk + b1, dk + b2, kb);
 
                 ctx.beginPath();
                 ctx.moveTo(a.x, a.y);
@@ -566,15 +568,15 @@
             }
 
             function triangle(a, b, c, t, x) {
-                var va = (a == null ? 0 : a.v) / t;
-                var vb = (b == null ? 0 : b.v) / t;
-                var vc = (c == null ? 0 : c.v) / t;
+                const va = (a == null ? 0 : a.v) / t;
+                const vb = (b == null ? 0 : b.v) / t;
+                const vc = (c == null ? 0 : c.v) / t;
 
                 a = va >= 1 ? 1 : 0;
                 b = vb >= 1 ? 1 : 0;
                 c = vc >= 1 ? 1 : 0;
 
-                if ((a == 0 && b == 0 && c == 0) || (a != 0 && b != 0 && c != 0)) 
+                if ((a == 0 && b == 0 && c == 0) || (a != 0 && b != 0 && c != 0))
                     return;
 
                 ctx.strokeStyle = hcy2rgb(360 * t, 1, .5, 1);
@@ -585,33 +587,33 @@
             }
 
             function drawCell(cell, pos) {
-                var screen = world(pos);
-                var x = screen.x;
-                var y = screen.y;
+                const screen = world(pos);
+                const x = screen.x;
+                const y = screen.y;
 
                 ctx.save();
                 ctx.translate(x, y);
 
-                var a = store.get(pos, dirup);
-                var b = store.get(pos, dirul);
-                var c = store.get(pos, dirdl);
+                const a = store.get(pos, dirup);
+                const b = store.get(pos, dirul);
+                const c = store.get(pos, dirdl);
 
                 if (oneOnly) {
                     triangle(cell, a, b, .5, 0);
                     triangle(cell, b, c, .5, 1);
                 }
                 else {
-                    var n = 10;
-                    for (var i = 0; i < n; ++i) {
+                    const n = 10;
+                    for (let i = 0; i < n; ++i) {
                         triangle(cell, a, b, i / (n - 1), 0);
                         triangle(cell, b, c, i / (n - 1), 1);
                     }
                 }
-                
-                
-                if(showGrid){
+
+
+                if (showGrid) {
                     ctx.fillStyle = 'white';
-                    ctx.fillRect(-1/(2*zoom), -1/(2*zoom), 1/zoom, 1/zoom);
+                    ctx.fillRect(-1 / (2 * zoom), -1 / (2 * zoom), 1 / zoom, 1 / zoom);
                 }
 
                 ctx.restore();
@@ -622,7 +624,7 @@
 
             ctx.save();
             ctx.scale(zoom, zoom);
-            var lw = ctx.lineWidth = 1 / zoom;
+            const lw = ctx.lineWidth = 1 / zoom;
 
             ctx.strokeStyle = '#fff';
             store.forEach(drawCell);
@@ -630,19 +632,19 @@
             ctx.restore();
         }
 
-        var csr = new Point(0, 0);
-        
+        const csr = new Point(0, 0);
+
         function fl(n) { return Math.floor(n); }
 
         function fade(t) { return t * t * t * (t * (t * 6 - 15) + 10); }
-        
+
         function tick() {
             store = store.nextGen(function (oldCell, newCell, pos, oldStore, newStore) {
 
                 if (oldCell != null) {
-                    var p = world(pos);
-                    var sum = balls.reduce(function (s, b) {
-                        var d = dist(p, b.pos) / b.r / 2;
+                    const p = world(pos);
+                    const sum = balls.reduce(function (s, b) {
+                        const d = dist(p, b.pos) / b.r / 2;
 
                         if (d > 1) return s;
 
@@ -656,10 +658,10 @@
 
             balls.forEach(function (b) {
 
-                var nextpos = b.pos.plus(b.v);
+                let nextpos = b.pos.plus(b.v);
 
                 while (dist(nextpos, zero) > maxd) {
-                    var a = rnd(tau);
+                    const a = rnd(tau);
                     b.v = new Point(mind * cos(a) / 50, mind * sin(a) / 50);
                     nextpos = b.pos.plus(b.v);
                 }
@@ -675,30 +677,31 @@
         }
 
         tick();
-        
+
         countFps();
-        
-        function countFps(){
-            var target = document.getElementById('fps');
-             countFps = function(){
-                 
-                 var now = (new Date).getTime();
-                 var timePassed = now - lastFpsCountging;
-                 
-                 target.innerHTML = (1000 * numFrames / timePassed).toFixed(1);
-                 
-                 lastFpsCountging = now;
-                 numFrames = 0;
-             };
-             
-             lastFpsCountging = (new Date).getTime();
-             window.setInterval(countFps, 500);
+
+        function countFps() {
+            const target = document.getElementById('fps');
+            countFps = function () {
+
+                const now = (new Date).getTime();
+                const timePassed = now - lastFpsCountging;
+
+                target.innerHTML = (1000 * numFrames / timePassed).toFixed(1);
+
+                lastFpsCountging = now;
+                numFrames = 0;
+            };
+
+            lastFpsCountging = (new Date).getTime();
+            window.setInterval(countFps, 500);
         }
 
-        function toggleLepr(){enableLepr = !enableLepr;}
-        function toggleGrid(){showGrid = !showGrid;}
-        function toggleOnion(){oneOnly = !oneOnly;}
+        function toggleLepr() { enableLepr = !enableLepr; }
+        function toggleGrid() { showGrid = !showGrid; }
+        function toggleOnion() { oneOnly = !oneOnly; }
 
     </script>
 </body>
+
 </html>
