@@ -421,30 +421,12 @@
     <script type="text/javascript">
         function loop(targetFps, init, update, render) {
             let world = init();
-            let then = performance.now();
-            let delta = 1000 / targetFps;
-            let time = delta;
 
             requestAnimationFrame(tick)
 
             function tick(now) {
-                time += now - then;
-                then = now;
-
-                const maxRuns = 50;
-                let numRuns = 0;
-                let rerenderRequired = false;
-
-                while (time > delta && numRuns++ < maxRuns) {
-                    time -= delta;
-                    world = update(world);
-                    rerenderRequired = true;
-                }
-
-                if (rerenderRequired) {
-                    render(world);
-                }
-
+                world = update(world);
+                render(world);
                 requestAnimationFrame(tick)
             }
         }
@@ -494,7 +476,7 @@
             const extremes = supercell.getCorners();
 
             const maxd = extremes.reduce(function (max, c) { return Math.max(max, dist(zero, c)) }, 0) / 2;
-            const mind = maxd / 3;
+            const mind = maxd / 2;
 
             state.minBallDistance = mind;
             state.maxBallDistance = maxd;
