@@ -484,7 +484,7 @@
         let showGrid = false;
         let showBalls = false;
 
-        loop(50, init, update, render);
+        loop(60, init, update, render);
 
         function init() {
             const state = {};
@@ -682,7 +682,6 @@
             ctx.beginPath();
 
             ctx.arc(ball.pos.x, ball.pos.y, ball.r, 0, tau);
-
 
             ctx.strokeStyle = 'silver';
             ctx.stroke();
