@@ -421,12 +421,27 @@
     <script type="text/javascript">
         function loop(targetFps, init, update, render) {
             let world = init();
+            const delta = 1000 / targetFps;
+            let time = delta;
+            let then = performance.now();
 
-            requestAnimationFrame(tick)
+            requestAnimationFrame(tick);
 
             function tick(now) {
-                world = update(world);
-                render(world);
+
+                time += now - then;
+                then = now;
+                let doRender = false;
+
+                while (time > delta) {
+                    time -= delta;
+                    world = update(world);
+                    doRender = true;
+                }
+
+                if (doRender)
+                    render(world);
+
                 requestAnimationFrame(tick)
             }
         }
