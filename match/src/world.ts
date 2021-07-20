@@ -1,6 +1,8 @@
 import { HexStore } from "./store";
 import { rnd } from "../../lib/util";
 
+const sqrt = Math.sqrt;
+
 export type Cell = {
     color: number,
     change: IChange | null
@@ -17,7 +19,7 @@ export interface IChange {
 }
 
 export class Burst implements IChange {
-    public phase: number = 0;
+    public phase: number = -sqrt(rnd(16) / 90);
 }
 
 export class Fall implements IChange {

@@ -29,7 +29,8 @@ function init(): World {
     };
 
     window.addEventListener('keydown', e => {
-        if (e.code == "KeyR" || e.keyCode == 82) {
+        // Reload
+        if (e.code == "KeyR") {
             world.cells = new HexStore<Cell>(size, (i, j) => ({
                 color: rnd(numColors),
                 spring: new Vector(0, 0),
@@ -43,7 +44,7 @@ function init(): World {
 
 function update(delta: number, state: World) {
     function markBurn(string: Cell[], item: Cell, i: number, j: number): Cell[] {
-        if (item.change != null && (item.change instanceof Burst && item.change.phase != 0 || !(item.change instanceof Burst)))
+        if (item.change != null)// && (item.change instanceof Burst && item.change.phase != 0 || !(item.change instanceof Burst)))
             return [];
 
         if (string.length == 0)
@@ -67,12 +68,12 @@ function update(delta: number, state: World) {
         }
     }
 
-    state.cells.rows(markBurn, () => []);
-    state.cells.cols(markBurn, () => []);
-    state.cells.diags(markBurn, () => []);
+    state.cells.reduceRows(() => [], markBurn);
+    state.cells.reduceCols(() => [], markBurn);
+    state.cells.reduceDiags(() => [], markBurn);
 
-    const burstDuration = 90;
-    const fallSpeed = 100;
+    const burstDuration = 120;
+    const fallSpeed = 200;
 
     state.cells.each((i, j, cell) => {
         if (cell.change instanceof Fall) {
@@ -81,7 +82,7 @@ function update(delta: number, state: World) {
                 cell.change = null;
             }
         }
-        if (cell.change instanceof Burst) {
+        else if (cell.change instanceof Burst) {
             if (cell.change.phase < 1) {
                 cell.change.phase += delta / burstDuration;
                 if (cell.change.phase > 1) cell.change.phase = 1;
@@ -94,7 +95,7 @@ function update(delta: number, state: World) {
 
                 while (tgt >= 0) {
                     ++n;
-                    if (n > 100) throw 1;
+                    if (n > 1000) throw i + ' ' + j;
                     let next = state.cells.get(i, tgt - 1);
 
                     if (next === undefined) {
@@ -117,6 +118,9 @@ function update(delta: number, state: World) {
 
                         --tgt;
                     }
+                    else if (next.change instanceof Burst) {
+                        break;
+                    }
                     else {
                         ++drop;
                     }
@@ -127,4 +131,3 @@ function update(delta: number, state: World) {
 
     return state;
 }
-

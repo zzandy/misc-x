@@ -1,10 +1,9 @@
 import { fullscreenCanvas } from '../../lib/canvas';
 import { World, Burst, Fall } from './world';
 import { Vector, AABB } from './geometry';
-import { version } from 'webpack';
 import { tau } from './util';
 
-const colors = ['#fed203', '#d6050d', '#1337b2', '#078ebd', '#f76f03', '#8e0c70', '#cbcbcb'];
+const colors = ['#fed203', '#d6050d', '#1337b2', '#079ecd', '#f76f03', '#8e0c70', '#cbcbcb'];
 
 const sq32 = Math.sqrt(3) / 2;
 
@@ -125,9 +124,10 @@ export class ScreenManager {
         const ctx = this.ctx;
         const { width, height } = ctx.canvas;
         const r0 = this.scaler.r;
-        const r = r0 * .7;
+        const r = r0 * .9;
 
-        ctx.clearRect(0, 0, width, height);
+        ctx.fillStyle = '#161610';
+        ctx.fillRect(0, 0, width, height);
         ctx.save();
 
         let a = r0;
@@ -136,36 +136,39 @@ export class ScreenManager {
 
         world.cells.each((i, j, cell) => {
             const color = cell.color
+
+            ctx.save();
             ctx.strokeStyle = 'white';
             ctx.fillStyle = colors[color];
 
             const pos = this.scaler.storeToScreen(i, j);
+            ctx.translate(pos.x, pos.y);r
 
             if (cell.change instanceof Burst) {
-                ctx.fillCircle(pos.x, pos.y, r * Math.sqrt(1 - cell.change.phase));
+                const s = fade(Math.min(1, 1 - cell.change.phase));
+                ctx.scale(s, s);
             }
             else if (cell.change instanceof Fall) {
-                let c = cell.change;
-                ctx.fillCircle(pos.x, pos.y - (c.dropHeight - c.phase) * r0 * 2, r);
+                const c = cell.change;
+                const dy = c.dropHeight * fade((c.dropHeight - c.phase) / c.dropHeight);
 
-            }
-            else {
-                if (this.active != null && this.active[0] == i && this.active[1] == j)
-                    ctx.strokeCircle(pos.x, pos.y, r);
-
-                ctx.fillCircle(pos.x, pos.y, r);
+                ctx.translate(0, -dy * r0 * 2);
             }
 
-            // if (cell.change != null) {
-            //     ctx.strokeStyle = 'white';
-            //     ctx.lineWidth = 3;
-            //     ctx.strokeCircle(pos.x, pos.y, r)
-            // }
+            if (this.active != null && this.active[0] == i && this.active[1] == j)
+                ctx.strokeCircle(0, 0, r);
+
+            ctx.fillCircle(0, 0, r);
 
             ctx.fillStyle = 'black'
-            ctx.fillText(i + ' ' + j, pos.x, pos.y)
+            const text = i + ' ' + j
+            ctx.fillText(text, 0 - ctx.measureText(text).width / 2, 4);
+
+            ctx.restore();
         });
 
         ctx.restore();
     }
 }
+
+function fade(t: number): number { return t * t * t * (t * (t * 6 - 15) + 10); }

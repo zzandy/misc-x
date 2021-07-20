@@ -34,7 +34,7 @@ export class HexStore<TCell> {
         }
     }
 
-    public cols<T>(callback: ItemStringCallback<T, TCell>, init: () => T) {
+    public reduceCols<T>(init: () => T, callback: ItemStringCallback<T, TCell>): void {
         for (let i = 0; i < this.cells.length; ++i) {
             let agg = init();
             for (let j = 0; j < this.cells[i].length; ++j) {
@@ -44,7 +44,7 @@ export class HexStore<TCell> {
         }
     }
 
-    public rows<T>(callback: ItemStringCallback<T, TCell>, init: () => T) {
+    public reduceRows<T>(init: () => T, callback: ItemStringCallback<T, TCell>): void {
         for (let j = 0; j < this.w; ++j) {
             let agg = init();
             for (let i = 0; i < this.cells.length; ++i) {
@@ -54,11 +54,12 @@ export class HexStore<TCell> {
         }
     }
 
-    public diags<T>(callback: ItemStringCallback<T, TCell>, init: () => T) {
+    public reduceDiags<T>(init: () => T, callback: ItemStringCallback<T, TCell>): void {
         let agg = init();
 
         for (let i = 0; i < this.w; ++i)
             if (this.cells[i][i] != undefined)
+                // main diagonal
                 agg = callback(agg, this.cells[i][i], i, i);
 
         for (let i = 1; i < this.size; ++i) {
@@ -67,7 +68,7 @@ export class HexStore<TCell> {
 
             for (var j = 0, k = i; j < this.w; ++j, ++k) {
 
-                if (k < this.cells.length &&this.cells[k][j] !== undefined)
+                if (k < this.cells.length && this.cells[k][j] !== undefined)
                     agg = callback(agg, this.cells[k][j], k, j);
 
                 if (this.cells[j][k] !== undefined)
