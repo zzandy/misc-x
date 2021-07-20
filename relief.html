@@ -12,11 +12,7 @@
         const tau = Math.PI * 2;
 
         function newCanvas(height) {
-            console.log(height, window.innerHeight)
-
             height = Math.max(height, window.innerHeight);
-
-            console.log(height, window.innerHeight)
 
             const c = document.createElement('canvas');
             const ctx = c.getContext('2d');
@@ -35,7 +31,7 @@
 
     <script type="text/javascript">
 
-        const numLayers = 20;
+        const numLayers = 30;
         const numPoints = numLayers * 2 / 3 | 0;
 
         const layers = [];
@@ -62,7 +58,24 @@
             layers.push(layer);
         }
 
-        render();
+        function tick() {
+            render();
+            layers.splice(0, 1);
+
+            let layer = [];
+            for (let j = 0; j < numPoints; ++j) {
+                layer.push(((Math.sin(points[j]) + 1) / 2) * .5 + .5);
+                points[j] += Math.random() * tau / 12;
+            }
+
+            layers.push(layer);
+
+            setTimeout(() => {
+                tick();
+            }, 40);
+        }
+
+        tick();
 
         function render() {
             const dx = window.innerWidth / (numLayers + 2);
