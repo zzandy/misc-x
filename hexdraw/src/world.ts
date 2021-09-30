@@ -1,4 +1,5 @@
 import { rnd, array } from '../../lib/util';
+import { color, Palette } from './palette';
 import { SpriteRenderer } from './sprite-renderer';
 import { WorldRenderer } from './world-renderer';
 
@@ -10,19 +11,20 @@ type adjarray = [boolean, boolean, boolean, boolean, boolean, boolean];
          3           */
 type adjindex = 0 | 1 | 2 | 3 | 4 | 5;
 
+
 class Cell {
-    public value: number;
-    public color: [number, number, number] = [0, 0, 0];
-    public sprite: HTMLCanvasElement;
+    constructor(public readonly value: number, public color: color) {
+    }
+
+    public sprite: HTMLCanvasElement | null = null;
 }
 
 export class World {
     private readonly data: Cell[][];
 
-    constructor(public readonly w: number, public readonly h: number, sr: SpriteRenderer, private readonly wr: WorldRenderer) {
+    constructor(public readonly w: number, public readonly h: number, private readonly palette: Palette, sr: SpriteRenderer, private readonly wr: WorldRenderer) {
         const data = this.data = array(w, h, (i, j) => {
-            const cell = new Cell();
-            cell.value = (j === 0 || j === w - 1 || (i === 0 && j % 2 === 1) || i === h - 1 && !!(j % 2)) ? 0 : Math.random() < .7 ? 1 : 0;
+            const cell = new Cell((j === 0 || j === w - 1 || (i === 0 && j % 2 === 1) || i === h - 1 && !!(j % 2)) ? 0 : Math.random() < .7 ? 1 : 0, this.palette.secondary);
             return cell;
         });
 
@@ -38,8 +40,8 @@ export class World {
 
             if (i >= 0 && i < h && j >= 0 && j < w && k >= 0 && k < h && l >= 0 && l < w && data[i][j].value && data[k][l].value) {
 
-                data[i][j].color = [128, 0, 0];
-                data[k][l].color = [0, 128, 0];
+                data[i][j].color = this.palette.primary;
+                data[k][l].color = this.palette.accent;
 
                 break;
             }
@@ -59,10 +61,13 @@ export class World {
 
     public render() {
         this.wr.clear();
+
         for (let i = 0; i < this.data.length; ++i)
             for (let j = 0; j < this.data[i].length; ++j) {
                 const cell = this.data[i][j];
-                this.wr.render(i, j, cell.sprite);
+
+                if (cell.sprite != null)
+                    this.wr.render(i, j, cell.sprite);
             }
     }
 }

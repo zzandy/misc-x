@@ -1,5 +1,8 @@
+import { color, rgb } from "./palette";
+
 export class WorldRenderer {
     constructor(private readonly ctx: CanvasRenderingContext2D
+        ,private readonly background:color
         , private readonly ox: number
         , private readonly oy: number
         , private readonly sx: number
@@ -16,7 +19,8 @@ export class WorldRenderer {
     public clear() {
         const ctx = this.ctx;
         const can = ctx.canvas;
-        ctx.clearRect(0, 0, can.width, can.height);
+        ctx.fillStyle = rgb(this.background);
+        ctx.fillRect(0, 0, can.width, can.height);
     }
 }
 

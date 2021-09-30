@@ -1,8 +1,13 @@
 var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
     return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
         extendStatics(d, b);
         function __() { this.constructor = d; }
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
@@ -10,11 +15,13 @@ var __extends = (this && this.__extends) || (function () {
 })();
 System.register("lib/color", [], function (exports_1, context_1) {
     "use strict";
+    var breaks;
     var __moduleName = context_1 && context_1.id;
     function hcy(h, c, y) {
         var r = .3;
         var g = .59;
         var b = .11;
+        h %= 360;
         h /= 60;
         var k = (1 - Math.abs((h % 2) - 1));
         var K = h < 1 ? r + k * g
@@ -41,7 +48,18 @@ System.register("lib/color", [], function (exports_1, context_1) {
     }
     exports_1("hcy", hcy);
     function wheelHcy(h, c, y) {
-        var h2 = h < 180 ? 2 * h / 3 : 120 + (h - 180) * 4 / 3;
+        var _a;
+        h %= 360;
+        var h2 = h;
+        var _b = [0, 0], s0 = _b[0], t0 = _b[1];
+        for (var _i = 0, breaks_1 = breaks; _i < breaks_1.length; _i++) {
+            var _c = breaks_1[_i], t = _c[0], s = _c[1];
+            if (h < s) {
+                h2 = t0 + (h - s0) * (t - t0) / (s - s0);
+                break;
+            }
+            _a = [s, t], s0 = _a[0], t0 = _a[1];
+        }
         return hcy(h2, c, y);
     }
     exports_1("wheelHcy", wheelHcy);
@@ -61,21 +79,27 @@ System.register("lib/color", [], function (exports_1, context_1) {
     }
     exports_1("hcy2rgb", hcy2rgb);
     function rgbdata2rgb(t, a) {
-        if (t.length == 3)
-            return tuple2rgb(t[0], t[1], t[2], a === undefined ? 1 : a);
-        return tuple2rgb(t[0], t[1], t[2], t[3]);
+        return tuple2rgb(t[0], t[1], t[2], a === undefined ? 1 : a);
     }
     exports_1("rgbdata2rgb", rgbdata2rgb);
     return {
         setters: [],
         execute: function () {
+            breaks = [
+                [39, 60],
+                [60, 120],
+                [120, 180],
+                [240, 240],
+                [290, 300],
+                [360, 360]
+            ];
         }
     };
 });
 System.register("lib/geometry", [], function (exports_2, context_2) {
     "use strict";
-    var __moduleName = context_2 && context_2.id;
     var Point, Rect, Range;
+    var __moduleName = context_2 && context_2.id;
     return {
         setters: [],
         execute: function () {
@@ -109,14 +133,14 @@ System.register("lib/geometry", [], function (exports_2, context_2) {
                     get: function () {
                         return new Range(this.x, this.w);
                     },
-                    enumerable: true,
+                    enumerable: false,
                     configurable: true
                 });
                 Object.defineProperty(Rect.prototype, "vertical", {
                     get: function () {
                         return new Range(this.y, this.h);
                     },
-                    enumerable: true,
+                    enumerable: false,
                     configurable: true
                 });
                 return Rect;
@@ -131,7 +155,7 @@ System.register("lib/geometry", [], function (exports_2, context_2) {
                     get: function () {
                         return this.start + this.length;
                     },
-                    enumerable: true,
+                    enumerable: false,
                     configurable: true
                 });
                 return Range;
@@ -142,8 +166,8 @@ System.register("lib/geometry", [], function (exports_2, context_2) {
 });
 System.register("lib/loop", [], function (exports_3, context_3) {
     "use strict";
-    var __moduleName = context_3 && context_3.id;
     var Loop;
+    var __moduleName = context_3 && context_3.id;
     return {
         setters: [],
         execute: function () {
@@ -203,6 +227,7 @@ System.register("lib/loop", [], function (exports_3, context_3) {
 });
 System.register("lib/canvas", [], function (exports_4, context_4) {
     "use strict";
+    var getCanvas, fullscreenCanvas3d;
     var __moduleName = context_4 && context_4.id;
     function fullscreenCanvas(relative, noAlpha) {
         if (relative === void 0) { relative = false; }
@@ -238,11 +263,11 @@ System.register("lib/canvas", [], function (exports_4, context_4) {
             ctx.fill();
             return ctx;
         };
+        document.body.style.overflow = 'hidden';
         document.body.appendChild(can);
         return ctx;
     }
     exports_4("fullscreenCanvas", fullscreenCanvas);
-    var getCanvas, fullscreenCanvas3d;
     return {
         setters: [],
         execute: function () {
@@ -272,8 +297,8 @@ System.register("lib/canvas", [], function (exports_4, context_4) {
 });
 System.register("hexdraw/src/sprite-renderer", [], function (exports_5, context_5) {
     "use strict";
-    var __moduleName = context_5 && context_5.id;
     var stencil, SpriteRenderer, isSet;
+    var __moduleName = context_5 && context_5.id;
     return {
         setters: [],
         execute: function () {
@@ -366,16 +391,45 @@ System.register("hexdraw/src/sprite-renderer", [], function (exports_5, context_
         }
     };
 });
-System.register("hexdraw/src/world-renderer", [], function (exports_6, context_6) {
+System.register("hexdraw/src/palette", [], function (exports_6, context_6) {
     "use strict";
+    var Palette;
     var __moduleName = context_6 && context_6.id;
-    var WorldRenderer, getHexPos;
+    function rgb(color) {
+        return '#' + color.map(function (c) { return c.toString(16).padStart(2, '0'); }).join('');
+    }
+    exports_6("rgb", rgb);
     return {
         setters: [],
         execute: function () {
+            Palette = (function () {
+                function Palette(bg, secondary, primary, accent) {
+                    this.bg = bg;
+                    this.secondary = secondary;
+                    this.primary = primary;
+                    this.accent = accent;
+                }
+                return Palette;
+            }());
+            exports_6("Palette", Palette);
+        }
+    };
+});
+System.register("hexdraw/src/world-renderer", ["hexdraw/src/palette"], function (exports_7, context_7) {
+    "use strict";
+    var palette_1, WorldRenderer, getHexPos;
+    var __moduleName = context_7 && context_7.id;
+    return {
+        setters: [
+            function (palette_1_1) {
+                palette_1 = palette_1_1;
+            }
+        ],
+        execute: function () {
             WorldRenderer = (function () {
-                function WorldRenderer(ctx, ox, oy, sx, sy) {
+                function WorldRenderer(ctx, background, ox, oy, sx, sy) {
                     this.ctx = ctx;
+                    this.background = background;
                     this.ox = ox;
                     this.oy = oy;
                     this.sx = sx;
@@ -389,18 +443,19 @@ System.register("hexdraw/src/world-renderer", [], function (exports_6, context_6
                 WorldRenderer.prototype.clear = function () {
                     var ctx = this.ctx;
                     var can = ctx.canvas;
-                    ctx.clearRect(0, 0, can.width, can.height);
+                    ctx.fillStyle = palette_1.rgb(this.background);
+                    ctx.fillRect(0, 0, can.width, can.height);
                 };
                 return WorldRenderer;
             }());
-            exports_6("WorldRenderer", WorldRenderer);
-            exports_6("getHexPos", getHexPos = function (i, j) { return [j * 20 - i * 4 - (j / 2 | 0) * 4, i * 19 - (j % 2) * 5 + (j / 2 | 0) * 9]; });
+            exports_7("WorldRenderer", WorldRenderer);
+            exports_7("getHexPos", getHexPos = function (i, j) { return [j * 20 - i * 4 - (j / 2 | 0) * 4, i * 19 - (j % 2) * 5 + (j / 2 | 0) * 9]; });
         }
     };
 });
-System.register("lib/util", [], function (exports_7, context_7) {
+System.register("lib/util", [], function (exports_8, context_8) {
     "use strict";
-    var __moduleName = context_7 && context_7.id;
+    var __moduleName = context_8 && context_8.id;
     function rnd(min, max) {
         if (typeof max === 'number' && typeof min === 'number')
             return Math.floor(min + Math.random() * (max - min));
@@ -408,9 +463,9 @@ System.register("lib/util", [], function (exports_7, context_7) {
             return Math.floor(min * Math.random());
         if (min instanceof Array)
             return min[Math.floor(min.length * Math.random())];
-        throw new Error('invalid set of arguments to rnd');
+        return Math.random();
     }
-    exports_7("rnd", rnd);
+    exports_8("rnd", rnd);
     function array(w, h, fn) {
         var res = [];
         for (var i = 0; i < h; ++i) {
@@ -421,17 +476,25 @@ System.register("lib/util", [], function (exports_7, context_7) {
         }
         return res;
     }
-    exports_7("array", array);
+    exports_8("array", array);
+    function shuffle(a) {
+        var _a;
+        for (var i = a.length - 1; i > 0; --i) {
+            var idx = rnd(i + 1);
+            _a = [a[idx], a[i]], a[i] = _a[0], a[idx] = _a[1];
+        }
+    }
+    exports_8("shuffle", shuffle);
     return {
         setters: [],
         execute: function () {
         }
     };
 });
-System.register("hexdraw/src/world", ["lib/util"], function (exports_8, context_8) {
+System.register("hexdraw/src/world", ["lib/util"], function (exports_9, context_9) {
     "use strict";
-    var __moduleName = context_8 && context_8.id;
     var util_1, Cell, World, collectAdjacency, isSolid, getAdj;
+    var __moduleName = context_9 && context_9.id;
     return {
         setters: [
             function (util_1_1) {
@@ -440,19 +503,22 @@ System.register("hexdraw/src/world", ["lib/util"], function (exports_8, context_
         ],
         execute: function () {
             Cell = (function () {
-                function Cell() {
-                    this.color = [0, 0, 0];
+                function Cell(value, color) {
+                    this.value = value;
+                    this.color = color;
+                    this.sprite = null;
                 }
                 return Cell;
             }());
             World = (function () {
-                function World(w, h, sr, wr) {
+                function World(w, h, palette, sr, wr) {
+                    var _this = this;
                     this.w = w;
                     this.h = h;
+                    this.palette = palette;
                     this.wr = wr;
                     var data = this.data = util_1.array(w, h, function (i, j) {
-                        var cell = new Cell();
-                        cell.value = (j === 0 || j === w - 1 || (i === 0 && j % 2 === 1) || i === h - 1 && !!(j % 2)) ? 0 : Math.random() < .7 ? 1 : 0;
+                        var cell = new Cell((j === 0 || j === w - 1 || (i === 0 && j % 2 === 1) || i === h - 1 && !!(j % 2)) ? 0 : Math.random() < .7 ? 1 : 0, _this.palette.secondary);
                         return cell;
                     });
                     var overflow = 0;
@@ -462,8 +528,8 @@ System.register("hexdraw/src/world", ["lib/util"], function (exports_8, context_
                         var k = h - i - 1;
                         var l = w - j - 1;
                         if (i >= 0 && i < h && j >= 0 && j < w && k >= 0 && k < h && l >= 0 && l < w && data[i][j].value && data[k][l].value) {
-                            data[i][j].color = [128, 0, 0];
-                            data[k][l].color = [0, 128, 0];
+                            data[i][j].color = this.palette.primary;
+                            data[k][l].color = this.palette.accent;
                             break;
                         }
                         if (++overflow > 100)
@@ -481,12 +547,13 @@ System.register("hexdraw/src/world", ["lib/util"], function (exports_8, context_
                     for (var i = 0; i < this.data.length; ++i)
                         for (var j = 0; j < this.data[i].length; ++j) {
                             var cell = this.data[i][j];
-                            this.wr.render(i, j, cell.sprite);
+                            if (cell.sprite != null)
+                                this.wr.render(i, j, cell.sprite);
                         }
                 };
                 return World;
             }());
-            exports_8("World", World);
+            exports_9("World", World);
             collectAdjacency = function (data, i, j, value) {
                 return [
                     isSolid(getAdj(data, 0, i, j)),
@@ -531,10 +598,10 @@ System.register("hexdraw/src/world", ["lib/util"], function (exports_8, context_
         }
     };
 });
-System.register("hexdraw/src/main", ["lib/canvas", "hexdraw/src/sprite-renderer", "hexdraw/src/world-renderer", "hexdraw/src/world"], function (exports_9, context_9) {
+System.register("hexdraw/src/main", ["lib/canvas", "hexdraw/src/sprite-renderer", "hexdraw/src/world-renderer", "hexdraw/src/world", "hexdraw/src/palette"], function (exports_10, context_10) {
     "use strict";
-    var __moduleName = context_9 && context_9.id;
-    var canvas_1, sprite_renderer_1, world_renderer_1, world_1, main;
+    var canvas_1, sprite_renderer_1, world_renderer_1, world_1, palette_2, main;
+    var __moduleName = context_10 && context_10.id;
     return {
         setters: [
             function (canvas_1_1) {
@@ -548,15 +615,19 @@ System.register("hexdraw/src/main", ["lib/canvas", "hexdraw/src/sprite-renderer"
             },
             function (world_1_1) {
                 world_1 = world_1_1;
+            },
+            function (palette_2_1) {
+                palette_2 = palette_2_1;
             }
         ],
         execute: function () {
-            exports_9("main", main = function () {
-                var _a = [2, 1], sx = _a[0], sy = _a[1];
+            exports_10("main", main = function () {
+                var _a = [3, 2], sx = _a[0], sy = _a[1];
                 var _b = [30, 20], w = _b[0], h = _b[1];
                 var ctx = canvas_1.fullscreenCanvas();
                 var _c = world_renderer_1.getHexPos(h / 2, w / 2), ox = _c[0], oy = _c[1];
-                var world = new world_1.World(w, h, new sprite_renderer_1.SpriteRenderer(sx, sy), new world_renderer_1.WorldRenderer(ctx, ctx.canvas.width / 2 - ox * sx, ctx.canvas.height / 2 - oy * sy, sx, sy));
+                var palette = new palette_2.Palette([0x00, 0x36, 0x38], [0x05, 0x50, 0x52], [0x53, 0xB8, 0xBB], [0xF3, 0xF2, 0xC9]);
+                var world = new world_1.World(w, h, palette, new sprite_renderer_1.SpriteRenderer(sx, sy), new world_renderer_1.WorldRenderer(ctx, palette.bg, ctx.canvas.width / 2 - ox * sx, ctx.canvas.height / 2 - oy * sy, sx, sy));
                 world.render();
             });
         }
