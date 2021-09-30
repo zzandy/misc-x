@@ -297,7 +297,7 @@ System.register("lib/canvas", [], function (exports_4, context_4) {
 });
 System.register("hexdraw/src/sprite-renderer", [], function (exports_5, context_5) {
     "use strict";
-    var stencil, SpriteRenderer, isSet;
+    var stencil, h, w, getHexPos, SpriteRenderer, isSet;
     var __moduleName = context_5 && context_5.id;
     return {
         setters: [],
@@ -345,6 +345,9 @@ System.register("hexdraw/src/sprite-renderer", [], function (exports_5, context_
                         return 0;
                 }
             }); });
+            h = 21;
+            w = 24;
+            exports_5("getHexPos", getHexPos = function (i, j) { return [j * 20 - i * 4 - ((j / 2) | 0) * 4, i * 19 - (j % 2) * 5 + ((j / 2) | 0) * 9]; });
             SpriteRenderer = (function () {
                 function SpriteRenderer(sx, sy) {
                     this.sx = sx;
@@ -353,18 +356,18 @@ System.register("hexdraw/src/sprite-renderer", [], function (exports_5, context_
                 SpriteRenderer.prototype.render = function (coreSet, color, adj) {
                     var _a = this, sx = _a.sx, sy = _a.sy;
                     var can = document.createElement('canvas');
-                    can.width = 24 * sx;
-                    can.height = 21 * sx;
+                    can.width = w * sx;
+                    can.height = h * sx;
                     var ctx = (can).getContext('2d');
-                    var id = ctx.createImageData(24 * sx, 21 * sy);
+                    var id = ctx.createImageData(w * sx, h * sy);
                     var data = id.data;
-                    for (var i = 0; i < 21; ++i) {
-                        for (var j = 0; j < 24; ++j) {
+                    for (var i = 0; i < h; ++i) {
+                        for (var j = 0; j < w; ++j) {
                             var set = isSet(coreSet, stencil[i][j], adj);
                             var col = set ? color : [0, 0, 0, 0];
                             for (var si = 0; si < sy; ++si) {
                                 for (var sj = 0; sj < sx; ++sj) {
-                                    var index = ((sy * i + si) * 24 * sx + sx * j + sj) * 4;
+                                    var index = ((sy * i + si) * w * sx + sx * j + sj) * 4;
                                     data[index] = col[0];
                                     data[index + 1] = col[1];
                                     data[index + 2] = col[2];
@@ -415,14 +418,17 @@ System.register("hexdraw/src/palette", [], function (exports_6, context_6) {
         }
     };
 });
-System.register("hexdraw/src/world-renderer", ["hexdraw/src/palette"], function (exports_7, context_7) {
+System.register("hexdraw/src/world-renderer", ["hexdraw/src/palette", "hexdraw/src/sprite-renderer"], function (exports_7, context_7) {
     "use strict";
-    var palette_1, WorldRenderer, getHexPos;
+    var palette_1, sprite_renderer_1, WorldRenderer;
     var __moduleName = context_7 && context_7.id;
     return {
         setters: [
             function (palette_1_1) {
                 palette_1 = palette_1_1;
+            },
+            function (sprite_renderer_1_1) {
+                sprite_renderer_1 = sprite_renderer_1_1;
             }
         ],
         execute: function () {
@@ -436,7 +442,7 @@ System.register("hexdraw/src/world-renderer", ["hexdraw/src/palette"], function 
                     this.sy = sy;
                 }
                 WorldRenderer.prototype.render = function (i, j, sprite) {
-                    var _a = getHexPos(i, j), hj = _a[0], hi = _a[1];
+                    var _a = sprite_renderer_1.getHexPos(i, j), hj = _a[0], hi = _a[1];
                     var _b = this, ox = _b.ox, oy = _b.oy, sx = _b.sx, sy = _b.sy;
                     this.ctx.drawImage(sprite, ox + hj * sx, oy + hi * sy);
                 };
@@ -449,7 +455,6 @@ System.register("hexdraw/src/world-renderer", ["hexdraw/src/palette"], function 
                 return WorldRenderer;
             }());
             exports_7("WorldRenderer", WorldRenderer);
-            exports_7("getHexPos", getHexPos = function (i, j) { return [j * 20 - i * 4 - (j / 2 | 0) * 4, i * 19 - (j % 2) * 5 + (j / 2 | 0) * 9]; });
         }
     };
 });
@@ -600,15 +605,15 @@ System.register("hexdraw/src/world", ["lib/util"], function (exports_9, context_
 });
 System.register("hexdraw/src/main", ["lib/canvas", "hexdraw/src/sprite-renderer", "hexdraw/src/world-renderer", "hexdraw/src/world", "hexdraw/src/palette"], function (exports_10, context_10) {
     "use strict";
-    var canvas_1, sprite_renderer_1, world_renderer_1, world_1, palette_2, main;
+    var canvas_1, sprite_renderer_2, world_renderer_1, world_1, palette_2, main;
     var __moduleName = context_10 && context_10.id;
     return {
         setters: [
             function (canvas_1_1) {
                 canvas_1 = canvas_1_1;
             },
-            function (sprite_renderer_1_1) {
-                sprite_renderer_1 = sprite_renderer_1_1;
+            function (sprite_renderer_2_1) {
+                sprite_renderer_2 = sprite_renderer_2_1;
             },
             function (world_renderer_1_1) {
                 world_renderer_1 = world_renderer_1_1;
@@ -625,9 +630,9 @@ System.register("hexdraw/src/main", ["lib/canvas", "hexdraw/src/sprite-renderer"
                 var _a = [3, 2], sx = _a[0], sy = _a[1];
                 var _b = [30, 20], w = _b[0], h = _b[1];
                 var ctx = canvas_1.fullscreenCanvas();
-                var _c = world_renderer_1.getHexPos(h / 2, w / 2), ox = _c[0], oy = _c[1];
+                var _c = sprite_renderer_2.getHexPos(h / 2, w / 2), ox = _c[0], oy = _c[1];
                 var palette = new palette_2.Palette([0x00, 0x36, 0x38], [0x05, 0x50, 0x52], [0x53, 0xB8, 0xBB], [0xF3, 0xF2, 0xC9]);
-                var world = new world_1.World(w, h, palette, new sprite_renderer_1.SpriteRenderer(sx, sy), new world_renderer_1.WorldRenderer(ctx, palette.bg, ctx.canvas.width / 2 - ox * sx, ctx.canvas.height / 2 - oy * sy, sx, sy));
+                var world = new world_1.World(w, h, palette, new sprite_renderer_2.SpriteRenderer(sx, sy), new world_renderer_1.WorldRenderer(ctx, palette.bg, (ctx.canvas.width / 2 - ox * sx) | 0, (ctx.canvas.height / 2 - oy * sy) | 0, sx, sy));
                 world.render();
             });
         }
