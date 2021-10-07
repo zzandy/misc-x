@@ -295,10 +295,34 @@ System.register("lib/canvas", [], function (exports_4, context_4) {
         }
     };
 });
-System.register("hexdraw/src/sprite-renderer", [], function (exports_5, context_5) {
+System.register("hexdraw/src/palette", [], function (exports_5, context_5) {
     "use strict";
-    var stencil, h, w, getHexPos, SpriteRenderer, isSet;
+    var Palette;
     var __moduleName = context_5 && context_5.id;
+    function rgb(color) {
+        return '#' + color.map(function (c) { return c.toString(16).padStart(2, '0'); }).join('');
+    }
+    exports_5("rgb", rgb);
+    return {
+        setters: [],
+        execute: function () {
+            Palette = (function () {
+                function Palette(bg, secondary, primary, accent) {
+                    this.bg = bg;
+                    this.secondary = secondary;
+                    this.primary = primary;
+                    this.accent = accent;
+                }
+                return Palette;
+            }());
+            exports_5("Palette", Palette);
+        }
+    };
+});
+System.register("hexdraw/src/sprite-renderer", [], function (exports_6, context_6) {
+    "use strict";
+    var stencil, h, w, getHexPos, Scaler, SpriteRenderer, max, min, med, getCornerColor;
+    var __moduleName = context_6 && context_6.id;
     return {
         setters: [],
         execute: function () {
@@ -347,33 +371,49 @@ System.register("hexdraw/src/sprite-renderer", [], function (exports_5, context_
             }); });
             h = 21;
             w = 24;
-            exports_5("getHexPos", getHexPos = function (i, j) { return [j * 20 - i * 4 - ((j / 2) | 0) * 4, i * 19 - (j % 2) * 5 + ((j / 2) | 0) * 9]; });
+            exports_6("getHexPos", getHexPos = function (i, j) { return [j * 20 - i * 4 - ((j / 2) | 0) * 4, i * 19 - (j % 2) * 5 + ((j / 2) | 0) * 9]; });
+            Scaler = (function () {
+                function Scaler(data, sx, sy) {
+                    this.data = data;
+                    this.sx = sx;
+                    this.sy = sy;
+                }
+                Scaler.prototype.put = function (i, j, col) {
+                    var data = this.data;
+                    var sx = this.sx;
+                    var sy = this.sy;
+                    for (var si = 0; si < sy; ++si) {
+                        for (var sj = 0; sj < sx; ++sj) {
+                            var index = ((sy * i + si) * w * sx + sx * j + sj) * 4;
+                            data[index] = col[0];
+                            data[index + 1] = col[1];
+                            data[index + 2] = col[2];
+                            data[index + 3] = (col.length > 3 ? col[3] : 255);
+                        }
+                    }
+                };
+                return Scaler;
+            }());
             SpriteRenderer = (function () {
                 function SpriteRenderer(sx, sy) {
                     this.sx = sx;
                     this.sy = sy;
                 }
-                SpriteRenderer.prototype.render = function (coreSet, color, adj) {
+                SpriteRenderer.prototype.render = function (coreValue, colorFn, adj) {
                     var _a = this, sx = _a.sx, sy = _a.sy;
                     var can = document.createElement('canvas');
                     can.width = w * sx;
                     can.height = h * sx;
                     var ctx = (can).getContext('2d');
                     var id = ctx.createImageData(w * sx, h * sy);
-                    var data = id.data;
+                    var scaler = new Scaler(id.data, sx, sy);
                     for (var i = 0; i < h; ++i) {
                         for (var j = 0; j < w; ++j) {
-                            var set = isSet(coreSet, stencil[i][j], adj);
-                            var col = set ? color : [0, 0, 0, 0];
-                            for (var si = 0; si < sy; ++si) {
-                                for (var sj = 0; sj < sx; ++sj) {
-                                    var index = ((sy * i + si) * w * sx + sx * j + sj) * 4;
-                                    data[index] = col[0];
-                                    data[index + 1] = col[1];
-                                    data[index + 2] = col[2];
-                                    data[index + 3] = col.length > 3 ? col[3] : 255;
-                                }
-                            }
+                            var fragment = stencil[i][j];
+                            if (fragment == 0)
+                                continue;
+                            var color = colorFn(fragment == 7 ? coreValue : getCornerColor(fragment, coreValue, adj));
+                            scaler.put(i, j, color);
                         }
                     }
                     ctx.putImageData(id, 0, 0);
@@ -381,40 +421,18 @@ System.register("hexdraw/src/sprite-renderer", [], function (exports_5, context_
                 };
                 return SpriteRenderer;
             }());
-            exports_5("SpriteRenderer", SpriteRenderer);
-            isSet = function (v, p, n) {
-                return (v && p === 7)
-                    || (((v && n[5]) || (v && n[0]) || (n[5] && n[0])) && p === 1)
-                    || (((v && n[0]) || (v && n[1]) || (n[0] && n[1])) && p === 2)
-                    || (((v && n[1]) || (v && n[2]) || (n[1] && n[2])) && p === 3)
-                    || (((v && n[2]) || (v && n[3]) || (n[2] && n[3])) && p === 4)
-                    || (((v && n[3]) || (v && n[4]) || (n[3] && n[4])) && p === 5)
-                    || (((v && n[4]) || (v && n[5]) || (n[4] && n[5])) && p === 6);
+            exports_6("SpriteRenderer", SpriteRenderer);
+            max = Math.max;
+            min = Math.min;
+            med = function (a, b, c) { return a > b ? b > c ? b : a > c ? c : a : a > c ? a : b > c ? c : b; };
+            getCornerColor = function (f, v, n) {
+                return f === 1 ? med(v, n[0], n[5])
+                    : f === 2 ? med(v, n[0], n[1])
+                        : f === 3 ? med(v, n[1], n[2])
+                            : f === 4 ? med(v, n[2], n[3])
+                                : f === 5 ? med(v, n[3], n[4])
+                                    : f === 6 ? med(v, n[4], n[5]) : 0;
             };
-        }
-    };
-});
-System.register("hexdraw/src/palette", [], function (exports_6, context_6) {
-    "use strict";
-    var Palette;
-    var __moduleName = context_6 && context_6.id;
-    function rgb(color) {
-        return '#' + color.map(function (c) { return c.toString(16).padStart(2, '0'); }).join('');
-    }
-    exports_6("rgb", rgb);
-    return {
-        setters: [],
-        execute: function () {
-            Palette = (function () {
-                function Palette(bg, secondary, primary, accent) {
-                    this.bg = bg;
-                    this.secondary = secondary;
-                    this.primary = primary;
-                    this.accent = accent;
-                }
-                return Palette;
-            }());
-            exports_6("Palette", Palette);
         }
     };
 });
@@ -508,9 +526,8 @@ System.register("hexdraw/src/world", ["lib/util"], function (exports_9, context_
         ],
         execute: function () {
             Cell = (function () {
-                function Cell(value, color) {
+                function Cell(value) {
                     this.value = value;
-                    this.color = color;
                     this.sprite = null;
                 }
                 return Cell;
@@ -521,32 +538,56 @@ System.register("hexdraw/src/world", ["lib/util"], function (exports_9, context_
                     this.w = w;
                     this.h = h;
                     this.palette = palette;
+                    this.sr = sr;
                     this.wr = wr;
-                    var data = this.data = util_1.array(w, h, function (i, j) {
-                        var cell = new Cell((j === 0 || j === w - 1 || (i === 0 && j % 2 === 1) || i === h - 1 && !!(j % 2)) ? 0 : Math.random() < .7 ? 1 : 0, _this.palette.secondary);
-                        return cell;
+                    this.data = this.initMap();
+                    window.addEventListener('click', function () {
+                        _this.data = _this.initMap();
+                        _this.render();
                     });
+                }
+                World.makeMap = function (w, h) {
+                    return util_1.array(w, h, function (i, j) { return new Cell((j === 0 || j === w - 1 || (i === 0 && j % 2 === 1) || i === h - 1 && !!(j % 2)) ? 0 : Math.random() < .7 ? 1 : 0); });
+                };
+                World.pickRandomPair = function (data) {
                     var overflow = 0;
+                    var h = data.length;
+                    var w = data[0].length;
                     while (1) {
                         var i = util_1.rnd(h);
                         var j = util_1.rnd(w / 2);
                         var k = h - i - 1;
                         var l = w - j - 1;
-                        if (i >= 0 && i < h && j >= 0 && j < w && k >= 0 && k < h && l >= 0 && l < w && data[i][j].value && data[k][l].value) {
-                            data[i][j].color = this.palette.primary;
-                            data[k][l].color = this.palette.accent;
-                            break;
-                        }
+                        if (i >= 0 && i < h && j >= 0 && j < w && k >= 0 && k < h && l >= 0 && l < w && data[i][j].value && data[k][l].value)
+                            return [i, j, k, l];
                         if (++overflow > 100)
-                            throw new Error("Failed to place source and destination");
+                            break;
                     }
-                    for (var i = 0; i < this.data.length; ++i)
-                        for (var j = 0; j < this.data[i].length; ++j) {
-                            var cell = this.data[i][j];
-                            var adjs = collectAdjacency(this.data, i, j, cell.value);
-                            cell.sprite = sr.render(cell.value != 0, cell.color, adjs);
+                    throw new Error("Failed to place source and destination");
+                };
+                World.prototype.initMap = function () {
+                    var _this = this;
+                    var data = World.makeMap(this.w, this.h);
+                    var _a = World.pickRandomPair(data), i = _a[0], j = _a[1], k = _a[2], l = _a[3];
+                    data[i][j].value = 2;
+                    data[k][l].value = 3;
+                    for (var i_1 = 0; i_1 < this.h; ++i_1)
+                        for (var j_1 = 0; j_1 < this.w; ++j_1) {
+                            var cell = data[i_1][j_1];
+                            var adjs = collectAdjacency(data, i_1, j_1);
+                            cell.sprite = this.sr.render(cell.value, function (n) { return _this.getColor(n); }, adjs);
                         }
-                }
+                    return data;
+                };
+                World.prototype.getColor = function (value) {
+                    return value == 1
+                        ? this.palette.secondary
+                        : value == 2
+                            ? this.palette.accent
+                            : value == 3
+                                ? this.palette.primary
+                                : this.palette.bg;
+                };
                 World.prototype.render = function () {
                     this.wr.clear();
                     for (var i = 0; i < this.data.length; ++i)
@@ -559,18 +600,19 @@ System.register("hexdraw/src/world", ["lib/util"], function (exports_9, context_
                 return World;
             }());
             exports_9("World", World);
-            collectAdjacency = function (data, i, j, value) {
+            collectAdjacency = function (data, i, j) {
+                var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
                 return [
-                    isSolid(getAdj(data, 0, i, j)),
-                    isSolid(getAdj(data, 1, i, j)),
-                    isSolid(getAdj(data, 2, i, j)),
-                    isSolid(getAdj(data, 3, i, j)),
-                    isSolid(getAdj(data, 4, i, j)),
-                    isSolid(getAdj(data, 5, i, j))
+                    (_b = (_a = getAdj(data, 0, i, j)) === null || _a === void 0 ? void 0 : _a.value) !== null && _b !== void 0 ? _b : 0,
+                    (_d = (_c = getAdj(data, 1, i, j)) === null || _c === void 0 ? void 0 : _c.value) !== null && _d !== void 0 ? _d : 0,
+                    (_f = (_e = getAdj(data, 2, i, j)) === null || _e === void 0 ? void 0 : _e.value) !== null && _f !== void 0 ? _f : 0,
+                    (_h = (_g = getAdj(data, 3, i, j)) === null || _g === void 0 ? void 0 : _g.value) !== null && _h !== void 0 ? _h : 0,
+                    (_k = (_j = getAdj(data, 4, i, j)) === null || _j === void 0 ? void 0 : _j.value) !== null && _k !== void 0 ? _k : 0,
+                    (_m = (_l = getAdj(data, 5, i, j)) === null || _l === void 0 ? void 0 : _l.value) !== null && _m !== void 0 ? _m : 0
                 ];
             };
-            isSolid = function (adj) {
-                return adj !== null && adj.value != 0;
+            isSolid = function (adj, value) {
+                return adj !== null && adj.value > 0 && adj.value >= value;
             };
             getAdj = function (data, n, i, j) {
                 var ni = i, nj = j;
@@ -627,8 +669,8 @@ System.register("hexdraw/src/main", ["lib/canvas", "hexdraw/src/sprite-renderer"
         ],
         execute: function () {
             exports_10("main", main = function () {
-                var _a = [3, 2], sx = _a[0], sy = _a[1];
-                var _b = [30, 20], w = _b[0], h = _b[1];
+                var _a = [4, 2], sx = _a[0], sy = _a[1];
+                var _b = [25, 15], w = _b[0], h = _b[1];
                 var ctx = canvas_1.fullscreenCanvas();
                 var _c = sprite_renderer_2.getHexPos(h / 2, w / 2), ox = _c[0], oy = _c[1];
                 var palette = new palette_2.Palette([0x00, 0x36, 0x38], [0x05, 0x50, 0x52], [0x53, 0xB8, 0xBB], [0xF3, 0xF2, 0xC9]);

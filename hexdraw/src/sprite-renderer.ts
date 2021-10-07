@@ -1,3 +1,13 @@
+import { color } from "./palette";
+
+export type adjarray = [number, number, number, number, number, number];
+/* hex:  0
+        ___
+    5  /   \  1
+    4  \___/  2
+         3           */
+export type adjindex = 0 | 1 | 2 | 3 | 4 | 5;
+
 const stencil = (""
     + ". . . . . . . ^ ^ ^ ^ . . . . . . . . . . . . .\n"
     + ". . . . . . ^ ^ ^ ^ ^ # # # # T T . . . . . . .\n"
@@ -47,13 +57,34 @@ const w = 24; //stencil[0].length;
 
 export const getHexPos = (i: number, j: number) => [j * 20 - i * 4 - ((j / 2) | 0) * 4, i * 19 - (j % 2) * 5 + ((j / 2) | 0) * 9];
 
-type adjarray = [boolean, boolean, boolean, boolean, boolean, boolean];
+class Scaler {
+    constructor(private readonly data: Uint8ClampedArray, private readonly sx: number, private readonly sy: number) {
+
+    }
+
+    public put(i: number, j: number, col: color) {
+        const data = this.data;
+        const sx = this.sx;
+        const sy = this.sy;
+
+        for (let si = 0; si < sy; ++si) {
+            for (let sj = 0; sj < sx; ++sj) {
+                let index = ((sy * i + si) * w * sx + sx * j + sj) * 4;
+                data[index] = col[0];
+                data[index + 1] = col[1];
+                data[index + 2] = col[2];
+
+                data[index + 3] = <number>(col.length > 3 ? col[3] : 255);
+            }
+        }
+    }
+}
 
 export class SpriteRenderer {
 
     constructor(private readonly sx: number, private readonly sy: number) { }
 
-    public render(coreSet: boolean, color: [number, number, number], adj: adjarray): HTMLCanvasElement {
+    public render(coreValue: number, colorFn: (value: number) => color, adj: adjarray): HTMLCanvasElement {
 
         const { sx, sy } = this;
         const can = <HTMLCanvasElement>document.createElement('canvas');
@@ -62,36 +93,34 @@ export class SpriteRenderer {
         const ctx = <CanvasRenderingContext2D>(can).getContext('2d');
 
         const id = ctx.createImageData(w * sx, h * sy);
-        const data = id.data;
+        const scaler = new Scaler(id.data, sx, sy);
 
         for (let i = 0; i < h; ++i) {
             for (let j = 0; j < w; ++j) {
-                let set = isSet(coreSet, stencil[i][j], adj);
-                let col = set ? color : [0, 0, 0, 0];
+                const fragment = stencil[i][j];
+                if (fragment == 0) continue;
 
-                for (let si = 0; si < sy; ++si) {
-                    for (let sj = 0; sj < sx; ++sj) {
-                        let index = ((sy * i + si) * w * sx + sx * j + sj) * 4;
-                        data[index] = col[0];
-                        data[index + 1] = col[1];
-                        data[index + 2] = col[2];
+                const color = colorFn(fragment == 7 ? coreValue : getCornerColor(fragment, coreValue, adj));
 
-                        data[index + 3] = col.length > 3 ? col[3] : 255;
-                    }
-                }
+                scaler.put(i, j, color);
             }
         }
+
         ctx.putImageData(id, 0, 0);
         return can;
     }
 }
 
-const isSet = (v: boolean, p: number, n: adjarray) =>
-    (v && p === 7)
-    || (((v && n[5]) || (v && n[0]) || (n[5] && n[0])) && p === 1)
-    || (((v && n[0]) || (v && n[1]) || (n[0] && n[1])) && p === 2)
-    || (((v && n[1]) || (v && n[2]) || (n[1] && n[2])) && p === 3)
-    || (((v && n[2]) || (v && n[3]) || (n[2] && n[3])) && p === 4)
-    || (((v && n[3]) || (v && n[4]) || (n[3] && n[4])) && p === 5)
-    || (((v && n[4]) || (v && n[5]) || (n[4] && n[5])) && p === 6);
+const max = Math.max;
+const min = Math.min;
+const med = (a: number, b: number, c: number) => a > b ? b > c ? b : a > c ? c : a : a > c ? a : b > c ? c : b;
+
+const getCornerColor = (f: number, v: number, n: adjarray) => {
+    return f === 1 ? med(v, n[0], n[5])
+        : f === 2 ? med(v, n[0], n[1])
+            : f === 3 ? med(v, n[1], n[2])
+                : f === 4 ? med(v, n[2], n[3])
+                    : f === 5 ? med(v, n[3], n[4])
+                        : f === 6 ? med(v, n[4], n[5]) : 0;
+}
 

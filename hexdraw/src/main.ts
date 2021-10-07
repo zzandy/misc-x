@@ -12,8 +12,8 @@ import { Palette } from './palette';
 
 
 export const main = () => {
-    const [sx, sy] = [3, 2];
-    const [w, h] = [30, 20];
+    const [sx, sy] = [4, 2];
+    const [w, h] = [25, 15];
 
     const ctx = fullscreenCanvas();
     const [ox, oy] = getHexPos(h / 2, w / 2);
@@ -24,6 +24,7 @@ export const main = () => {
         [0x53, 0xB8, 0xBB],
         [0xF3, 0xF2, 0xC9]
     );
+
     const world = new World(w, h, palette, new SpriteRenderer(sx, sy), new WorldRenderer(ctx, palette.bg, (ctx.canvas.width / 2 - ox * sx) | 0, (ctx.canvas.height / 2 - oy * sy) | 0, sx, sy));
 
     world.render();

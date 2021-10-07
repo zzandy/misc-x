@@ -1,34 +1,28 @@
 import { rnd, array } from '../../lib/util';
 import { color, Palette } from './palette';
-import { SpriteRenderer } from './sprite-renderer';
+import { adjarray, adjindex, SpriteRenderer } from './sprite-renderer';
 import { WorldRenderer } from './world-renderer';
 
-type adjarray = [boolean, boolean, boolean, boolean, boolean, boolean];
-/* hex:  0
-        ___
-    5  /   \  1
-    4  \___/  2
-         3           */
-type adjindex = 0 | 1 | 2 | 3 | 4 | 5;
-
-
 class Cell {
-    constructor(public readonly value: number, public color: color) {
+    constructor(public value: number) {
     }
 
     public sprite: HTMLCanvasElement | null = null;
 }
 
 export class World {
-    private readonly data: Cell[][];
+    private data: Cell[][];
 
-    constructor(public readonly w: number, public readonly h: number, private readonly palette: Palette, sr: SpriteRenderer, private readonly wr: WorldRenderer) {
-        const data = this.data = array(w, h, (i, j) => {
-            const cell = new Cell((j === 0 || j === w - 1 || (i === 0 && j % 2 === 1) || i === h - 1 && !!(j % 2)) ? 0 : Math.random() < .7 ? 1 : 0, this.palette.secondary);
-            return cell;
-        });
+    private static makeMap(w: number, h: number) {
+        return array(w, h, (i, j) => new Cell((j === 0 || j === w - 1 || (i === 0 && j % 2 === 1) || i === h - 1 && !!(j % 2)) ? 0 : Math.random() < .7 ? 1 : 0));
+    }
+
+    private static pickRandomPair(data: Cell[][]) {
 
         let overflow = 0;
+
+        const h = data.length;
+        const w = data[0].length
 
         while (1) {
 
@@ -38,25 +32,53 @@ export class World {
             const k = h - i - 1;
             const l = w - j - 1;
 
-            if (i >= 0 && i < h && j >= 0 && j < w && k >= 0 && k < h && l >= 0 && l < w && data[i][j].value && data[k][l].value) {
-
-                data[i][j].color = this.palette.primary;
-                data[k][l].color = this.palette.accent;
-
-                break;
-            }
+            if (i >= 0 && i < h && j >= 0 && j < w && k >= 0 && k < h && l >= 0 && l < w && data[i][j].value && data[k][l].value)
+                return [i, j, k, l];
 
             if (++overflow > 100)
-                throw new Error("Failed to place source and destination");
+                break;
         }
 
-        for (let i = 0; i < this.data.length; ++i)
-            for (let j = 0; j < this.data[i].length; ++j) {
-                const cell = this.data[i][j];
-                const adjs = collectAdjacency(this.data, i, j, cell.value);
+        throw new Error("Failed to place source and destination");
+    }
 
-                cell.sprite = sr.render(cell.value != 0, cell.color, adjs);
+    constructor(public readonly w: number, public readonly h: number, private readonly palette: Palette, private readonly sr: SpriteRenderer, private readonly wr: WorldRenderer) {
+        this.data = this.initMap();
+
+        window.addEventListener('click', () => {
+            this.data = this.initMap();
+            this.render();
+        })
+    }
+
+    private initMap() {
+        const data = World.makeMap(this.w, this.h);
+
+        let [i, j, k, l] = World.pickRandomPair(data);
+
+        data[i][j].value = 2;
+
+        data[k][l].value = 3;
+
+        for (let i = 0; i < this.h; ++i)
+            for (let j = 0; j < this.w; ++j) {
+                const cell = data[i][j];
+                const adjs = collectAdjacency(data, i, j);
+
+                cell.sprite = this.sr.render(cell.value, (n)=>this.getColor(n), adjs);
             }
+
+        return data;
+    }
+
+    private getColor(value: number) {
+        return value == 1
+            ? this.palette.secondary
+            : value == 2
+                ? this.palette.accent
+                : value == 3
+                    ? this.palette.primary
+                    : this.palette.bg;
     }
 
     public render() {
@@ -72,19 +94,19 @@ export class World {
     }
 }
 
-const collectAdjacency = (data: Cell[][], i: number, j: number, value: number): adjarray => {
+const collectAdjacency = (data: Cell[][], i: number, j: number): adjarray => {
     return [
-        isSolid(getAdj(data, 0, i, j)),
-        isSolid(getAdj(data, 1, i, j)),
-        isSolid(getAdj(data, 2, i, j)),
-        isSolid(getAdj(data, 3, i, j)),
-        isSolid(getAdj(data, 4, i, j)),
-        isSolid(getAdj(data, 5, i, j))
+        getAdj(data, 0, i, j)?.value ?? 0,
+        getAdj(data, 1, i, j)?.value ?? 0,
+        getAdj(data, 2, i, j)?.value ?? 0,
+        getAdj(data, 3, i, j)?.value ?? 0,
+        getAdj(data, 4, i, j)?.value ?? 0,
+        getAdj(data, 5, i, j)?.value ?? 0
     ];
 }
 
-const isSolid = (adj: Cell | null): boolean => {
-    return adj !== null && adj.value != 0;
+const isSolid = (adj: Cell | null, value: number): boolean => {
+    return adj !== null && adj.value > 0 && adj.value >= value;
 }
 
 const getAdj = <TCell>(data: TCell[][], n: adjindex, i: number, j: number): TCell | null => {
