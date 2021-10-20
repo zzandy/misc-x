@@ -11,15 +11,6 @@
     <label><input name="mute" type="checkbox" />Mute</label>
 
     <script type="text/javascript">
-        function bindRadial(name, setter) {
-            for (const element of document.getElementsByName(name)) {
-                if (element.checked) setter(element.value);
-                element.addEventListener('click', function (e) {
-                    setter(element.value);
-                });
-            }
-        }
-
         function bindCheckbox(name, setter) {
             for (const element of document.getElementsByName(name)) {
                 setter(element.checked);
@@ -30,17 +21,24 @@
         }
 
         function addRange(title, min, max, initial, setter) {
+            let output = document.createElement('output');
+            output.value = setter(initial);
+
             let input = document.createElement('input');
+
             input.setAttribute('type', 'range')
             input.setAttribute('min', min)
             input.setAttribute('max', max)
             input.setAttribute('value', initial)
-            input.addEventListener('input', e => setter(e.target.value));
-
+            input.addEventListener('input', e => {
+                output.value = setter(e.target.value)
+            });
 
             let label = document.createElement('label');
-            label.appendChild(input);
             label.appendChild(document.createTextNode(title))
+            label.appendChild(input);
+            label.appendChild(output);
+
 
             let div = document.createElement('div');
             div.appendChild(label)
@@ -51,6 +49,8 @@
         let nameCtr = 0;
 
         function addSelector(values, setter) {
+            setter(values[0]);
+
             let name = "name-" + nameCtr++;
 
             let div = document.createElement('div');
@@ -60,6 +60,7 @@
                 input.setAttribute('type', 'radio')
                 input.setAttribute('name', name)
                 input.setAttribute('value', value)
+                if (value == values[0]) input.setAttribute('checked', true);
                 input.addEventListener('input', e => setter(e.target.value));
 
                 let label = document.createElement('label');
@@ -74,60 +75,97 @@
     </script>
 
     <script type="text/javascript">
+
+        function loop(fps, init, update, render) {
+            const frameTime = 1000 / fps;
+            let acc = frameTime;
+
+            let state = init();
+            let then = performance.now();
+
+            let tick = (now) => {
+
+                acc += now - then;
+                then = now;
+
+                let doRender = false;
+
+                while (acc >= frameTime) {
+                    acc -= frameTime;
+                    state = update(state, frameTime);
+                    doRender = true;
+                }
+
+                if (doRender)
+                    render(state);
+
+                requestAnimationFrame(tick);
+
+            };
+            requestAnimationFrame(tick);
+        }
+
+    </script>
+
+    <script type="text/javascript">
         const ctx = new AudioContext();
 
+        const lfo = ctx.createOscillator();
         const oscillator = ctx.createOscillator();
+        const muteNode = ctx.createGain();
         const gainNode = ctx.createGain();
+        const lfoGainNode = ctx.createGain();
+        const envelope = ctx.createGain();
         const filter = ctx.createBiquadFilter();
+        const compressor = ctx.createDynamicsCompressor();
 
-        //bindRadial('type', value => oscillator.type = value);
-        bindCheckbox('mute', value => gainNode.gain.value = value ? 0 : 1);
+        envelope.gain.value = 0;
 
-        addRange("Volume", 0, 1000, 100, x => { gainNode.gain.value = x / 1000 });
+        let attack = 40;
+        let decay = 50;
+        let sustain = 20;
+        let release = 40;
 
+        bindCheckbox('mute', value => muteNode.gain.value = value ? 0 : 1);
+
+        addRange("Freq", 0, 1000, 200, x => x + " " + (oscillator.frequency.value = freq(x / 1000)).toFixed(2) + 'Hz')
+        addRange("Volume", 0, 3000, 1000, x => gainNode.gain.value = x / 1000);
         addSelector(['sine', 'sawtooth', 'square', 'triangle'], value => oscillator.type = value)
 
-        addRange('Filter frequency', 0, 10000, 440, x => filter.frequency.value = x);
+        addRange('Attack', 0, 1000, 50, x => (attack = x / 1000) * 1000 + 'ms');
+        addRange('Decay', 0, 1000, 50, x => (decay = x / 1000) * 1000 + 'ms');
+        addRange('Sustain', 0, 1000, 500, x => (sustain = x / 1000));
+        addRange('Release', 0, 1000, 50, x => (release = x / 1000) * 1000 + 'ms');
+
+        addRange("LFO", 0, 300, 50, x => (lfo.frequency.value = x) + 'Hz')
+        addSelector(['sine', 'sawtooth', 'square', 'triangle'], value => lfo.type = value)
+
+
+        addRange('Filter frequency', 0, 1000, 440, x => (filter.frequency.value = freq(x / 1000)).toFixed(2) + 'Hz');
         addRange('Filter Q', 0, 20, 0, x => filter.Q.value = x);
-        addRange('Filter gain', -20, 20, 0, x => filter.gain.value = x);
-        addSelector(['lowpass', 'highpass', 'bandpass', 'lowshelf', 'highshelf', 'peaking', 'notch', 'allpass'], value => filter.type = value)
+        addRange('Filter gain', -50, 50, 0, x => filter.gain.value = x);
+        addSelector(['allpass', 'lowpass', 'highpass', 'bandpass', 'lowshelf', 'highshelf', 'peaking', 'notch'], value => filter.type = value)
 
-        oscillator.connect(filter);
-        filter.connect(gainNode)
-        gainNode.connect(ctx.destination);
+        addRange("Compressor Threshold", -100, 0, -50, value => compressor.threshold.value = value);
+        addRange("Compressor Knee", 0, 100, 40, value => compressor.knee.value = value);
+        addRange("Compressor Ratio", 1, 20, 12, value => compressor.ratio.value = value);
+        addRange("Compressor Attack", 0, 5, 0, value => compressor.attack.value = value);
+        addRange("Compressor Release", 0, 5, .25, value => compressor.release.value = value);
 
-        oscillator.frequency.value = 440;
+        connect(lfo, lfoGainNode.gain);
+        connect(oscillator, lfoGainNode, envelope, filter, compressor, gainNode, muteNode, ctx.destination);
+
+        lfo.start();
         oscillator.start();
 
-        filter.type = "lowshelf";
-        filter.frequency.value = 40;
-        filter.gain.value = 25;
+        function freq(mill) {
+            const min = 20;
+            const max = 11000;
+            const range = max - min;
 
-        function Loop(callback) {
-            this.isRunning = false;
-            this.callback = callback;
-            this.last = 0;
+            return min + (mill * mill) * range;
         }
 
-        Loop.prototype.start = function () {
-            this.isRunning = true;
-            this.last = 0;
-            const self = this;
-
-            const frame = function (x) {
-                self.callback(x - self.last);
-                self.last = x;
-                if (self.isRunning)
-                    requestAnimationFrame(frame);
-            }
-
-            requestAnimationFrame(frame);
-
-            return this;
-        }
-
-        var acc = 0;
-        const delay = 200;
         function nextFrequency() {
             let n = 0;
             const maxn = 24;
@@ -148,13 +186,35 @@
             return nextFrequency();
         }
 
-        const loop = new Loop(function (delta) {
-            acc += delta;
-            if (acc > delay) {
-                acc -= delay;
-                oscillator.frequency.value = nextFrequency();
+        loop(1, init, update, render);
+
+        function init() {
+            return {
+                oscillator, frequency: nextFrequency(), acc: 0, delay: 200
             }
-        }).start();
+        }
+
+        function update(state, delta) {
+
+            const t = ctx.currentTime;
+
+            envelope.gain.setValueAtTime(0, t)
+            envelope.gain.linearRampToValueAtTime(3, t + attack)
+            envelope.gain.linearRampToValueAtTime(sustain, t + attack + decay)
+            envelope.gain.linearRampToValueAtTime(sustain, t + attack + decay + .2)
+            envelope.gain.linearRampToValueAtTime(0, t + attack + decay + decay + release)
+
+            // if ((state.acc += delta) >= state.delay) {
+            //     state.frequency = nextFrequency();
+            //     state.acc -= state.delay;
+            // }
+
+            return state;
+        }
+
+        function render(state) {
+            //state.oscillator.frequency.value = state.frequency;
+        }
 
         function connect() {
             var prev = arguments[0];
@@ -164,6 +224,8 @@
                 prev = next;
             }
         }
+
+
     </script>
 </body>
 
