@@ -20,6 +20,23 @@
             }
         }
 
+        function addCheck(title, setter) {
+            let input = document.createElement('input');
+            input.setAttribute('type', 'checkbox')
+            input.setAttribute('checked', 'checked')
+
+            input.addEventListener('click', e => setter(input.checked));
+
+            let label = document.createElement('label');
+            label.appendChild(document.createTextNode(title))
+            label.appendChild(input);
+
+            let div = document.createElement('div');
+            div.appendChild(label)
+
+            document.body.appendChild(div);
+        }
+
         function addRange(title, min, max, initial, setter) {
             let output = document.createElement('output');
             output.value = setter(initial);
@@ -111,19 +128,23 @@
         const ctx = new AudioContext();
 
         const lfo = ctx.createOscillator();
+        const lfo2 = ctx.createOscillator();
         const oscillator = ctx.createOscillator();
         const muteNode = ctx.createGain();
         const gainNode = ctx.createGain();
         const lfoGainNode = ctx.createGain();
+        const lfo2GainNode = ctx.createGain();
         const envelope = ctx.createGain();
         const filter = ctx.createBiquadFilter();
         const compressor = ctx.createDynamicsCompressor();
 
         let lfoMultiplier = 1;
+        let lfo2Multiplier = 1;
 
         function setFrequency(v) {
             oscillator.frequency.value = v;
             lfo.frequency.value = oscillator.frequency.value * lfoMultiplier;
+            lfo2.frequency.value = oscillator.frequency.value * lfo2Multiplier;
             return v;
         }
 
@@ -132,6 +153,46 @@
             lfo.frequency.value = oscillator.frequency.value * lfoMultiplier;
 
             return lfoMultiplier;
+        }
+
+        function setLfo2Frequency(x) {
+            lfo2Multiplier = x;
+            lfo2.frequency.value = oscillator.frequency.value * lfo2Multiplier;
+
+            return lfo2Multiplier;
+        }
+
+        let enableLfo1 = true;
+        let enableLfo2 = true;
+
+        function toggleLfo1(isOn) {
+            enableLfo1 = isOn;
+            updateLfos();
+
+        }
+        function toggleLfo2(isOn) {
+            enableLfo2 = isOn;
+            updateLfos();
+        }
+
+        function updateLfos() {
+            oscillator.disconnect();
+            lfoGainNode.disconnect();
+            lfo2GainNode.disconnect();
+
+            let top = oscillator;
+
+            if (enableLfo1) {
+                top.connect(lfoGainNode);
+                top = lfoGainNode;
+            }
+            if (enableLfo2) {
+                top.connect(lfo2GainNode);
+                top = lfo2GainNode;
+            }
+
+            top.connect(envelope);
+
         }
 
         envelope.gain.value = 0;
@@ -152,8 +213,13 @@
         addRange('Sustain', 0, 1000, 500, x => (sustain = x / 1000));
         addRange('Release', 0, 1000, 50, x => (release = x / 1000) * 1000 + 'ms');
 
-        addRange("LFO", 10, 300, 50, x => setLfoFrequency(x / 100))
+        addCheck('LFO', toggleLfo1);
+        addRange("LFO", 10, 500, 50, x => setLfoFrequency(x / 100))
         addSelector(['sine', 'sawtooth', 'square', 'triangle'], value => lfo.type = value)
+
+        addCheck('LFO2', toggleLfo2);
+        addRange("LFO2", 10, 500, 50, x => setLfo2Frequency(x / 100))
+        addSelector(['sine', 'sawtooth', 'square', 'triangle'], value => lfo2.type = value)
 
         addRange('Filter frequency', 0, 1000, 440, x => (filter.frequency.value = freq(x / 1000)).toFixed(2) + 'Hz');
         addRange('Filter detune', -1200, 1200, 0, x => filter.detune.value = x);
@@ -171,10 +237,13 @@
         analyzer.fftSize = 2048;
 
         connect(lfo, lfoGainNode.gain);
-        connect(oscillator, lfoGainNode, envelope, filter, compressor, gainNode, analyzer, muteNode, ctx.destination);
+        connect(lfo2, lfo2GainNode.gain);
+        connect(oscillator, lfoGainNode, lfo2GainNode, envelope, filter, compressor, gainNode, analyzer, muteNode, ctx.destination);
 
         lfo.start();
+        lfo2.start();
         oscillator.start();
+
 
         function freq(mill) {
             const min = 20;
@@ -222,7 +291,7 @@
             analyzer.fftSize = 2 ** (Math.log2(ctx.canvas.width * 2) | 0);
             const data = new Uint8Array(analyzer.frequencyBinCount);
             const color = viridis_data().map(d => 'rgb(' + (d[0] * 255).toFixed(0) + ',' + (d[1] * 255).toFixed(0) + ',' + (d[2] * 255).toFixed(0) + ')')
-
+            console.log(color[200])
             return { ctx, analyzer, data, color }
         }
 
