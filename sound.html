@@ -327,10 +327,10 @@
 
         addSelector(['sine', 'sawtooth', 'square', 'triangle'], value => oscillator.type = value)
 
-        addRange('Attack', 0, 1000, 50, x => (attack = x / 1000) * 1000 + 'ms');
-        addRange('Decay', 0, 1000, 50, x => (decay = x / 1000) * 1000 + 'ms');
+        addRange('Attack', 1, 1000, 50, x => (attack = x / 1000) * 1000 + 'ms');
+        addRange('Decay', 1, 1000, 50, x => (decay = x / 1000) * 1000 + 'ms');
         addRange('Sustain', 0, 1000, 500, x => (sustain = x / 1000));
-        addRange('Release', 0, 1000, 50, x => (release = x / 1000) * 1000 + 'ms');
+        addRange('Release', 1, 1000, 50, x => (release = x / 1000) * 1000 + 'ms');
 
         addCheck('LFO', toggleLfo1);
         addRange("LFO", 10, 500, 50, x => setLfoFrequency(x / 100))
@@ -404,11 +404,14 @@
         }
 
         addDiv(rows, 'keyboard');
+
+        let isDown = false;
+
         addEventListener('keydown', e => {
+            if (isDown) return;
+            isDown = true;
 
             let fr = kbd[e.keyCode]
-
-console.log(fr)
 
             if (fr !== undefined) {
                 setFrequency(fr);
@@ -416,7 +419,7 @@ console.log(fr)
             }
         });
 
-        addEventListener("keyup", keyRelease);
+        addEventListener("keyup", () => { isDown = false; keyRelease() });
 
         loop(60, init, update, render);
 
@@ -462,16 +465,21 @@ console.log(fr)
 
         function keyPress() {
             const t = ctx.currentTime;
+
+            let value = envelope.gain.value;
             envelope.gain.cancelScheduledValues(t);
-            envelope.gain.setValueAtTime(0, t)
+            envelope.gain.setValueAtTime(value, t)
             envelope.gain.linearRampToValueAtTime(3, t + attack)
             envelope.gain.linearRampToValueAtTime(sustain, t + attack + decay)
         }
 
         function keyRelease() {
             const t = ctx.currentTime;
+
+            let value = envelope.gain.value;
             envelope.gain.cancelScheduledValues(t);
-            envelope.gain.linearRampToValueAtTime(0, t + attack + decay + .2 + release)
+            envelope.gain.setValueAtTime(Math.min(value, sustain), t + .001)
+            envelope.gain.linearRampToValueAtTime(0, t + release)
         }
 
         function connect() {
