@@ -18,6 +18,7 @@
             border-radius: .2em;
             border-width: .1em .15em .3em .15em;
             border-style: solid;
+            font-family: Verdana, Geneva, Tahoma, sans-serif;
         }
 
         .tone-0 {
@@ -164,10 +165,15 @@
             document.body.appendChild(div);
         }
 
-        function makeButton(title, click, cls) {
+        function makeButton(title, press, release, cls) {
             let b = document.createElement('button')
+
             b.appendChild(document.createTextNode(title))
-            b.addEventListener('click', click);
+            b.addEventListener('mousedown', press);
+            b.addEventListener('mouseup', release);
+
+            b.addEventListener('mouseenter', (e) => { if (e.buttons == 1) press() });
+            b.addEventListener('mouseleave', (e) => { if (e.buttons == 1) release() });
 
             if (cls !== undefined && cls !== null && cls.trim().length > 0)
                 b.classList.add(cls.trim());
@@ -309,8 +315,6 @@
 
         envelope.gain.value = 0;
 
-        function value() { }
-
         let attack = 40;
         let decay = 50;
         let sustain = 20;
@@ -369,33 +373,13 @@
             return min + (mill * mill) * range;
         }
 
-        function nextFrequency() {
-            let n = 0;
-            const maxn = 24;
-            const cent = 1.05946309435929;
-            let freq = 440;
-            nextFrequency = function () {
-                if (++n > maxn) {
-                    freq = 220;
-                    n = 0;
-                }
-                else {
-                    freq *= cent;
-                    freq *= cent;
-                }
-                return freq;
-            }
-
-            return nextFrequency();
-        }
-
-
         let w = 15;
         let h = 7;
 
         let mainRow = h / 2 | 0;
-        let mainDo = ((w / 2) | 0) - 2 + mainRow/2|0;
+        let mainDo = ((w / 2) | 0) - 2 + mainRow / 2 | 0;
 
+        let kbd = {};
         let rows = [];
         for (let i = 0; i < h; ++i) {
             let buts = [];
@@ -405,16 +389,34 @@
                 let semitoneDif = (mainRow - i) * 7 + (j - mainDo + (i / 2 | 0)) * 4;
 
                 let fr = freqDiff(440, semitoneDif);
-                buts.push(makeButton(semitoneDif, () => {
-                    setFrequency(fr)
-                    play();
-                }, getTone(semitoneDif)));
+                let press = () => {
+                    setFrequency(fr);
+                    keyPress();
+                }
+                let key = getKey(i - mainRow, j - mainDo)
+                buts.push(makeButton(key, press, keyRelease, getTone(semitoneDif)));
+
+                kbd[key.charCodeAt(0)] = fr;
+
             }
 
             rows.push(makeDiv(buts, isWide ? '' : 'pad'));
         }
 
         addDiv(rows, 'keyboard');
+        addEventListener('keydown', e => {
+
+            let fr = kbd[e.keyCode]
+
+console.log(fr)
+
+            if (fr !== undefined) {
+                setFrequency(fr);
+                keyPress();
+            }
+        });
+
+        addEventListener("keyup", keyRelease);
 
         loop(60, init, update, render);
 
@@ -458,14 +460,17 @@
             ctx.restore();
         }
 
-        function play() {
+        function keyPress() {
             const t = ctx.currentTime;
-
             envelope.gain.cancelScheduledValues(t);
             envelope.gain.setValueAtTime(0, t)
             envelope.gain.linearRampToValueAtTime(3, t + attack)
             envelope.gain.linearRampToValueAtTime(sustain, t + attack + decay)
-            envelope.gain.linearRampToValueAtTime(sustain, t + attack + decay + .2)
+        }
+
+        function keyRelease() {
+            const t = ctx.currentTime;
+            envelope.gain.cancelScheduledValues(t);
             envelope.gain.linearRampToValueAtTime(0, t + attack + decay + .2 + release)
         }
 
@@ -477,7 +482,6 @@
                 prev = next;
             }
         }
-
 
         function freqDiff(base, numSemitones) {
             const octaves = Math.abs(Math.floor(numSemitones / 12));
@@ -498,6 +502,19 @@
 
         function getTone(numSemitones) {
             return 'tone-' + (numSemitones > 0 ? numSemitones % 12 : (12 + numSemitones % 12) % 12);
+        }
+
+        function getKey(di, dj) {
+            const kb = '1234567890 qwertyuiop asdfghjkl zxcvbnm<>'.toUpperCase().split(' ').map(row => row.split(''));
+            const o = 2;
+            const offst = [4, 4, 3, 3];
+            const empty = '\uFEFF';
+
+            return di + o < 0 || di + o >= kb.length ? empty
+                : dj + offst[di + o] < 0 || dj + offst[di + o] >= kb[di + o].length
+                    ? empty
+                    : kb[di + o][dj + offst[di + o]];
+
         }
 
         function viridis_data() {
