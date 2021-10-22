@@ -457,7 +457,12 @@
             for (let i = 0; i < data.length; ++i) {
                 const value = data[i];
                 ctx.fillStyle = color[value];
-                ctx.fillRect(i, 0, 1, hdr);
+                let log = Math.log2;
+                let pos = data.length * ((log(i + 1) - log(1)) / (log(data.length) - log(1)));
+
+
+                ctx.fillRect(pos, 0, data.length, hdr);
+                ctx.restore();
             }
 
             ctx.restore();
@@ -493,7 +498,7 @@
 
         function freqDiff(base, numSemitones) {
             const octaves = Math.abs(Math.floor(numSemitones / 12));
-            const cent = 1.05946309435929;
+            const semitone = 1.05946309435929;
 
             let freq = base;
 
@@ -503,7 +508,7 @@
 
             let semitones = numSemitones > 0 ? numSemitones % 12 : (12 + numSemitones % 12) % 12;
             for (let i = 0; i < semitones; ++i)
-                freq *= cent
+                freq *= semitone
 
             return freq;
         }
