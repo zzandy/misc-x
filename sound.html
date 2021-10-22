@@ -5,6 +5,81 @@
 <head>
     <meta charset="utf-8" />
     <title>Audio</title>
+    <style>
+        .keyboard button {
+            width: 2em;
+        }
+
+        .keyboard .pad {
+            margin-left: 1em;
+        }
+
+        .keyboard button {
+            border-radius: .2em;
+            border-width: .1em .15em .3em .15em;
+            border-style: solid;
+        }
+
+        .tone-0 {
+            background-color: #f482af;
+            border-color: #a32275;
+        }
+
+        .tone-1 {
+            background-color: #d884cf;
+            border-color: #7c2f81;
+        }
+
+        .tone-2 {
+            background-color: #af89d2;
+            border-color: #52358f;
+        }
+
+        .tone-3 {
+            background-color: #8da1e0;
+            border-color: #3048a8;
+        }
+
+        .tone-4 {
+            background-color: #71c1f4;
+            border-color: #0e6ea8;
+        }
+
+        .tone-5 {
+            background-color: #7cd6cd;
+            border-color: #157d5a;
+        }
+
+        .tone-6 {
+            background-color: #afda81;
+            border-color: #5a7d1f;
+        }
+
+        .tone-7 {
+            background-color: #d8df6e;
+            border-color: #9d911e;
+        }
+
+        .tone-8 {
+            background-color: #f2e684;
+            border-color: #dca91c;
+        }
+
+        .tone-9 {
+            background-color: #fdd985;
+            border-color: #ec871b;
+        }
+
+        .tone-10 {
+            background-color: #fdb676;
+            border-color: #ca441e;
+        }
+
+        .tone-11 {
+            background-color: #f47761;
+            border-color: #b41f21;
+        }
+    </style>
 </head>
 
 <body>
@@ -89,6 +164,33 @@
             document.body.appendChild(div);
         }
 
+        function makeButton(title, click, cls) {
+            let b = document.createElement('button')
+            b.appendChild(document.createTextNode(title))
+            b.addEventListener('click', click);
+
+            if (cls !== undefined && cls !== null && cls.trim().length > 0)
+                b.classList.add(cls.trim());
+
+            return b;
+        }
+
+        function makeDiv(children, cls) {
+            let div = document.createElement('div')
+            for (const child of children) {
+                div.appendChild(child);
+            }
+
+            if (cls !== undefined && cls !== null && cls.trim().length > 0)
+                div.classList.add(cls.trim());
+
+            return div;
+        }
+
+        function addDiv(children, cls) {
+            document.body.appendChild(makeDiv(children, cls));
+        }
+
     </script>
 
     <script type="text/javascript">
@@ -140,11 +242,13 @@
 
         let lfoMultiplier = 1;
         let lfo2Multiplier = 1;
+        let filterFreqMul = 1;
 
         function setFrequency(v) {
             oscillator.frequency.value = v;
             lfo.frequency.value = oscillator.frequency.value * lfoMultiplier;
             lfo2.frequency.value = oscillator.frequency.value * lfo2Multiplier;
+            filter.frequency.value = oscillator.frequency.value * filterFreqMul;
             return v;
         }
 
@@ -186,6 +290,7 @@
                 top.connect(lfoGainNode);
                 top = lfoGainNode;
             }
+
             if (enableLfo2) {
                 top.connect(lfo2GainNode);
                 top = lfo2GainNode;
@@ -195,7 +300,16 @@
 
         }
 
+        function filterMultiplier(x) {
+            filterFreqMul = x;
+            filter.frequency.value = oscillator.frequency.value * filterFreqMul;
+
+            return x;
+        }
+
         envelope.gain.value = 0;
+
+        function value() { }
 
         let attack = 40;
         let decay = 50;
@@ -204,8 +318,9 @@
 
         bindCheckbox('mute', value => muteNode.gain.value = value ? 0 : 1);
 
-        addRange("Freq", 0, 1000, 200, x => setFrequency(freq(x / 1000)).toFixed(2) + 'Hz');
         addRange("Volume", 0, 3000, 1000, x => gainNode.gain.value = x / 1000);
+        addRange("Freq", 0, 1000, 200, x => setFrequency(freq(x / 1000)).toFixed(2) + 'Hz');
+
         addSelector(['sine', 'sawtooth', 'square', 'triangle'], value => oscillator.type = value)
 
         addRange('Attack', 0, 1000, 50, x => (attack = x / 1000) * 1000 + 'ms');
@@ -215,13 +330,15 @@
 
         addCheck('LFO', toggleLfo1);
         addRange("LFO", 10, 500, 50, x => setLfoFrequency(x / 100))
+        addRange('Detune', -1200, 1200, 0, x => lfo.detune.value = x);
         addSelector(['sine', 'sawtooth', 'square', 'triangle'], value => lfo.type = value)
 
         addCheck('LFO2', toggleLfo2);
         addRange("LFO2", 10, 500, 50, x => setLfo2Frequency(x / 100))
+        addRange('Detune', -1200, 1200, 0, x => lfo2.detune.value = x);
         addSelector(['sine', 'sawtooth', 'square', 'triangle'], value => lfo2.type = value)
 
-        addRange('Filter frequency', 0, 1000, 440, x => (filter.frequency.value = freq(x / 1000)).toFixed(2) + 'Hz');
+        addRange('Filter frequency', 0, 2000, 440, x => filterMultiplier(x / 1000));
         addRange('Filter detune', -1200, 1200, 0, x => filter.detune.value = x);
         addRange('Filter Q', 0, 20, 0, x => filter.Q.value = x);
         addRange('Filter gain', -50, 50, 0, x => filter.gain.value = x);
@@ -243,7 +360,6 @@
         lfo.start();
         lfo2.start();
         oscillator.start();
-
 
         function freq(mill) {
             const min = 20;
@@ -273,8 +389,34 @@
             return nextFrequency();
         }
 
-        loop(1, init, update, render);
-        loop(60, initRender, updateRender, renderRender);
+
+        let w = 15;
+        let h = 7;
+
+        let mainRow = h / 2 | 0;
+        let mainDo = ((w / 2) | 0) - 2 + mainRow/2|0;
+
+        let rows = [];
+        for (let i = 0; i < h; ++i) {
+            let buts = [];
+            let isWide = i % 2 == mainRow % 2
+
+            for (let j = 0; j < w + isWide; ++j) {
+                let semitoneDif = (mainRow - i) * 7 + (j - mainDo + (i / 2 | 0)) * 4;
+
+                let fr = freqDiff(440, semitoneDif);
+                buts.push(makeButton(semitoneDif, () => {
+                    setFrequency(fr)
+                    play();
+                }, getTone(semitoneDif)));
+            }
+
+            rows.push(makeDiv(buts, isWide ? '' : 'pad'));
+        }
+
+        addDiv(rows, 'keyboard');
+
+        loop(60, init, update, render);
 
         function makeCanvas() {
             const canvas = document.createElement('canvas');
@@ -286,58 +428,45 @@
             return canvas.getContext('2d');
         }
 
-        function initRender() {
+        function init() {
             const ctx = makeCanvas();
             analyzer.fftSize = 2 ** (Math.log2(ctx.canvas.width * 2) | 0);
             const data = new Uint8Array(analyzer.frequencyBinCount);
             const color = viridis_data().map(d => 'rgb(' + (d[0] * 255).toFixed(0) + ',' + (d[1] * 255).toFixed(0) + ',' + (d[2] * 255).toFixed(0) + ')')
-            console.log(color[200])
             return { ctx, analyzer, data, color }
         }
 
-        function updateRender(state) {
-            return state;
-        }
-
-        function renderRender(state) {
-            const { data, ctx, ctx2, color, analyzer } = state;
-            analyzer.getByteFrequencyData(data);
-
-            ctx.drawImage(ctx.canvas, 0, 0, ctx.canvas.width, ctx.canvas.height, 0, -1, ctx.canvas.width, ctx.canvas.height)
-
-            for (let i = 0; i < data.length; ++i) {
-                const value = data[i];
-                ctx.fillStyle = color[value];
-                ctx.fillRect(i, ctx.canvas.height - 1, 1, 1);
-            }
-        }
-
-        function init() {
-            return {
-                oscillator, frequency: nextFrequency(), acc: 0, delay: 200
-            }
-        }
-
-        function update(state, delta) {
-
-            const t = ctx.currentTime;
-
-            envelope.gain.setValueAtTime(0, t)
-            envelope.gain.linearRampToValueAtTime(3, t + attack)
-            envelope.gain.linearRampToValueAtTime(sustain, t + attack + decay)
-            envelope.gain.linearRampToValueAtTime(sustain, t + attack + decay + .2)
-            envelope.gain.linearRampToValueAtTime(0, t + attack + decay + decay + release)
-
-            // if ((state.acc += delta) >= state.delay) {
-            //     state.frequency = nextFrequency();
-            //     state.acc -= state.delay;
-            // }
-
+        function update(state) {
             return state;
         }
 
         function render(state) {
-            //state.oscillator.frequency.value = state.frequency;
+            const { data, ctx, ctx2, color, analyzer } = state;
+            const hdr = 20;
+            analyzer.getByteFrequencyData(data);
+
+            ctx.drawImage(ctx.canvas, 0, hdr - 1, ctx.canvas.width, ctx.canvas.height - hdr, 0, hdr, ctx.canvas.width, ctx.canvas.height - hdr)
+
+            ctx.save();
+            ctx.scale(ctx.canvas.width / data.length, 1)
+            for (let i = 0; i < data.length; ++i) {
+                const value = data[i];
+                ctx.fillStyle = color[value];
+                ctx.fillRect(i, 0, 1, hdr);
+            }
+
+            ctx.restore();
+        }
+
+        function play() {
+            const t = ctx.currentTime;
+
+            envelope.gain.cancelScheduledValues(t);
+            envelope.gain.setValueAtTime(0, t)
+            envelope.gain.linearRampToValueAtTime(3, t + attack)
+            envelope.gain.linearRampToValueAtTime(sustain, t + attack + decay)
+            envelope.gain.linearRampToValueAtTime(sustain, t + attack + decay + .2)
+            envelope.gain.linearRampToValueAtTime(0, t + attack + decay + .2 + release)
         }
 
         function connect() {
@@ -347,6 +476,28 @@
                 prev.connect(next);
                 prev = next;
             }
+        }
+
+
+        function freqDiff(base, numSemitones) {
+            const octaves = Math.abs(Math.floor(numSemitones / 12));
+            const cent = 1.05946309435929;
+
+            let freq = base;
+
+            for (let i = 0; i < octaves; ++i) {
+                freq = numSemitones > 0 ? freq * 2 : (freq / 2)
+            }
+
+            let semitones = numSemitones > 0 ? numSemitones % 12 : (12 + numSemitones % 12) % 12;
+            for (let i = 0; i < semitones; ++i)
+                freq *= cent
+
+            return freq;
+        }
+
+        function getTone(numSemitones) {
+            return 'tone-' + (numSemitones > 0 ? numSemitones % 12 : (12 + numSemitones % 12) % 12);
         }
 
         function viridis_data() {
