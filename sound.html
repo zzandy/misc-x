@@ -234,8 +234,8 @@
             b.addEventListener('mousedown', press);
             b.addEventListener('mouseup', release);
 
-            b.addEventListener('mouseenter', (e) => { if (e.buttons == 1) press() });
-            b.addEventListener('mouseleave', (e) => { if (e.buttons == 1) release() });
+            b.addEventListener('mouseenter', (e) => { if (e.buttons == 1) press(e) });
+            b.addEventListener('mouseleave', release);
 
             for (let cls of classes)
                 b.classList.add(cls);
@@ -316,6 +316,8 @@
                 this.vco3mute = ctx.createGain();
                 this.vco4mute = ctx.createGain();
 
+                this.envelope = ctx.createGain();
+                this.envelope.gain.value = 0;
                 this.out = ctx.createGain();
 
                 this.vco1.start();
@@ -330,10 +332,11 @@
 
                 this.updateFreq();
 
-                connect(this.vco1, this.out);
-                connect(this.vco2, this.vco2mute, this.out);
-                connect(this.vco3, this.vco3mute, this.out);
-                connect(this.vco4, this.vco4mute, this.out);
+                connect(this.vco1, this.envelope);
+                connect(this.vco2, this.vco2mute, this.envelope);
+                connect(this.vco3, this.vco3mute, this.envelope);
+                connect(this.vco4, this.vco4mute, this.envelope);
+                connect(this.envelope, this.out);
             }
 
             set freq(v) {
@@ -383,11 +386,12 @@
         let sustain = 20;
         let release = 40;
 
-        const voice = new Voice();
-
-        function setFrequency(f) {
-            voice.freq = f;
-            return f;
+        const voices = [];
+        const activations = []
+        let numActivations = 0;
+        for (let i = 0; i < 4; ++i) {
+            voices.push(new Voice());
+            activations.push(null);
         }
 
         function value(initial, setter) {
@@ -413,18 +417,18 @@
             '\u2293': 'square',
             '\u2A58': 'sawtooth'
         }
-        const vco1type = value(Object.keys(shapes)[3], v => { voice.vco1.type = shapes[v]; });
-        const vco2type = value(Object.keys(shapes)[2], v => { voice.vco2.type = shapes[v]; });
-        const vco3type = value(Object.keys(shapes)[1], v => { voice.vco3.type = shapes[v]; });
-        const vco4type = value(Object.keys(shapes)[3], v => { voice.vco4.type = shapes[v]; });
+        const vco1type = value(Object.keys(shapes)[3], v => { voices.forEach(voice => voice.vco1.type = shapes[v]) });
+        const vco2type = value(Object.keys(shapes)[2], v => { voices.forEach(voice => voice.vco2.type = shapes[v]) });
+        const vco3type = value(Object.keys(shapes)[1], v => { voices.forEach(voice => voice.vco3.type = shapes[v]) });
+        const vco4type = value(Object.keys(shapes)[3], v => { voices.forEach(voice => voice.vco4.type = shapes[v]) });
 
-        const vco2mul = value(500, v => { voice.vco2mul = v / 1000 })
-        const vco3mul = value(1250, v => { voice.vco3mul = v / 1000 })
-        const vco4mul = value(2000, v => { voice.vco4mul = v / 1000 })
+        const vco2mul = value(500, v => { voices.forEach(voice => voice.vco2mul = v / 1000) })
+        const vco3mul = value(1250, v => { voices.forEach(voice => voice.vco3mul = v / 1000) })
+        const vco4mul = value(2000, v => { voices.forEach(voice => voice.vco4mul = v / 1000) })
 
-        const vco2on = value(true, v => { voice.vco2level = +v })
-        const vco3on = value(true, v => { voice.vco3level = +v })
-        const vco4on = value(true, v => { voice.vco4level = +v })
+        const vco2on = value(true, v => { voices.forEach(voice => voice.vco2level = +v) })
+        const vco3on = value(true, v => { voices.forEach(voice => voice.vco3level = +v) })
+        const vco4on = value(true, v => { voices.forEach(voice => voice.vco4level = +v) })
 
         bindCheckbox('mute', value => muteNode.gain.value = value ? 0 : 1);
 
@@ -463,7 +467,9 @@
         const analyzer = ctx.createAnalyser();
         analyzer.fftSize = 2048;
 
-        connect(voice.out, envelope, filter, gainNode, analyzer, muteNode, ctx.destination);
+        voices.forEach(voice => voice.out.connect(filter));
+
+        connect(filter, gainNode, analyzer, muteNode, ctx.destination);
 
         function freq(mill) {
             const min = 20;
@@ -484,6 +490,7 @@
 
         let kbdDiv = addDiv([], 'keyboard');
         let offset = getComputedStyle(kbdDiv).getPropertyValue('--column-offset-half');
+        let num = 1000;
 
         for (let i = 0; i < h; ++i) {
             let buts = [];
@@ -497,14 +504,17 @@
 
                 let semitoneDif = numThirds * 4 + numFifths * 7;
 
+                let key = getKey(i - mainRow, j - mainDo);
+
                 let fr = freqDiff(440, semitoneDif);
-                let press = () => {
-                    setFrequency(fr);
-                    keyPress();
+
+                let press = (e) => {
+                    setFrequency(fr, +e.target.id);
+                    keyPress(+e.target.id);
                 }
 
-                let key = getKey(i - mainRow, j - mainDo);
-                btn = makeButton(key, press, keyRelease, ['main-button', getTone(semitoneDif), semitoneDif == 0 ? 'do' : 'x']);
+                btn = makeButton(key, press, e => keyRelease(+e.target.id), ['main-button', getTone(semitoneDif), semitoneDif == 0 ? 'do' : 'x']);
+                btn.id = key == '\uFEFF' ? ++num : key.charCodeAt(0);
 
                 btn.style.position = 'relative';
 
@@ -520,21 +530,23 @@
         for (let row of rows)
             kbdDiv.appendChild(row);
 
-        let isDown = false;
+        let isDown = null;
 
         addEventListener('keydown', e => {
-            if (isDown) return;
-            isDown = true;
+            if (isDown == e.keyCode) return;
+            isDown = e.keyCode;
 
-            let fr = kbd[e.keyCode]
+            if (e.keyCode in kbd) {
+                let fr = kbd[e.keyCode]
 
-            if (fr !== undefined) {
-                setFrequency(fr);
-                keyPress();
+                if (fr !== undefined) {
+                    setFrequency(fr, e.keyCode);
+                    keyPress(e.keyCode);
+                }
             }
         });
 
-        addEventListener("keyup", () => { isDown = false; keyRelease() });
+        addEventListener("keyup", (e) => { isDown = null; keyRelease(e.keyCode) });
 
         loop(60, init, update, render);
 
@@ -585,23 +597,50 @@
             ctx.restore();
         }
 
-        function keyPress() {
-            const t = ctx.currentTime;
+        function setFrequency(fr, id) {
+            let index = activations.findIndex(a => a == null);
+            if (index == -1) return;
 
-            let value = envelope.gain.value;
-            envelope.gain.cancelScheduledValues(t);
-            envelope.gain.setValueAtTime(value, t)
-            envelope.gain.linearRampToValueAtTime(1, t + attack)
-            envelope.gain.linearRampToValueAtTime(sustain, t + attack + decay)
+            activations[index] = [id, fr, 0];
         }
 
-        function keyRelease() {
+        function keyPress(id) {
+            let voiceId = activations.findIndex(a => a != null && a[0] == id && a[2] == 0);
+
+            if (voiceId == -1) return;
+
+            activations[voiceId][2] = 1;
+
+            let voice = voices[voiceId];
+
             const t = ctx.currentTime;
 
-            let value = envelope.gain.value;
-            envelope.gain.cancelScheduledValues(t);
-            envelope.gain.setValueAtTime(Math.min(value, sustain), t + .001)
-            envelope.gain.linearRampToValueAtTime(0, t + release)
+            voice.freq = activations[voiceId][1];
+            let value = voice.envelope.gain.value;
+            voice.envelope.gain.cancelScheduledValues(t);
+            voice.envelope.gain.setValueAtTime(value, t)
+            voice.envelope.gain.linearRampToValueAtTime(1, t + attack)
+            voice.envelope.gain.linearRampToValueAtTime(sustain, t + attack + decay)
+        }
+
+        function keyRelease(id) {
+            let voiceId = activations.findIndex(a => a != null && a[0] == id && a[2] == 1);
+            if (voiceId == -1) return;
+
+            activations[voiceId][2] = 2;
+            let voice = voices[voiceId];
+
+            const t = ctx.currentTime;
+
+            let value = voice.envelope.gain.value;
+            voice.envelope.gain.cancelScheduledValues(t);
+            voice.envelope.gain.setValueAtTime(Math.min(value, sustain), t + .001)
+            voice.envelope.gain.linearRampToValueAtTime(0, t + release)
+
+            setTimeout(() => {
+                voice.envelope.gain.linearRampToValueAtTime(0, t + release)
+                activations[voiceId] = null;
+            }, release * 1000);
         }
 
         function connect() {
