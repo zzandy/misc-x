@@ -111,19 +111,42 @@
             let input = mk('input');
             input.setAttribute('type', 'checkbox')
 
-            if (value === undefined){
+            if (value === undefined) {
                 input.style.visibility = 'hidden';
             }
             else {
                 if (value.value)
                     input.setAttribute('checked', 'checked');
-                input.addEventListener('click', e => value.value = input.checked);
 
+                input.addEventListener('click', e => value.value = input.checked);
             }
 
             let label = mk('label');
             label.appendChild(input);
             label.appendChild(text(title))
+
+            return label;
+        }
+
+        function makeRange(title, min, max, value) {
+            let output = mk('output');
+            output.value = value.value;
+
+            let input = mk('input');
+
+            input.setAttribute('type', 'range')
+            input.setAttribute('min', min)
+            input.setAttribute('max', max)
+            input.setAttribute('value', value.value)
+            input.addEventListener('input', e => {
+                output.value = value.value = e.target.value;
+            });
+
+
+            let label = document.createElement('label');
+            label.appendChild(document.createTextNode(title))
+            label.appendChild(input);
+            label.appendChild(output);
 
             return label;
         }
@@ -190,7 +213,8 @@
                 input.setAttribute('type', 'radio')
                 input.setAttribute('name', name)
                 input.setAttribute('value', option)
-                if (option == options[0]) input.setAttribute('checked', true);
+
+                if (option == value.value) input.setAttribute('checked', true);
                 input.addEventListener('input', e => value.value = e.target.value);
 
                 label = mk('label');
@@ -389,10 +413,14 @@
             '\u2293': 'square',
             '\u2A58': 'sawtooth'
         }
-        const vco1type = value(Object.keys(shapes)[0], v => { voice.vco1.type = shapes[v]; });
-        const vco2type = value(Object.keys(shapes)[0], v => { voice.vco2.type = shapes[v]; });
-        const vco3type = value(Object.keys(shapes)[0], v => { voice.vco3.type = shapes[v]; });
-        const vco4type = value(Object.keys(shapes)[0], v => { voice.vco4.type = shapes[v]; });
+        const vco1type = value(Object.keys(shapes)[3], v => { voice.vco1.type = shapes[v]; });
+        const vco2type = value(Object.keys(shapes)[2], v => { voice.vco2.type = shapes[v]; });
+        const vco3type = value(Object.keys(shapes)[1], v => { voice.vco3.type = shapes[v]; });
+        const vco4type = value(Object.keys(shapes)[3], v => { voice.vco4.type = shapes[v]; });
+
+        const vco2mul = value(500, v => { voice.vco2mul = v / 1000 })
+        const vco3mul = value(1250, v => { voice.vco3mul = v / 1000 })
+        const vco4mul = value(2000, v => { voice.vco4mul = v / 1000 })
 
         const vco2on = value(true, v => { voice.vco2level = +v })
         const vco3on = value(true, v => { voice.vco3level = +v })
@@ -406,13 +434,16 @@
             div(makeCheck("VCO1"), makeSelector('', Object.keys(shapes), vco1type)),
             div(makeCheck("VCO2", vco2on),
                 makeSelector('', Object.keys(shapes), vco2type)),
+            div(makeRange("freq", 1, 5000, vco2mul)),
             div(makeCheck("VCO2", vco3on),
                 makeSelector('', Object.keys(shapes), vco3type)),
+            div(makeRange("freq", 1, 5000, vco3mul)),
             div(makeCheck("VCO4", vco4on),
-                makeSelector('', Object.keys(shapes), vco4type))
+                makeSelector('', Object.keys(shapes), vco4type)),
+            div(makeRange("freq", 1, 5000, vco4mul)),
         );
 
-        addRange('Attack', 1, 1000, 50, x => (attack = x / 1000) * 1000 + 'ms');
+        addRange('Attack', 1, 1000, 15, x => (attack = x / 1000) * 1000 + 'ms');
         addRange('Decay', 1, 1000, 50, x => (decay = x / 1000) * 1000 + 'ms');
         addRange('Sustain', 0, 1000, 200, x => (sustain = x / 1000));
         addRange('Release', 1, 1000, 50, x => (release = x / 1000) * 1000 + 'ms');
