@@ -386,12 +386,21 @@
         let sustain = 20;
         let release = 40;
 
+        class Activation {
+            constructor() {
+                this.activatedAt = 0;
+                this.semitoneDif = -Infinity;
+                this.engaged = false;
+                this.timeoutId = -1;
+            }
+        }
+
         const voices = [];
         const activations = []
         let numActivations = 0;
         for (let i = 0; i < 4; ++i) {
             voices.push(new Voice());
-            activations.push(null);
+            activations.push(new Activation());
         }
 
         function value(initial, setter) {
@@ -432,7 +441,7 @@
 
         bindCheckbox('mute', value => muteNode.gain.value = value ? 0 : 1);
 
-        addRange("Volume", 0, 1000, 500, x => gainNode.gain.value = x / 1000);
+        addRange("Volume", 0, 3000, 1000, x => gainNode.gain.value = x / 1000);
 
         addPanel('VCOs',
             div(makeCheck("VCO1"), makeSelector('', Object.keys(shapes), vco1type)),
@@ -465,11 +474,10 @@
         // addRange("Compressor Release", 0, 5, .25, value => compressor.release.value = value);
 
         const analyzer = ctx.createAnalyser();
-        analyzer.fftSize = 2048;
 
-        voices.forEach(voice => voice.out.connect(filter));
+        voices.forEach(voice => voice.out.connect(gainNode));
 
-        connect(filter, gainNode, analyzer, muteNode, ctx.destination);
+        connect(gainNode, analyzer, muteNode, ctx.destination);
 
         function freq(mill) {
             const min = 20;
@@ -506,15 +514,10 @@
 
                 let key = getKey(i - mainRow, j - mainDo);
 
-                let fr = freqDiff(440, semitoneDif);
+                let press = (e) => keyPress(semitoneDif);
+                let release = (e) => keyRelease(semitoneDif);
 
-                let press = (e) => {
-                    setFrequency(fr, +e.target.id);
-                    keyPress(+e.target.id);
-                }
-
-                btn = makeButton(key, press, e => keyRelease(+e.target.id), ['main-button', getTone(semitoneDif), semitoneDif == 0 ? 'do' : 'x']);
-                btn.id = key == '\uFEFF' ? ++num : key.charCodeAt(0);
+                btn = makeButton(key, press, release, ['main-button', getTone(semitoneDif), semitoneDif == 0 ? 'do' : 'x']);
 
                 btn.style.position = 'relative';
 
@@ -522,7 +525,7 @@
 
                 buts.push(btn);
 
-                kbd[key.charCodeAt(0)] = fr;
+                kbd[key.charCodeAt(0)] = semitoneDif;
             }
 
             rows.push(makeDiv(buts))
@@ -530,23 +533,34 @@
         for (let row of rows)
             kbdDiv.appendChild(row);
 
-        let isDown = null;
+        let isDown = [];
 
         addEventListener('keydown', e => {
-            if (isDown == e.keyCode) return;
-            isDown = e.keyCode;
+            if (isDown.includes(e.keyCode)) return;
+            isDown.push(e.keyCode);
 
             if (e.keyCode in kbd) {
-                let fr = kbd[e.keyCode]
+                let semitoneDif = kbd[e.keyCode];
 
-                if (fr !== undefined) {
-                    setFrequency(fr, e.keyCode);
-                    keyPress(e.keyCode);
+                if (semitoneDif !== undefined) {
+                    keyPress(semitoneDif);
                 }
             }
         });
 
-        addEventListener("keyup", (e) => { isDown = null; keyRelease(e.keyCode) });
+        addEventListener("keyup", (e) => {
+            let idx = isDown.findIndex(k => k == e.keyCode)
+            if (idx != -1)
+                isDown.splice(idx, 1);
+
+            if (e.keyCode in kbd) {
+                let semitoneDif = kbd[e.keyCode];
+
+                if (semitoneDif !== undefined) {
+                    keyRelease(semitoneDif);
+                }
+            }
+        });
 
         loop(60, init, update, render);
 
@@ -562,7 +576,8 @@
 
         function init() {
             const ctx = makeCanvas();
-            analyzer.fftSize = 2 ** (Math.log2(ctx.canvas.width * 2) | 0);
+            analyzer.fftSize = 2 ** 12;
+
             const data = new Uint8Array(analyzer.frequencyBinCount);
             const color = viridis_data().map(d => 'rgb(' + (d[0] * 255).toFixed(0) + ',' + (d[1] * 255).toFixed(0) + ',' + (d[2] * 255).toFixed(0) + ')')
             return { ctx, analyzer, data, color }
@@ -573,11 +588,11 @@
         }
 
         function render(state) {
-            const { data, ctx, ctx2, color, analyzer } = state;
-            const hdr = 20;
+            const { data, ctx, color, analyzer } = state;
+            const top = 20;
             analyzer.getByteFrequencyData(data);
 
-            ctx.drawImage(ctx.canvas, 0, hdr - 1, ctx.canvas.width, ctx.canvas.height - hdr, 0, hdr, ctx.canvas.width, ctx.canvas.height - hdr)
+            ctx.drawImage(ctx.canvas, 0, top - 1, ctx.canvas.width, ctx.canvas.height - top, 0, top, ctx.canvas.width, ctx.canvas.height - top)
 
             ctx.save();
             ctx.scale(ctx.canvas.width / data.length, 1)
@@ -585,62 +600,85 @@
                 const value = data[i];
                 ctx.fillStyle = color[value];
                 let log = Math.log2;
-                let pos = data.length * ((log(i + 1) - log(1)) / (log(data.length) - log(1)));
+                let pos = ctx.canvas.width * ((log(i + 1) - log(1)) / (log(data.length) - log(1)));
 
-                ctx.fillRect(pos, 0, data.length, hdr);
+                ctx.fillRect(pos, 0, data.length, top);
                 ctx.restore();
             }
-
-            // ctx.fillStyle = color[(255 * envelope.gain.value) | 0];
-            // ctx.fillRect(200, hdr, envelope.gain.value * 100, 1);
 
             ctx.restore();
         }
 
-        function setFrequency(fr, id) {
-            let index = activations.findIndex(a => a == null);
-            if (index == -1) return;
+        function keyPress(semitoneDif) {
+            let oldest = Infinity;
+            let oldestId = -1;
+            let matching = -1;
+            let free = -1;
 
-            activations[index] = [id, fr, 0];
+            let idx = -1;
+
+            for (let i = 0; i < activations.length; ++i) {
+                if (activations[i].semitoneDif == semitoneDif) {
+                    matching = i;
+                }
+
+                if (!activations[i].engaged && free == -1) {
+                    free = i;
+                }
+
+                if (activations[i].activatedAt < oldest) {
+                    oldestId = i;
+                }
+            }
+
+            if (matching != -1 && activations[matching].engaged) {
+                return;
+            }
+
+            if (matching != -1) idx = matching;
+            else if (free != -1) idx = free;
+            else idx = oldestId;
+
+            let voice = voices[idx];
+            let a = activations[idx];
+
+            if (a.engaged)
+                clearTimeout(a.timeoutId);
+
+            a.engaged = true;
+            a.semitoneDif = semitoneDif;
+            a.activatedAt = ctx.currentTime;
+
+            voice.freq = freqDiff(261, semitoneDif);
+            envelopeOpen(voice.envelope.gain);
         }
 
-        function keyPress(id) {
-            let voiceId = activations.findIndex(a => a != null && a[0] == id && a[2] == 0);
-
-            if (voiceId == -1) return;
-
-            activations[voiceId][2] = 1;
-
-            let voice = voices[voiceId];
-
-            const t = ctx.currentTime;
-
-            voice.freq = activations[voiceId][1];
-            let value = voice.envelope.gain.value;
-            voice.envelope.gain.cancelScheduledValues(t);
-            voice.envelope.gain.setValueAtTime(value, t)
-            voice.envelope.gain.linearRampToValueAtTime(1, t + attack)
-            voice.envelope.gain.linearRampToValueAtTime(sustain, t + attack + decay)
-        }
-
-        function keyRelease(id) {
-            let voiceId = activations.findIndex(a => a != null && a[0] == id && a[2] == 1);
-            if (voiceId == -1) return;
-
-            activations[voiceId][2] = 2;
-            let voice = voices[voiceId];
-
-            const t = ctx.currentTime;
-
-            let value = voice.envelope.gain.value;
-            voice.envelope.gain.cancelScheduledValues(t);
-            voice.envelope.gain.setValueAtTime(Math.min(value, sustain), t + .001)
-            voice.envelope.gain.linearRampToValueAtTime(0, t + release)
-
-            setTimeout(() => {
-                voice.envelope.gain.linearRampToValueAtTime(0, t + release)
-                activations[voiceId] = null;
+        function keyRelease(semitoneDif) {
+            let idx = activations.findIndex(a => a.semitoneDif == semitoneDif);
+            if (idx == -1) return;
+            envelopeClose(voices[idx].envelope.gain);
+            activations[idx].timeoutId = setTimeout(() => {
+                activations[idx].engaged = false;
             }, release * 1000);
+        }
+
+        function envelopeOpen(gainNode) {
+            const t = ctx.currentTime;
+            const value = gainNode.value;
+
+            gainNode.cancelScheduledValues(t);
+            gainNode.setValueAtTime(value, t)
+            gainNode.linearRampToValueAtTime(1, t + attack)
+            gainNode.linearRampToValueAtTime(sustain, t + attack + decay)
+        }
+
+        function envelopeClose(gainNode) {
+            const t = ctx.currentTime;
+            const value = gainNode.value;
+
+            gainNode.cancelScheduledValues(t);
+            gainNode.setValueAtTime(Math.min(value, sustain), t + .001)
+            gainNode.linearRampToValueAtTime(0, t + release)
         }
 
         function connect() {
