@@ -441,7 +441,7 @@
             div(makeRange("freq", 1, 5000, vco4mul), makeSelector('', ratios, vco4ratio)),
         );
 
-        addRange('Attack', 1, 1000, 15, x => (attack = x / 1000) * 1000 + 'ms');
+        addRange('Attack', 1, 1000, 25, x => (attack = x / 1000) * 1000 + 'ms');
         addRange('Decay', 1, 1000, 50, x => (decay = x / 1000) * 1000 + 'ms');
         addRange('Sustain', 0, 1000, 200, x => (sustain = x / 1000));
         addRange('Release', 1, 1000, 50, x => (release = x / 1000) * 1000 + 'ms');
@@ -502,7 +502,7 @@
                 let press = (e) => keyPress(semitoneDif);
                 let release = (e) => keyRelease(semitoneDif);
 
-                btn = makeButton(key, press, release, ['main-button', getTone(semitoneDif), semitoneDif == 0 ? 'do' : 'x']);
+                btn = makeButton(key, press, release, ['main-button', getTone(semitoneDif), semitoneDif == 0 ? 'do' : '_']);
 
                 btn.style.position = 'relative';
 
@@ -568,14 +568,16 @@
 
             let floor = 4;
             let borderFloor = 2;
-            let highlight = 3;
+            let highlight = 2;
+            let borderHigh = 2;
             for (let i = 0; i < 12; ++i) {
-                let bg = color[((i + floor) * (color.length - 1) / (floor + highlight + 12)) | 0];
-                let b2 = color[((i + floor + highlight) * (color.length - 1) / (floor + highlight + 12)) | 0];
-                let border = color[((i + borderFloor) * (color.length - 1) / (floor + highlight + 12)) | 0];
+                let bg = color[((i + floor) * (color.length - 1) / (floor + highlight + borderHigh + 12)) | 0];
+                let b2 = color[((i + floor + highlight) * (color.length - 1) / (floor + highlight + borderHigh + 12)) | 0];
+                let border = color[((i + borderFloor) * (color.length - 1) / (floor + highlight + borderHigh + 12)) | 0];
+                let border2 = color[((i + floor + highlight + borderHigh) * (color.length - 1) / (floor + highlight + borderHigh + 12)) | 0];
 
                 document.styleSheets[0].insertRule(`.tone-${i} {background-color: ${bg}; border-color: ${border}}`);
-                document.styleSheets[0].insertRule(`.tone-${i}:active {background-color: ${b2}}`);
+                document.styleSheets[0].insertRule(`.keyboard.activetone-${i} .tone-${i} {background-color: ${b2}; border-color: ${border2}}`);
             }
             return { ctx, analyzer, data, color }
         }
@@ -646,6 +648,8 @@
             a.semitoneDif = semitoneDif;
             a.activatedAt = ctx.currentTime;
 
+            document.getElementsByClassName('keyboard')[0].classList.add('activetone-' + semitone(semitoneDif));
+
             voice.freq = freqDiff(261, semitoneDif);
             envelopeOpen(voice.envelope.gain);
         }
@@ -653,10 +657,21 @@
         function keyRelease(semitoneDif) {
             let idx = activations.findIndex(a => a.semitoneDif == semitoneDif);
             if (idx == -1) return;
+
             envelopeClose(voices[idx].envelope.gain);
             activations[idx].timeoutId = setTimeout(() => {
                 activations[idx].engaged = false;
+
+                let id = semitone(activations[idx].semitoneDif);
+                if (activations.some(a => a.engaged && semitone(a.semitoneDif) == id))
+                    return;
+
+                document.getElementsByClassName('keyboard')[0].classList.remove('activetone-' + id);
             }, release * 1000);
+        }
+
+        function semitone(numSemitones) {
+            return numSemitones > 0 ? numSemitones % 12 : (12 + numSemitones % 12) % 12;
         }
 
         function envelopeOpen(gainNode) {
@@ -689,7 +704,7 @@
 
         function freqDiff(base, numSemitones) {
             const octaves = Math.abs(Math.floor(numSemitones / 12));
-            const semitone = 1.05946309435929;
+            const semitoneFactor = 1.05946309435929;
 
             let freq = base;
 
@@ -697,15 +712,15 @@
                 freq = numSemitones > 0 ? freq * 2 : (freq / 2)
             }
 
-            let semitones = numSemitones > 0 ? numSemitones % 12 : (12 + numSemitones % 12) % 12;
+            let semitones = semitone(numSemitones);
             for (let i = 0; i < semitones; ++i)
-                freq *= semitone
+                freq *= semitoneFactor
 
             return freq;
         }
 
         function getTone(numSemitones) {
-            return 'tone-' + (numSemitones > 0 ? numSemitones % 12 : (12 + numSemitones % 12) % 12);
+            return 'tone-' + semitone(numSemitones);
         }
 
         function getKey(di, dj) {
