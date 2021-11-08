@@ -139,9 +139,12 @@
             input.setAttribute('max', max)
             input.setAttribute('value', value.value)
             input.addEventListener('input', e => {
-                output.value = value.value = e.target.value;
+                value.value = +e.target.value;
             });
 
+            value.addEventListener(e => {
+                input.value = output.value = e.toFixed(2).replace(/\.0+$/, '');
+            });
 
             let label = document.createElement('label');
             label.appendChild(document.createTextNode(title))
@@ -170,9 +173,9 @@
             label.appendChild(input);
             label.appendChild(output);
 
-
             let div = document.createElement('div');
             div.appendChild(label)
+
 
             document.body.appendChild(div);
         }
@@ -216,6 +219,13 @@
 
                 if (option == value.value) input.setAttribute('checked', true);
                 input.addEventListener('input', e => value.value = e.target.value);
+
+                value.addEventListener(v => {
+                    if (v == option)
+                        input.setAttribute('checked', true);
+                    else
+                        input.removeAttribute('checked');
+                });
 
                 label = mk('label');
                 label.appendChild(input);
@@ -405,7 +415,9 @@
 
         function value(initial, setter) {
             let _value = initial;
+            let listeners = [];
             setter(initial);
+
 
             return {
                 get value() {
@@ -413,8 +425,15 @@
                 },
 
                 set value(v) {
+                    if (_value == v) return;
                     _value = v;
                     setter(_value);
+
+                    listeners.forEach(l => l(v));
+                },
+
+                addEventListener(listener) {
+                    listeners.push(listener)
                 }
             }
         }
@@ -426,18 +445,44 @@
             '\u2293': 'square',
             '\u2A58': 'sawtooth'
         }
-        const vco1type = value(Object.keys(shapes)[3], v => { voices.forEach(voice => voice.vco1.type = shapes[v]) });
-        const vco2type = value(Object.keys(shapes)[2], v => { voices.forEach(voice => voice.vco2.type = shapes[v]) });
+
+        const vco1type = value(Object.keys(shapes)[1], v => { voices.forEach(voice => voice.vco1.type = shapes[v]) });
+        const vco2type = value(Object.keys(shapes)[0], v => { voices.forEach(voice => voice.vco2.type = shapes[v]) });
         const vco3type = value(Object.keys(shapes)[1], v => { voices.forEach(voice => voice.vco3.type = shapes[v]) });
-        const vco4type = value(Object.keys(shapes)[3], v => { voices.forEach(voice => voice.vco4.type = shapes[v]) });
+        const vco4type = value(Object.keys(shapes)[0], v => { voices.forEach(voice => voice.vco4.type = shapes[v]) });
 
-        const vco2mul = value(500, v => { voices.forEach(voice => voice.vco2mul = v / 1000) })
-        const vco3mul = value(1250, v => { voices.forEach(voice => voice.vco3mul = v / 1000) })
-        const vco4mul = value(2000, v => { voices.forEach(voice => voice.vco4mul = v / 1000) })
+        const vco2mul = value(500, v => voices.forEach(voice => voice.vco2mul = v / 1000))
+        const vco3mul = value(1250, v => voices.forEach(voice => voice.vco3mul = v / 1000))
+        const vco4mul = value(2000, v => voices.forEach(voice => voice.vco4mul = v / 1000))
 
-        const vco2on = value(true, v => { voices.forEach(voice => voice.vco2level = +v) })
-        const vco3on = value(true, v => { voices.forEach(voice => voice.vco3level = +v) })
-        const vco4on = value(true, v => { voices.forEach(voice => voice.vco4level = +v) })
+        const vco2on = value(true, v => voices.forEach(voice => voice.vco2level = +v))
+        const vco3on = value(true, v => voices.forEach(voice => voice.vco3level = +v))
+        const vco4on = value(true, v => voices.forEach(voice => voice.vco4level = +v))
+
+        const vco2ratio = value('1/2', v => vco2mul.value = 1000 * getRatio(v))
+        const vco3ratio = value('5/4', v => vco3mul.value = 1000 * getRatio(v))
+        const vco4ratio = value('2/1', v => vco4mul.value = 1000 * getRatio(v))
+
+        vco2mul.addEventListener(v => vco2ratio.value = getReverseRatio(v / 1000));
+        vco3mul.addEventListener(v => vco3ratio.value = getReverseRatio(v / 1000));
+        vco4mul.addEventListener(v => vco4ratio.value = getReverseRatio(v / 1000));
+
+        const ratios = '1/2 2/3 3/4 4/5 5/6 1/1 6/5 5/4 4/3 3/2 2/1'.split(' ');
+
+        function getRatio(ratio) {
+            if (ratio.split === undefined) return ratio;
+
+            let r = ratio.split('/').map(r => parseInt(r, 10));
+            return r[0] / r[1];
+        }
+
+        function getReverseRatio(r) {
+            for (let rat of ratios) {
+                if (Math.abs(Math.abs(getRatio(rat)) - Math.abs(r)) < .01) return rat;
+            }
+
+            return r;
+        }
 
         bindCheckbox('mute', value => muteNode.gain.value = value ? 0 : 1);
 
@@ -447,13 +492,13 @@
             div(makeCheck("VCO1"), makeSelector('', Object.keys(shapes), vco1type)),
             div(makeCheck("VCO2", vco2on),
                 makeSelector('', Object.keys(shapes), vco2type)),
-            div(makeRange("freq", 1, 5000, vco2mul)),
+            div(makeRange("freq", 1, 5000, vco2mul), makeSelector('', ratios, vco2ratio)),
             div(makeCheck("VCO2", vco3on),
                 makeSelector('', Object.keys(shapes), vco3type)),
-            div(makeRange("freq", 1, 5000, vco3mul)),
+            div(makeRange("freq", 1, 5000, vco3mul), makeSelector('', ratios, vco3ratio)),
             div(makeCheck("VCO4", vco4on),
                 makeSelector('', Object.keys(shapes), vco4type)),
-            div(makeRange("freq", 1, 5000, vco4mul)),
+            div(makeRange("freq", 1, 5000, vco4mul), makeSelector('', ratios, vco4ratio)),
         );
 
         addRange('Attack', 1, 1000, 15, x => (attack = x / 1000) * 1000 + 'ms');
@@ -712,9 +757,8 @@
         }
 
         function getKey(di, dj) {
-            const kb = '1234567890 qwertyuiop asdfghjkl zxcvbnm<>'.toUpperCase().split(' ').map(row => row.split(''));
-            const o = 3;
-            const offst = [4, 4, 3, 3];
+            const kb = '1234567890 qwertyuiop asdfghjkl; zxcvbnm'.toUpperCase().split(' ').map(row => row.split(''));
+            const o = 4;
             const empty = '\uFEFF';
 
             let i = di + ((dj / 2) | 0) + (dj > 0 ? (dj % 2) : 0);
