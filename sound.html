@@ -31,66 +31,6 @@
         .do {
             text-decoration: underline;
         }
-
-        .tone-0 {
-            background-color: #f482af;
-            border-color: #a32275;
-        }
-
-        .tone-1 {
-            background-color: #d884cf;
-            border-color: #7c2f81;
-        }
-
-        .tone-2 {
-            background-color: #af89d2;
-            border-color: #52358f;
-        }
-
-        .tone-3 {
-            background-color: #8da1e0;
-            border-color: #3048a8;
-        }
-
-        .tone-4 {
-            background-color: #71c1f4;
-            border-color: #0e6ea8;
-        }
-
-        .tone-5 {
-            background-color: #7cd6cd;
-            border-color: #157d5a;
-        }
-
-        .tone-6 {
-            background-color: #afda81;
-            border-color: #5a7d1f;
-        }
-
-        .tone-7 {
-            background-color: #d8df6e;
-            border-color: #9d911e;
-        }
-
-        .tone-8 {
-            background-color: #f2e684;
-            border-color: #dca91c;
-        }
-
-        .tone-9 {
-            background-color: #fdd985;
-            border-color: #ec871b;
-        }
-
-        .tone-10 {
-            background-color: #fdb676;
-            border-color: #ca441e;
-        }
-
-        .tone-11 {
-            background-color: #f47761;
-            border-color: #b41f21;
-        }
     </style>
 </head>
 
@@ -625,6 +565,18 @@
 
             const data = new Uint8Array(analyzer.frequencyBinCount);
             const color = viridis_data().map(d => 'rgb(' + (d[0] * 255).toFixed(0) + ',' + (d[1] * 255).toFixed(0) + ',' + (d[2] * 255).toFixed(0) + ')')
+
+            let floor = 4;
+            let borderFloor = 2;
+            let highlight = 3;
+            for (let i = 0; i < 12; ++i) {
+                let bg = color[((i + floor) * (color.length - 1) / (floor + highlight + 12)) | 0];
+                let b2 = color[((i + floor + highlight) * (color.length - 1) / (floor + highlight + 12)) | 0];
+                let border = color[((i + borderFloor) * (color.length - 1) / (floor + highlight + 12)) | 0];
+
+                document.styleSheets[0].insertRule(`.tone-${i} {background-color: ${bg}; border-color: ${border}}`);
+                document.styleSheets[0].insertRule(`.tone-${i}:active {background-color: ${b2}}`);
+            }
             return { ctx, analyzer, data, color }
         }
 
