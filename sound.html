@@ -252,7 +252,15 @@
         const muteNode = ctx.createGain();
         const gainNode = ctx.createGain();
         const envelope = ctx.createGain();
-        const filter = ctx.createBiquadFilter();
+        const delay = ctx.createDelay();
+        const delayGain = ctx.createGain();
+
+        const lfo1 = ctx.createOscillator()
+        const lfo2 = ctx.createOscillator()
+
+        lfo1.start();
+        lfo2.start();
+
         const compressor = ctx.createDynamicsCompressor();
 
         class Voice {
@@ -270,6 +278,8 @@
                 this.envelope.gain.value = 0;
                 this.out = ctx.createGain();
 
+                this.filter = ctx.createBiquadFilter();
+
                 this.vco1.start();
                 this.vco2.start();
                 this.vco3.start();
@@ -279,6 +289,7 @@
                 this._vco2mul = .5;
                 this._vco3mul = 5 / 4;
                 this._vco4mul = 4;
+                this._filterFrequencyMul = 1;
 
                 this.updateFreq();
 
@@ -286,12 +297,18 @@
                 connect(this.vco2, this.vco2mute, this.envelope);
                 connect(this.vco3, this.vco3mute, this.envelope);
                 connect(this.vco4, this.vco4mute, this.envelope);
-                connect(this.envelope, this.out);
+                connect(this.envelope, this.filter, this.out);
+            }
+
+            set filterFrequencyMul(v) {
+                this._filterFrequencyMul = v;
+                this.updateFilter();
             }
 
             set freq(v) {
                 this._freq = v;
                 this.updateFreq();
+                this.updateFilter();
             }
 
             set vco2mul(v) {
@@ -327,9 +344,14 @@
                 this.vco3.frequency.setValueAtTime(this._freq * this._vco3mul, ctx.currentTime + 0.001);
                 this.vco4.frequency.setValueAtTime(this._freq * this._vco4mul, ctx.currentTime + 0.001);
             }
+
+            updateFilter() {
+                this.filter.frequency.setValueAtTime(this._freq * this._filterFrequencyMul, ctx.currentTime + 0.001);
+            }
         }
 
         envelope.gain.value = 0;
+
 
         let attack = 40;
         let decay = 50;
@@ -386,6 +408,33 @@
             '\u2A58': 'sawtooth'
         }
 
+        const targets = ['off', 'gain', 'filter'];
+
+        let lfo1currentTarget = [targets[0]];
+        let lfo2currentTarget = [targets[0]];
+        const lfo1target = value(targets[0], v => rewire(lfo1, v, lfo1currentTarget));
+        const lfo2target = value(targets[0], v => rewire(lfo1, v, lfo2currentTarget));
+
+        function rewire(lfo, target, currentTarget) {
+            if (target == currentTarget[0]) return;
+
+            lfo.disconnect();
+
+            switch (target) {
+                case 'gain':
+                    connect(lfo, gainNode.gain);
+                    break;
+            }
+
+            currentTarget[0] = target;
+        }
+
+        const lfo1type = value(Object.keys(shapes)[0], v => lfo1.type = shapes[v])
+        const lfo2type = value(Object.keys(shapes)[0], v => lfo2.type = shapes[v])
+
+        const lfo1freq = value(1000, f => lfo1.frequency.value = f / 100);
+        const lfo2freq = value(1000, f => lfo2.frequency.value = f / 100);
+
         const vco1type = value(Object.keys(shapes)[1], v => { voices.forEach(voice => voice.vco1.type = shapes[v]) });
         const vco2type = value(Object.keys(shapes)[0], v => { voices.forEach(voice => voice.vco2.type = shapes[v]) });
         const vco3type = value(Object.keys(shapes)[1], v => { voices.forEach(voice => voice.vco3.type = shapes[v]) });
@@ -424,6 +473,12 @@
             return r;
         }
 
+        const filterFreqMul = new value(1000, v => voices.forEach(voice => voice.filterFrequencyMul = v / 1000));
+        const filterDetune = new value(0, v => voices.forEach(voice => voice.filter.detune.q = v));
+        const filterQ = new value(0, v => voices.forEach(voice => voice.filter.Q.value = v / 1000));
+        const filterGain = new value(0, v => voices.forEach(voice => voice.filter.gain.value = v));
+        const filterType = new value('allpass', v => voices.forEach(voice => voice.filter.type = v));
+
         bindCheckbox('mute', value => muteNode.gain.value = value ? 0 : 1);
 
         addRange("Volume", 0, 3000, 1000, x => gainNode.gain.value = x / 1000);
@@ -446,11 +501,41 @@
         addRange('Sustain', 0, 1000, 200, x => (sustain = x / 1000));
         addRange('Release', 1, 1000, 50, x => (release = x / 1000) * 1000 + 'ms');
 
-        // addRange('Filter frequency', 0, 2000, 440, x => filterMultiplier(x / 1000));
-        // addRange('Filter detune', -1200, 1200, 0, x => filter.detune.value = x);
-        // addRange('Filter Q', 0, 20, 0, x => filter.Q.value = x);
-        // addRange('Filter gain', -50, 50, 0, x => filter.gain.value = x);
-        // addSelector(['allpass', 'lowpass', 'highpass', 'bandpass', 'lowshelf', 'highshelf', 'peaking', 'notch'], value => filter.type = value)
+        addPanel("LFO1",
+            div(makeSelector('', Object.keys(shapes), lfo1type)),
+            div(makeSelector('target', targets, lfo1target)),
+            div(makeRange('frequency', 1, 5000, lfo1freq))
+        );
+
+        addPanel("LFO2",
+            div(makeSelector('', Object.keys(shapes), lfo2type)),
+            div(makeSelector('target', targets, lfo2target)),
+            div(makeRange('frequency', 1, 5000, lfo2freq))
+        );
+
+
+        addPanel('filter',
+            div(makeRange('freq', 1, 5000, filterFreqMul)),
+            div(makeRange('detune', -1200, 1200, filterDetune)),
+            div(makeRange('Q', 1, 5000, filterQ)),
+            div(makeRange('gain', -50, 50, filterGain)),
+            div(makeSelector('type', ['allpass', 'lowpass', 'highpass', 'bandpass', 'lowshelf', 'highshelf', 'peaking', 'notch'], filterType))
+        )
+
+        const delayOn = value(true, v => {
+            if (v) delayGain.connect(gainNode);
+            else delayGain.disconnect(gainNode);
+        });
+
+        delayOn.value = false;
+
+        const delayAmount = value(500, v => delay.delayTime.value = v / 1000);
+        const delayAtten = value(500, v => delayGain.gain.value = v / 1000);
+
+        addPanel('Delay',
+            div(makeCheck('Delay', delayOn), makeRange('', 0, 5000, delayAmount)),
+            div(makeRange('attenuation', 0, 999, delayAtten))
+        );
 
         // addRange("Compressor Threshold", -100, 0, 0, value => compressor.threshold.value = value);
         // addRange("Compressor Knee", 0, 100, 40, value => compressor.knee.value = value);
@@ -460,9 +545,13 @@
 
         const analyzer = ctx.createAnalyser();
 
+
+
+
         voices.forEach(voice => voice.out.connect(gainNode));
 
         connect(gainNode, analyzer, muteNode, ctx.destination);
+        connect(gainNode, delay, delayGain);
 
         function freq(mill) {
             const min = 20;
@@ -659,9 +748,9 @@
             if (idx == -1) return;
 
             envelopeClose(voices[idx].envelope.gain);
-            activations[idx].timeoutId = setTimeout(() => {
-                activations[idx].engaged = false;
+            activations[idx].engaged = false;
 
+            activations[idx].timeoutId = setTimeout(() => {
                 let id = semitone(activations[idx].semitoneDif);
                 if (activations.some(a => a.engaged && semitone(a.semitoneDif) == id))
                     return;
