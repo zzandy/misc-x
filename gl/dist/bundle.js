@@ -222,7 +222,7 @@ System.register("gl/src/matrix", [], function (exports_3, context_3) {
 });
 System.register("gl/src/transform", ["gl/src/matrix"], function (exports_4, context_4) {
     "use strict";
-    var matrix_1, Camera, translate3d, scale3d, diff, vectorAngleQuaternion, rotateAArroundB, rotate3d, makePerspective, mul, makeProjection3d, projection, cross, epsilon, tau, deg, length, substract, norm, lookAt;
+    var matrix_1, Camera, translate3d, scale3d, sum, diff, vectorAngleQuaternion, rotateAArroundB, rotate3d, makePerspective, mul, makeProjection3d, projection, cross, epsilon, tau, deg, length, substract, norm, lookAt;
     var __moduleName = context_4 && context_4.id;
     return {
         setters: [
@@ -257,6 +257,9 @@ System.register("gl/src/transform", ["gl/src/matrix"], function (exports_4, cont
                     0, 0, scale[2], 0,
                     0, 0, 0, 1
                 ];
+            });
+            exports_4("sum", sum = function (a, b) {
+                return [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
             });
             exports_4("diff", diff = function (a, b) {
                 return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
@@ -561,9 +564,9 @@ System.register("lib/color", [], function (exports_7, context_7) {
         }
     };
 });
-System.register("gl/src/scene-helpers", ["gl/src/mesh", "lib/color"], function (exports_8, context_8) {
+System.register("gl/src/scene-helpers", ["gl/src/mesh", "lib/color", "gl/src/transform", "gl/src/matrix"], function (exports_8, context_8) {
     "use strict";
-    var mesh_1, color_1, s3, s6, rnd, makeCube, repeat, makeGrid, makeDodecahedronMesh, makeDodecahedrons, makeCubeMesh, makeQuadColors;
+    var mesh_1, color_1, transform_2, matrix_2, s3, s6, rnd, makeCube, repeat, makeGrid, makeDodecahedronMesh, makeDodecahedrons, makeSimplexMesh, makeCubeMesh, makeQuadColors;
     var __moduleName = context_8 && context_8.id;
     function tri(a, b, c) {
         return __spreadArray(__spreadArray(__spreadArray([], a, true), b, true), c, true);
@@ -578,6 +581,12 @@ System.register("gl/src/scene-helpers", ["gl/src/mesh", "lib/color"], function (
             },
             function (color_1_1) {
                 color_1 = color_1_1;
+            },
+            function (transform_2_1) {
+                transform_2 = transform_2_1;
+            },
+            function (matrix_2_1) {
+                matrix_2 = matrix_2_1;
             }
         ],
         execute: function () {
@@ -602,13 +611,17 @@ System.register("gl/src/scene-helpers", ["gl/src/mesh", "lib/color"], function (
                 return res;
             };
             exports_8("makeGrid", makeGrid = function (gl, n, m, d, color) {
-                var mesh = makeCubeMesh(0, 0, 0, .1, .1, .1);
+                var mesh = makeDodecahedronMesh(.1);
                 var p = new mesh_1.SimpleProgram(gl, 'vertex', 'fragment');
                 var colors = new Float32Array(repeat(color, mesh.length));
                 var res = [];
+                var l = Math.ceil((n + m) / 2);
+                var offset = [-n * d / 2, -m * d / 2, -l * d / 2];
                 for (var i = 0; i < n; ++i)
                     for (var j = 0; j < m; ++j) {
-                        res.push(new mesh_1.Mesh(gl, p, mesh, colors, [i * d - n * d / 2, j * d - m * d / 2, 0]));
+                        for (var k = 0; k < l; ++k) {
+                            res.push(new mesh_1.Mesh(gl, p, mesh, colors, transform_2.sum(offset, [i * d, j * d, k * d])));
+                        }
                     }
                 return res;
             });
@@ -658,6 +671,16 @@ System.register("gl/src/scene-helpers", ["gl/src/mesh", "lib/color"], function (
                             ]));
                 return res;
             });
+            makeSimplexMesh = function (pos, r) {
+                var top = [0, 0, r, 1];
+                var b1 = matrix_2.mul44v(transform_2.rotate3d(transform_2.vectorAngleQuaternion([1, 0, 0], 120 * transform_2.deg)), top);
+                var b2 = matrix_2.mul44v(transform_2.rotate3d(transform_2.vectorAngleQuaternion([0, 0, 1], 120 * transform_2.deg)), b1);
+                var b3 = matrix_2.mul44v(transform_2.rotate3d(transform_2.vectorAngleQuaternion([0, 0, 1], -120 * transform_2.deg)), b1);
+                function t(a, b, c) {
+                    return [a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2]];
+                }
+                return new Float32Array(__spreadArray(__spreadArray(__spreadArray(__spreadArray([], t(top, b1, b2), true), t(top, b2, b3), true), t(top, b3, b1), true), t(b3, b2, b1), true));
+            };
             makeCubeMesh = function (x, y, z, w, hy, dz) {
                 var a = [x, y, z];
                 var b = [x + w, y, z];
@@ -752,15 +775,15 @@ System.register("lib/loop", [], function (exports_9, context_9) {
 });
 System.register("gl/src/mouse", ["gl/src/matrix", "gl/src/transform"], function (exports_10, context_10) {
     "use strict";
-    var matrix_2, transform_2, clamp, ViewController, MouseAdapter;
+    var matrix_3, transform_3, clamp, ViewController, MouseAdapter;
     var __moduleName = context_10 && context_10.id;
     return {
         setters: [
-            function (matrix_2_1) {
-                matrix_2 = matrix_2_1;
+            function (matrix_3_1) {
+                matrix_3 = matrix_3_1;
             },
-            function (transform_2_1) {
-                transform_2 = transform_2_1;
+            function (transform_3_1) {
+                transform_3 = transform_3_1;
             }
         ],
         execute: function () {
@@ -770,12 +793,12 @@ System.register("gl/src/mouse", ["gl/src/matrix", "gl/src/transform"], function 
             ViewController = (function () {
                 function ViewController(cam) {
                     this.cam = cam;
-                    this.minfov = 3 * transform_2.deg;
-                    this.maxfov = 140 * transform_2.deg;
-                    this.qpanh = 1 / 4 * transform_2.deg;
-                    this.qpanv = 1 / 32 * transform_2.deg;
-                    this.qorbh = 1 / 4 * transform_2.deg;
-                    this.qorbv = 1 / 24 * transform_2.deg;
+                    this.minfov = 3 * transform_3.deg;
+                    this.maxfov = 140 * transform_3.deg;
+                    this.qpanh = 1 / 4 * transform_3.deg;
+                    this.qpanv = 1 / 32 * transform_3.deg;
+                    this.qorbh = 1 / 4 * transform_3.deg;
+                    this.qorbv = 1 / 24 * transform_3.deg;
                 }
                 ViewController.prototype.zoom = function (delta) {
                     var k = 1.2;
@@ -784,15 +807,15 @@ System.register("gl/src/mouse", ["gl/src/matrix", "gl/src/transform"], function 
                 };
                 ViewController.prototype.turn = function (dx, dy) {
                     var cam = this.cam;
-                    cam.lookat = transform_2.rotateAArroundB(cam.lookat, cam.pos, dx * this.qpanh, cam.up);
-                    cam.lookat = transform_2.rotateAArroundB(cam.lookat, cam.pos, dy * this.qpanv, transform_2.cross(cam.up, transform_2.diff(cam.pos, cam.lookat)));
+                    cam.lookat = transform_3.rotateAArroundB(cam.lookat, cam.pos, dx * this.qpanh, cam.up);
+                    cam.lookat = transform_3.rotateAArroundB(cam.lookat, cam.pos, dy * this.qpanv, transform_3.cross(cam.up, transform_3.diff(cam.pos, cam.lookat)));
                 };
                 ViewController.prototype.orbit = function (dx, dy) {
                     var cam = this.cam;
-                    var v = transform_2.cross(cam.up, transform_2.diff(cam.pos, cam.lookat));
-                    cam.pos = transform_2.rotateAArroundB(cam.pos, cam.lookat, dx * this.qorbh, cam.up);
-                    cam.pos = transform_2.rotateAArroundB(cam.pos, cam.lookat, -dy * this.qorbv, v);
-                    cam.up = matrix_2.mul44v(transform_2.rotate3d(transform_2.vectorAngleQuaternion(v, -dy * this.qorbv)), [cam.up[0], cam.up[1], cam.up[2], 1]).slice(0, 3);
+                    var v = transform_3.cross(cam.up, transform_3.diff(cam.pos, cam.lookat));
+                    cam.pos = transform_3.rotateAArroundB(cam.pos, cam.lookat, dx * this.qorbh, cam.up);
+                    cam.pos = transform_3.rotateAArroundB(cam.pos, cam.lookat, -dy * this.qorbv, v);
+                    cam.up = matrix_3.mul44v(transform_3.rotate3d(transform_3.vectorAngleQuaternion(v, -dy * this.qorbv)), [cam.up[0], cam.up[1], cam.up[2], 1]).slice(0, 3);
                 };
                 return ViewController;
             }());
@@ -826,7 +849,7 @@ System.register("gl/src/mouse", ["gl/src/matrix", "gl/src/transform"], function 
 });
 System.register("gl/src/main", ["lib/canvas", "gl/src/scene-helpers", "gl/src/matrix", "gl/src/transform", "lib/loop", "gl/src/mouse"], function (exports_11, context_11) {
     "use strict";
-    var canvas_1, scene_helpers_1, matrix_3, transform_3, loop_1, mouse_1, run, init, fixed, render;
+    var canvas_1, scene_helpers_1, matrix_4, transform_4, loop_1, mouse_1, run, init, fixed, render;
     var __moduleName = context_11 && context_11.id;
     return {
         setters: [
@@ -836,11 +859,11 @@ System.register("gl/src/main", ["lib/canvas", "gl/src/scene-helpers", "gl/src/ma
             function (scene_helpers_1_1) {
                 scene_helpers_1 = scene_helpers_1_1;
             },
-            function (matrix_3_1) {
-                matrix_3 = matrix_3_1;
+            function (matrix_4_1) {
+                matrix_4 = matrix_4_1;
             },
-            function (transform_3_1) {
-                transform_3 = transform_3_1;
+            function (transform_4_1) {
+                transform_4 = transform_4_1;
             },
             function (loop_1_1) {
                 loop_1 = loop_1_1;
@@ -861,7 +884,7 @@ System.register("gl/src/main", ["lib/canvas", "gl/src/scene-helpers", "gl/src/ma
                 var state = {
                     gl: gl,
                     aspect: gl.canvas.width / gl.canvas.height,
-                    cam: new transform_3.Camera([20, 20, 10], [0, 0, 0], [0, 0, 1], 80 * transform_3.deg),
+                    cam: new transform_4.Camera([20, 20, 10], [0, 0, 0], [0, 0, 1], 80 * transform_4.deg),
                     meshes: __spreadArray(__spreadArray([scene_helpers_1.makeCube(gl)], scene_helpers_1.makeGrid(gl, 20, 20, 5, [1, 1, 1]), true), scene_helpers_1.makeDodecahedrons(gl, 3, 7, 7, 5), true)
                 };
                 var mouse = new mouse_1.MouseAdapter(new mouse_1.ViewController(state.cam));
@@ -873,9 +896,9 @@ System.register("gl/src/main", ["lib/canvas", "gl/src/scene-helpers", "gl/src/ma
             render = function (delta, state) {
                 var cam = state.cam;
                 var gl = state.gl;
-                var pr = transform_3.makePerspective(cam.fov, state.aspect, 1, 100000);
-                var view = matrix_3.inverse(transform_3.lookAt(cam.pos, cam.lookat, cam.up));
-                var proj = matrix_3.mul44(view, pr);
+                var pr = transform_4.makePerspective(cam.fov, state.aspect, 1, 100000);
+                var view = matrix_4.inverse(transform_4.lookAt(cam.pos, cam.lookat, cam.up));
+                var proj = matrix_4.mul44(view, pr);
                 gl.enable(gl.CULL_FACE);
                 gl.enable(gl.DEPTH_TEST);
                 gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);

@@ -1,6 +1,8 @@
 import { Mesh, SimpleProgram } from './mesh';
-import { Vec3, Matrix4 } from './types';
+import { Vec3, Matrix4, Vec4 } from './types';
 import { hcy } from '../../lib/color';
+import { deg, rotate3d, sum, vectorAngleQuaternion } from './transform';
+import { mul44v } from './matrix';
 
 const s3 = Math.sqrt(3);
 const s6 = Math.sqrt(6);
@@ -39,14 +41,20 @@ function quad(a: Vec3, b: Vec3, c: Vec3, d: Vec3) {
 }
 
 export const makeGrid = (gl: WebGLRenderingContext, n: number, m: number, d: number, color: [number, number, number]) => {
-    const mesh = makeCubeMesh(0, 0, 0, .1, .1, .1);
+    const mesh = makeDodecahedronMesh(.1)
     const p = new SimpleProgram(gl, 'vertex', 'fragment');
     const colors = new Float32Array(repeat(color, mesh.length));
     const res = []
 
+    let l = Math.ceil((n + m) / 2);
+
+    let offset: Vec3 = [-n * d / 2, -m * d / 2, -l * d / 2];
+
     for (let i = 0; i < n; ++i)
         for (let j = 0; j < m; ++j) {
-            res.push(new Mesh(gl, p, mesh, colors, [i * d - n * d / 2, j * d - m * d / 2, 0]))
+            for (let k = 0; k < l; ++k) {
+                res.push(new Mesh(gl, p, mesh, colors, sum(offset, [i*d, j*d, k*d])))
+            }
         }
 
     return res;
@@ -117,6 +125,24 @@ export const makeDodecahedrons = (gl: WebGLRenderingContext, a: number, cols: nu
                     ]));
 
     return res;
+}
+
+const makeSimplexMesh = (pos: Vec3, r: number) => {
+    const top: Vec4 = [0, 0, r, 1];
+    const b1 = mul44v(rotate3d(vectorAngleQuaternion([1, 0, 0], 120 * deg)), top);
+    const b2 = mul44v(rotate3d(vectorAngleQuaternion([0, 0, 1], 120 * deg)), b1);
+    const b3 = mul44v(rotate3d(vectorAngleQuaternion([0, 0, 1], -120 * deg)), b1);
+
+    function t(a: Vec4, b: Vec4, c: Vec4) {
+        return [a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2]]
+    }
+
+    return new Float32Array([
+        ...t(top, b1, b2),
+        ...t(top, b2, b3),
+        ...t(top, b3, b1),
+        ...t(b3, b2, b1),
+    ]);
 }
 
 const makeCubeMesh = (x: number, y: number, z: number, w: number, hy: number, dz: number) => {
