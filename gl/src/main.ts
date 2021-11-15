@@ -3,7 +3,7 @@ import { makeCube, makeGrid, makeDodecahedrons } from './scene-helpers';
 import { inverse, mul44 } from './matrix';
 import { Camera, deg, makePerspective, lookAt } from './transform';
 import { Loop } from '../../lib/loop';
-import { Mesh, SimpleProgram } from './Mesh';
+import { Mesh } from './Mesh';
 import { ViewController, MouseAdapter } from './mouse';
 
 export const run = () => {

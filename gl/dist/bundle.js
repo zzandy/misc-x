@@ -1,5 +1,15 @@
+var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
+};
 System.register("lib/canvas", [], function (exports_1, context_1) {
     "use strict";
+    var getCanvas, fullscreenCanvas3d;
     var __moduleName = context_1 && context_1.id;
     function fullscreenCanvas(relative, noAlpha) {
         if (relative === void 0) { relative = false; }
@@ -35,11 +45,11 @@ System.register("lib/canvas", [], function (exports_1, context_1) {
             ctx.fill();
             return ctx;
         };
+        document.body.style.overflow = 'hidden';
         document.body.appendChild(can);
         return ctx;
     }
     exports_1("fullscreenCanvas", fullscreenCanvas);
-    var getCanvas, fullscreenCanvas3d;
     return {
         setters: [],
         execute: function () {
@@ -78,8 +88,8 @@ System.register("gl/src/types", [], function (exports_2, context_2) {
 });
 System.register("gl/src/matrix", [], function (exports_3, context_3) {
     "use strict";
-    var __moduleName = context_3 && context_3.id;
     var iden3, iden4, mul33, mul44v, mul44, inverse;
+    var __moduleName = context_3 && context_3.id;
     return {
         setters: [],
         execute: function () {
@@ -212,8 +222,8 @@ System.register("gl/src/matrix", [], function (exports_3, context_3) {
 });
 System.register("gl/src/transform", ["gl/src/matrix"], function (exports_4, context_4) {
     "use strict";
-    var __moduleName = context_4 && context_4.id;
     var matrix_1, Camera, translate3d, scale3d, diff, vectorAngleQuaternion, rotateAArroundB, rotate3d, makePerspective, mul, makeProjection3d, projection, cross, epsilon, tau, deg, length, substract, norm, lookAt;
+    var __moduleName = context_4 && context_4.id;
     return {
         setters: [
             function (matrix_1_1) {
@@ -336,6 +346,7 @@ System.register("gl/src/transform", ["gl/src/matrix"], function (exports_4, cont
 });
 System.register("gl/src/shader", [], function (exports_5, context_5) {
     "use strict";
+    var mimeFragmentShader, mimeVertexShader;
     var __moduleName = context_5 && context_5.id;
     function compileShader(gl, shaderSource, shaderType) {
         var shader = gl.createShader(shaderType);
@@ -380,7 +391,6 @@ System.register("gl/src/shader", [], function (exports_5, context_5) {
         return createProgram(gl, vertex, fragment);
     }
     exports_5("createProgramFromScripts", createProgramFromScripts);
-    var mimeFragmentShader, mimeVertexShader;
     return {
         setters: [],
         execute: function () {
@@ -391,8 +401,8 @@ System.register("gl/src/shader", [], function (exports_5, context_5) {
 });
 System.register("gl/src/mesh", ["gl/src/transform", "gl/src/shader"], function (exports_6, context_6) {
     "use strict";
-    var __moduleName = context_6 && context_6.id;
     var transform_1, shader_1, SimpleProgram, Mesh;
+    var __moduleName = context_6 && context_6.id;
     return {
         setters: [
             function (transform_1_1) {
@@ -470,11 +480,13 @@ System.register("gl/src/mesh", ["gl/src/transform", "gl/src/shader"], function (
 });
 System.register("lib/color", [], function (exports_7, context_7) {
     "use strict";
+    var breaks;
     var __moduleName = context_7 && context_7.id;
     function hcy(h, c, y) {
         var r = .3;
         var g = .59;
         var b = .11;
+        h %= 360;
         h /= 60;
         var k = (1 - Math.abs((h % 2) - 1));
         var K = h < 1 ? r + k * g
@@ -501,7 +513,18 @@ System.register("lib/color", [], function (exports_7, context_7) {
     }
     exports_7("hcy", hcy);
     function wheelHcy(h, c, y) {
-        var h2 = h < 180 ? 2 * h / 3 : 120 + (h - 180) * 4 / 3;
+        var _a;
+        h %= 360;
+        var h2 = h;
+        var _b = [0, 0], s0 = _b[0], t0 = _b[1];
+        for (var _i = 0, breaks_1 = breaks; _i < breaks_1.length; _i++) {
+            var _c = breaks_1[_i], t = _c[0], s = _c[1];
+            if (h < s) {
+                h2 = t0 + (h - s0) * (t - t0) / (s - s0);
+                break;
+            }
+            _a = [s, t], s0 = _a[0], t0 = _a[1];
+        }
         return hcy(h2, c, y);
     }
     exports_7("wheelHcy", wheelHcy);
@@ -521,27 +544,33 @@ System.register("lib/color", [], function (exports_7, context_7) {
     }
     exports_7("hcy2rgb", hcy2rgb);
     function rgbdata2rgb(t, a) {
-        if (t.length == 3)
-            return tuple2rgb(t[0], t[1], t[2], a === undefined ? 1 : a);
-        return tuple2rgb(t[0], t[1], t[2], t[3]);
+        return tuple2rgb(t[0], t[1], t[2], a === undefined ? 1 : a);
     }
     exports_7("rgbdata2rgb", rgbdata2rgb);
     return {
         setters: [],
         execute: function () {
+            breaks = [
+                [39, 60],
+                [60, 120],
+                [120, 180],
+                [240, 240],
+                [290, 300],
+                [360, 360]
+            ];
         }
     };
 });
 System.register("gl/src/scene-helpers", ["gl/src/mesh", "lib/color"], function (exports_8, context_8) {
     "use strict";
+    var mesh_1, color_1, s3, s6, rnd, makeCube, repeat, makeGrid, makeDodecahedronMesh, makeDodecahedrons, makeCubeMesh, makeQuadColors;
     var __moduleName = context_8 && context_8.id;
     function tri(a, b, c) {
-        return a.concat(b, c);
+        return __spreadArray(__spreadArray(__spreadArray([], a, true), b, true), c, true);
     }
     function quad(a, b, c, d) {
-        return tri(a, b, c).concat(tri(c, d, a));
+        return __spreadArray(__spreadArray([], tri(a, b, c), true), tri(c, d, a), true);
     }
-    var mesh_1, color_1, s3, s6, rnd, makeCube, repeat, makeGrid, makeDodecahedronMesh, makeDodecahedrons, makeCubeMesh, makeQuadColors;
     return {
         setters: [
             function (mesh_1_1) {
@@ -609,7 +638,7 @@ System.register("gl/src/scene-helpers", ["gl/src/mesh", "lib/color"], function (
                 var iquad = function (i, j, k, l) {
                     return quad(v[i], v[j], v[k], v[l]);
                 };
-                return new Float32Array(iquad(0, 3, 2, 1).concat(iquad(0, 5, 4, 3), iquad(0, 1, 6, 5), iquad(2, 8, 7, 1), iquad(2, 3, 9, 8), iquad(4, 10, 9, 3), iquad(4, 5, 11, 10), iquad(6, 12, 11, 5), iquad(6, 1, 7, 12), iquad(7, 8, 13, 12), iquad(9, 10, 13, 8), iquad(11, 12, 13, 10)));
+                return new Float32Array(__spreadArray(__spreadArray(__spreadArray(__spreadArray(__spreadArray(__spreadArray(__spreadArray(__spreadArray(__spreadArray(__spreadArray(__spreadArray(__spreadArray([], iquad(0, 3, 2, 1), true), iquad(0, 5, 4, 3), true), iquad(0, 1, 6, 5), true), iquad(2, 8, 7, 1), true), iquad(2, 3, 9, 8), true), iquad(4, 10, 9, 3), true), iquad(4, 5, 11, 10), true), iquad(6, 12, 11, 5), true), iquad(6, 1, 7, 12), true), iquad(7, 8, 13, 12), true), iquad(9, 10, 13, 8), true), iquad(11, 12, 13, 10), true));
             });
             exports_8("makeDodecahedrons", makeDodecahedrons = function (gl, a, cols, rows, layers, o) {
                 if (o === void 0) { o = [0, 0, 0]; }
@@ -662,8 +691,8 @@ System.register("gl/src/scene-helpers", ["gl/src/mesh", "lib/color"], function (
 });
 System.register("lib/loop", [], function (exports_9, context_9) {
     "use strict";
-    var __moduleName = context_9 && context_9.id;
     var Loop;
+    var __moduleName = context_9 && context_9.id;
     return {
         setters: [],
         execute: function () {
@@ -685,7 +714,7 @@ System.register("lib/loop", [], function (exports_9, context_9) {
                     var time = 0;
                     var frame = function (ts) {
                         var force = time == 0;
-                        var delta = ts - time;
+                        var delta = force ? 0 : ts - time;
                         time = ts;
                         state = _this.update(delta, state, force);
                         if (_this.isRunning)
@@ -698,7 +727,6 @@ System.register("lib/loop", [], function (exports_9, context_9) {
                 };
                 Loop.prototype.update = function (delta, state, force) {
                     if (force === void 0) { force = false; }
-                    var time = new Date().getTime();
                     var newState = state;
                     this.fixedAccum += delta;
                     var upd = false;
@@ -722,12 +750,15 @@ System.register("lib/loop", [], function (exports_9, context_9) {
         }
     };
 });
-System.register("gl/src/mouse", ["gl/src/transform"], function (exports_10, context_10) {
+System.register("gl/src/mouse", ["gl/src/matrix", "gl/src/transform"], function (exports_10, context_10) {
     "use strict";
+    var matrix_2, transform_2, clamp, ViewController, MouseAdapter;
     var __moduleName = context_10 && context_10.id;
-    var transform_2, clamp, ViewController, MouseAdapter;
     return {
         setters: [
+            function (matrix_2_1) {
+                matrix_2 = matrix_2_1;
+            },
             function (transform_2_1) {
                 transform_2 = transform_2_1;
             }
@@ -758,8 +789,10 @@ System.register("gl/src/mouse", ["gl/src/transform"], function (exports_10, cont
                 };
                 ViewController.prototype.orbit = function (dx, dy) {
                     var cam = this.cam;
+                    var v = transform_2.cross(cam.up, transform_2.diff(cam.pos, cam.lookat));
                     cam.pos = transform_2.rotateAArroundB(cam.pos, cam.lookat, dx * this.qorbh, cam.up);
-                    cam.pos = transform_2.rotateAArroundB(cam.pos, cam.lookat, -dy * this.qorbv, transform_2.cross(cam.up, transform_2.diff(cam.pos, cam.lookat)));
+                    cam.pos = transform_2.rotateAArroundB(cam.pos, cam.lookat, -dy * this.qorbv, v);
+                    cam.up = matrix_2.mul44v(transform_2.rotate3d(transform_2.vectorAngleQuaternion(v, -dy * this.qorbv)), [cam.up[0], cam.up[1], cam.up[2], 1]).slice(0, 3);
                 };
                 return ViewController;
             }());
@@ -793,8 +826,8 @@ System.register("gl/src/mouse", ["gl/src/transform"], function (exports_10, cont
 });
 System.register("gl/src/main", ["lib/canvas", "gl/src/scene-helpers", "gl/src/matrix", "gl/src/transform", "lib/loop", "gl/src/mouse"], function (exports_11, context_11) {
     "use strict";
+    var canvas_1, scene_helpers_1, matrix_3, transform_3, loop_1, mouse_1, run, init, fixed, render;
     var __moduleName = context_11 && context_11.id;
-    var canvas_1, scene_helpers_1, matrix_2, transform_3, loop_1, mouse_1, run, init, fixed, render;
     return {
         setters: [
             function (canvas_1_1) {
@@ -803,8 +836,8 @@ System.register("gl/src/main", ["lib/canvas", "gl/src/scene-helpers", "gl/src/ma
             function (scene_helpers_1_1) {
                 scene_helpers_1 = scene_helpers_1_1;
             },
-            function (matrix_2_1) {
-                matrix_2 = matrix_2_1;
+            function (matrix_3_1) {
+                matrix_3 = matrix_3_1;
             },
             function (transform_3_1) {
                 transform_3 = transform_3_1;
@@ -829,7 +862,7 @@ System.register("gl/src/main", ["lib/canvas", "gl/src/scene-helpers", "gl/src/ma
                     gl: gl,
                     aspect: gl.canvas.width / gl.canvas.height,
                     cam: new transform_3.Camera([20, 20, 10], [0, 0, 0], [0, 0, 1], 80 * transform_3.deg),
-                    meshes: [scene_helpers_1.makeCube(gl)].concat(scene_helpers_1.makeGrid(gl, 20, 20, 5, [1, 1, 1]), scene_helpers_1.makeDodecahedrons(gl, 3, 7, 7, 5))
+                    meshes: __spreadArray(__spreadArray([scene_helpers_1.makeCube(gl)], scene_helpers_1.makeGrid(gl, 20, 20, 5, [1, 1, 1]), true), scene_helpers_1.makeDodecahedrons(gl, 3, 7, 7, 5), true)
                 };
                 var mouse = new mouse_1.MouseAdapter(new mouse_1.ViewController(state.cam));
                 return state;
@@ -841,8 +874,8 @@ System.register("gl/src/main", ["lib/canvas", "gl/src/scene-helpers", "gl/src/ma
                 var cam = state.cam;
                 var gl = state.gl;
                 var pr = transform_3.makePerspective(cam.fov, state.aspect, 1, 100000);
-                var view = matrix_2.inverse(transform_3.lookAt(cam.pos, cam.lookat, cam.up));
-                var proj = matrix_2.mul44(view, pr);
+                var view = matrix_3.inverse(transform_3.lookAt(cam.pos, cam.lookat, cam.up));
+                var proj = matrix_3.mul44(view, pr);
                 gl.enable(gl.CULL_FACE);
                 gl.enable(gl.DEPTH_TEST);
                 gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);

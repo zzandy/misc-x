@@ -1,4 +1,4 @@
-import { Matrix3, Matrix4, Vec3, Vec4 } from 'types';
+import { Matrix4, Vec3, Vec4 } from 'types';
 import { mul44, mul44v } from 'matrix';
 
 export class Camera {
@@ -75,7 +75,7 @@ export const mul = (...matrices: Matrix4[]): Matrix4 => {
     return matrices.reverse().reduce((a, b) => mul44(a, b))
 }
 
-export const makeProjection3d = (view: Matrix4, proj: Matrix4, origin: Matrix4, rv: Vec3, ra: number, scales: Matrix4): Matrix4 => {
+export const makeProjection3d = (view: Matrix4, proj: Matrix4, origin: Vec3, rv: Vec3, ra: number, scales: Vec3): Matrix4 => {
     const scale = scale3d(scales);
     const rot = rotate3d(vectorAngleQuaternion(rv, ra));
     const translate = translate3d(origin);

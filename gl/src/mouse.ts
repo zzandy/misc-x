@@ -1,4 +1,6 @@
-import { Camera, deg, rotateAArroundB, cross, diff } from './transform';
+import { mul44v } from './matrix';
+import { Camera, deg, rotateAArroundB, cross, diff, rotate3d, vectorAngleQuaternion } from './transform';
+import { Vec3 } from './types';
 
 const clamp = (v: number, min: number, max: number) => {
     return v > max ? max : v < min ? min : v;
@@ -8,14 +10,13 @@ export class ViewController {
     private readonly minfov = 3 * deg;
     private readonly maxfov = 140 * deg;
 
-    private readonly qpanh = 1/4 * deg;
-    private readonly qpanv = 1/32 * deg;
+    private readonly qpanh = 1 / 4 * deg;
+    private readonly qpanv = 1 / 32 * deg;
 
-    private readonly qorbh = 1/4 * deg;
-    private readonly qorbv = 1/24 * deg;
+    private readonly qorbh = 1 / 4 * deg;
+    private readonly qorbv = 1 / 24 * deg;
 
-    constructor(private readonly cam: Camera) {
-    }
+    constructor(private readonly cam: Camera) { }
 
     public zoom(delta: number) {
         const k = 1.2;
@@ -34,9 +35,11 @@ export class ViewController {
     /// TODO: camera's up needs to be rotated as well.
     public orbit(dx: number, dy: number) {
         const cam = this.cam;
+        const v = cross(cam.up, diff(cam.pos, cam.lookat));
 
         cam.pos = rotateAArroundB(cam.pos, cam.lookat, dx * this.qorbh, cam.up);
-        cam.pos = rotateAArroundB(cam.pos, cam.lookat, -dy * this.qorbv, cross(cam.up, diff(cam.pos, cam.lookat)));
+        cam.pos = rotateAArroundB(cam.pos, cam.lookat, -dy * this.qorbv, v);
+        cam.up = <Vec3>mul44v(rotate3d(vectorAngleQuaternion(v, -dy * this.qorbv)), [cam.up[0], cam.up[1], cam.up[2], 1]).slice(0,3);
     }
 }
 
@@ -47,7 +50,7 @@ export class MouseAdapter {
         addEventListener('mousemove', (e) => this.handleMouseMove(e));
     }
 
-    private handleWheel(e: MouseWheelEvent) {
+    private handleWheel(e: WheelEvent) {
         this.controller.zoom(e.deltaY);
 
         e.preventDefault();
