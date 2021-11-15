@@ -28,8 +28,12 @@ export const scale3d = (scale: Vec3): Matrix4 => {
     ];
 }
 
-export const sum = (a: Vec3, b: Vec3): Vec3 => {
-    return [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+export const sum = (...vectors: Vec3[]): Vec3 => {
+    return <Vec3>vectors[0].map((_, i) => vectors.reduce((s, v) => v[i] + s, 0));
+}
+
+export const scale = (vector: Vec3, scalar: number): Vec3 => {
+    return [vector[0] * scalar, vector[1] * scalar, vector[2] * scalar];
 }
 
 export const diff = (a: Vec3, b: Vec3): Vec3 => {

@@ -1,5 +1,5 @@
 import { mul44v } from './matrix';
-import { Camera, deg, rotateAArroundB, cross, diff, rotate3d, vectorAngleQuaternion } from './transform';
+import { Camera, deg, rotateAArroundB, cross, diff, rotate3d, vectorAngleQuaternion, mul, sum, norm, scale } from './transform';
 import { Vec3 } from './types';
 
 const clamp = (v: number, min: number, max: number) => {
@@ -32,14 +32,28 @@ export class ViewController {
         cam.lookat = rotateAArroundB(cam.lookat, cam.pos, dy * this.qpanv, cross(cam.up, diff(cam.pos, cam.lookat)));
     }
 
-    /// TODO: camera's up needs to be rotated as well.
     public orbit(dx: number, dy: number) {
         const cam = this.cam;
         const v = cross(cam.up, diff(cam.pos, cam.lookat));
 
         cam.pos = rotateAArroundB(cam.pos, cam.lookat, dx * this.qorbh, cam.up);
         cam.pos = rotateAArroundB(cam.pos, cam.lookat, -dy * this.qorbv, v);
-        cam.up = <Vec3>mul44v(rotate3d(vectorAngleQuaternion(v, -dy * this.qorbv)), [cam.up[0], cam.up[1], cam.up[2], 1]).slice(0,3);
+        cam.up = <Vec3>mul44v(rotate3d(vectorAngleQuaternion(v, -dy * this.qorbv)), [cam.up[0], cam.up[1], cam.up[2], 1]).slice(0, 3);
+    }
+
+    public move(v: Vec3) {
+        mul
+        const cam = this.cam;
+
+        console.log(v, cam.lookat, cam.pos, norm(diff(cam.lookat, cam.pos)))
+        let dir = norm(diff(cam.lookat, cam.pos));
+        let side = norm(cross(dir, cam.up));
+
+        v = sum(scale(dir, v[0]), scale(side, v[1]), scale(cam.up, v[2]));
+
+
+        cam.pos = sum(cam.pos, v);
+        cam.lookat = sum(cam.lookat, v);
     }
 }
 
@@ -48,6 +62,36 @@ export class MouseAdapter {
         addEventListener('wheel', (e) => this.handleWheel(e));
         addEventListener('contextmenu', (e) => this.handleContextMenu(e), true);
         addEventListener('mousemove', (e) => this.handleMouseMove(e));
+        addEventListener('keydown', (e) => this.handleKey(e))
+    }
+
+    private handleKey(e: KeyboardEvent) {
+        let unhandled = false;
+        switch (e.code) {
+            case 'KeyW':
+                this.controller.move([1, 0, 0])
+                break;
+            case 'KeyA':
+                this.controller.move([0, -1, 0])
+                break;
+            case 'KeyS':
+                this.controller.move([-1, 0, 0])
+                break;
+            case 'KeyD':
+                this.controller.move([0, 1, 0])
+                break;
+            case 'Space':
+                this.controller.move([0, 0, 1])
+                break;
+            case 'ControlLeft':
+                this.controller.move([0, 0, -1])
+                break;
+            default:
+                unhandled = true;
+        }
+
+        if (!unhandled)
+            e.preventDefault();
     }
 
     private handleWheel(e: WheelEvent) {
