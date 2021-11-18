@@ -59,8 +59,3 @@ export class Loop<TState>{
         return newState;
     }
 }
-
-
-
-
-
