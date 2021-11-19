@@ -10,28 +10,33 @@ type TState = {
     width: number,
     height: number,
     gradient: IInterpolator<TColor>;
+    iter: number
 }
 
 let loop = new Loop(1000 / 60, init, update, render);
 loop.start();
 
-function init(): TState {
-    let ctx = fullscreenCanvas();
-    ctx.fillStyle = '#262626';
-    ctx.strokeStyle = '#aeaeae';
-    ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-    ctx.fillStyle = '#aeaeae';
-
-    let noise = new SimplexNoise2d(.4, 4, 200200200);
-    let width = ctx.canvas.width;
-    let height = ctx.canvas.height
+function generateMap(width: number, height: number) {
+    let then = performance.now()
     let q = 2;
     let ext = Math.min(width, height);
+    let noise = new SimplexNoise2d(.4, 4, 200200200);
+
     let map = new Uint8ClampedArray(width * height);
 
     for (let i = 0; i < height; ++i)
         for (let j = 0; j < width; ++j)
             map[i * width + j] = (noise.getNoise2d(j / ext * q, i / ext * q) + 1) / 2 * 255 | 0;
+
+    return map;
+}
+
+function init(): TState {
+    let ctx = fullscreenCanvas();
+
+    let width = ctx.canvas.width;
+    let height = ctx.canvas.height
+    let map = new Uint8ClampedArray(0);
 
     let bottom = '#e0af71';
     let middle = '#4e2b2a';
@@ -46,7 +51,11 @@ function init(): TState {
     gradient.addStop(.22, parseColor(bottom));
     gradient.addStop(.8, parseColor(middle));
 
-    return { ctx, map, width, height, gradient }
+    let state = { ctx, map, width, height, gradient, iter: 0 }
+
+    window.setTimeout(() => state.map = generateMap(width, height), 1);
+
+    return state;
 }
 
 function update(delta: number, state: TState) {
@@ -56,11 +65,19 @@ function update(delta: number, state: TState) {
 function render(delta: number, state: TState) {
     const { ctx, map, width, height, gradient } = state;
 
-    for (let y = 0; y < height; ++y) for (let x = 0; x < width; ++x) {
+    if (map.length == 0) return;
 
-        ctx.fillStyle = colorString(gradient.getValue(map[y * width + x] / 255));
-        ctx.fillRect(x, y, 1, 1);
+    let data = ctx.getImageData(0, 0, width, height);
+
+    for (let i = 0; i < map.length; ++i) {
+        let color = gradient.getValue(map[i] / 255);
+        data.data[i * 4] = color[0];
+        data.data[i * 4 + 1] = color[1];
+        data.data[i * 4 + 2] = color[2];
+        data.data[i * 4 + 3] = 255;
     }
+
+    ctx.putImageData(data, 0, 0);
 
     loop.stop();
 }
