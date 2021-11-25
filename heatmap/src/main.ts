@@ -1,7 +1,7 @@
 import { Loop } from '../../lib/loop';
 import { fullscreenCanvas, ICanvasRenderingContext2D } from '../../lib/canvas'
 import { SimplexNoise2d } from '../../lib/simplex';
-import { Gradient, IInterpolator, lerp } from './interpolation';
+import { Gradient, IInterpolator, lerp, easeOut, easeInOut, easeIn } from './interpolation';
 import { colorString, parseColor, TColor } from './color';
 
 type TState = {
@@ -45,11 +45,11 @@ function init(): TState {
     let shallow = '#d3b8c7';
     let edge = '#e3d1db';
 
-    let gradient = new Gradient(parseColor(deep), parseColor(top), lerp);
-    gradient.addStop(.2, parseColor(shallow));
+    let gradient = new Gradient(parseColor(deep), parseColor(top), easeIn);
+    gradient.addStop(.2, parseColor(shallow), easeInOut);
     gradient.addStop(.21, parseColor(edge));
-    gradient.addStop(.22, parseColor(bottom));
-    gradient.addStop(.8, parseColor(middle));
+    gradient.addStop(.215, parseColor(bottom));
+    gradient.addStop(.9, parseColor(middle), easeOut);
 
     let state = { ctx, map, width, height, gradient, iter: 0 }
 
