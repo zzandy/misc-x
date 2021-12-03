@@ -1,22 +1,13 @@
-import { TColor } from "./color";
+import { triplet } from "../../lib/hcl";
 
 export interface IInterpolator<TValue> {
     getValue(ratio: number): TValue;
 }
 
-export type Interpolation<TValue> = (min: TValue, max: TValue, ratio: number) => TValue;
 type easing = (v: number) => number;
 
 export function lerp(min: number, max: number, ratio: number) {
     return min + (max - min) * ratio;
-}
-
-export class Interpolator implements IInterpolator<number>{
-    constructor(private readonly min: number, private readonly max: number, private readonly funk: Interpolation<number>) { }
-
-    getValue(ratio: number): number {
-        return this.funk(this.min, this.max, ratio);
-    }
 }
 
 export function linear(x: number): number { return x }
@@ -24,23 +15,23 @@ export function easeInOut(x: number): number { return x * x * x * (x * (x * 6 - 
 export function easeOut(x: number): number { return easeInOut(x / 2) * 2 }
 export function easeIn(x: number): number { return easeInOut(x / 2 + .5) * 2 - 1 }
 
-export class Gradient implements IInterpolator<TColor>{
+export class Gradient implements IInterpolator<triplet>{
 
-    private stops: [number, TColor, easing][];
+    private stops: [number, triplet, easing][];
 
-    constructor(startColor: TColor, endColor: TColor, easeFn: easing | null = null) {
+    constructor(startColor: triplet, endColor: triplet, easeFn: easing | null = null) {
         this.stops = [
             [0, startColor, linear],
             [1, endColor, easeFn ?? linear]
         ]
     }
 
-    addStop(ratio: number, color: TColor, easeFn: easing | null = null) {
+    addStop(ratio: number, color: triplet, easeFn: easing | null = null) {
         this.stops.push([ratio, color, easeFn ?? linear]);
         this.stops = this.stops.sort((a, b) => a[0] - b[0]);
     }
 
-    getValue(ratio: number): TColor {
+    getValue(ratio: number): triplet {
         let idx = this.stops.findIndex(s => s[0] > ratio);
 
         let next = idx == -1 ? this.stops.length - 1 : idx;
