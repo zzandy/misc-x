@@ -22,7 +22,7 @@ const init = (): State => {
         gl: gl,
         aspect: gl.canvas.width / gl.canvas.height,
         cam: new Camera([20, 20, 10], [0, 0, 0], [0, 0, 1], 80 * deg),
-        meshes: [makeCube(gl), ...makeGrid(gl, 20, 20, 5, [1, 1, 1]), ...makeDodecahedrons(gl, 3, 7, 7, 5)]
+        meshes: [makeCube(gl), ...makeGrid(gl, [0, 0, 0], 100, 10, [1, 1, 1]), ...makeDodecahedrons(gl, 3, 3, 5, 7)]
     };
 
     const mouse = new MouseAdapter(new ViewController(state.cam));
