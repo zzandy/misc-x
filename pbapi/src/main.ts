@@ -8,7 +8,6 @@ async function main() {
     let nodata: string[] = [];
 
     for (let term of terms) {
-
         let matches = (await query(term))
             .filter(isPromisingName)
             .filter(isRecentEnough)
@@ -18,12 +17,21 @@ async function main() {
         if (matches.length > 0)
             data.push(...matches.map(m => [m.id, m.seeders, humanSize(m.size), m.name, humanDate(m.added)]));
         else
-            nodata.push(bold(term));
+            nodata.push(term);
     }
 
     let widths = data.reduce((w, row) => {
-        return w.map((x, i) => Math.max(x, row[i].length))
-    }, [0, 0, 0, 0, 0])
+        return w.map((x, i) => i == 0 ? x : Math.max(x, row[i].length))
+    }, [0, 5, 0, 0, 0])
+
+    console.log([
+        '    ',
+        bold('seeds'.padStart(widths[1])),
+        bold('size'.padStart(widths[2])),
+        bold('name'.padEnd(widths[3])),
+        bold('age')].join('  ')
+    );
+
 
     for (let row of data) {
         console.log([
@@ -35,7 +43,7 @@ async function main() {
         ].join('  '));
     }
 
-    console.log('No results for ' + nodata.join(', '));
+    console.log('No results for ' + nodata.map(bold).join(', '));
 }
 
 main();
@@ -48,7 +56,7 @@ async function readTerms() {
         });
     });
 
-    return data.split(/\r?\n/);
+    return data.split(/\r?\n/).map(x=>x.trim()).filter(x=>x.length > 0);
 }
 
 async function query(term: string): Promise<record[]> {
