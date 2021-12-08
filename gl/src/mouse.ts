@@ -29,7 +29,7 @@ export class ViewController {
         const cam = this.cam;
 
         cam.lookat = rotateAArroundB(cam.lookat, cam.pos, dx * this.qpanh, cam.up);
-        cam.lookat = rotateAArroundB(cam.lookat, cam.pos, dy * this.qpanv, cross(cam.up, diff(cam.pos, cam.lookat)));
+        cam.lookat = rotateAArroundB(cam.lookat, cam.pos, -dy * this.qpanv, cross(cam.up, diff(cam.pos, cam.lookat)));
     }
 
     public orbit(dx: number, dy: number) {
@@ -37,20 +37,17 @@ export class ViewController {
         const v = cross(cam.up, diff(cam.pos, cam.lookat));
 
         cam.pos = rotateAArroundB(cam.pos, cam.lookat, dx * this.qorbh, cam.up);
-        cam.pos = rotateAArroundB(cam.pos, cam.lookat, -dy * this.qorbv, v);
-        cam.up = <Vec3>mul44v(rotate3d(vectorAngleQuaternion(v, -dy * this.qorbv)), [cam.up[0], cam.up[1], cam.up[2], 1]).slice(0, 3);
+        cam.pos = rotateAArroundB(cam.pos, cam.lookat, dy * this.qorbv, v);
+        cam.up = <Vec3>mul44v(rotate3d(vectorAngleQuaternion(v, dy * this.qorbv)), [cam.up[0], cam.up[1], cam.up[2], 1]).slice(0, 3);
     }
 
     public move(v: Vec3) {
-        mul
         const cam = this.cam;
 
-        console.log(v, cam.lookat, cam.pos, norm(diff(cam.lookat, cam.pos)))
         let dir = norm(diff(cam.lookat, cam.pos));
         let side = norm(cross(dir, cam.up));
 
         v = sum(scale(dir, v[0]), scale(side, v[1]), scale(cam.up, v[2]));
-
 
         cam.pos = sum(cam.pos, v);
         cam.lookat = sum(cam.lookat, v);

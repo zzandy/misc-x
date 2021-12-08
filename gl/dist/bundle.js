@@ -222,7 +222,7 @@ System.register("gl/src/matrix", [], function (exports_3, context_3) {
 });
 System.register("gl/src/transform", ["gl/src/matrix"], function (exports_4, context_4) {
     "use strict";
-    var matrix_1, Camera, translate3d, scale3d, sum, diff, vectorAngleQuaternion, rotateAArroundB, rotate3d, makePerspective, mul, makeProjection3d, projection, cross, epsilon, tau, deg, length, substract, norm, lookAt;
+    var matrix_1, Camera, translate3d, scale3d, sum, scale, diff, vectorAngleQuaternion, rotateAArroundB, rotate3d, makePerspective, mul, makeProjection3d, projection, cross, epsilon, tau, deg, length, lengthUnder, substract, norm, lookAt;
     var __moduleName = context_4 && context_4.id;
     return {
         setters: [
@@ -258,8 +258,15 @@ System.register("gl/src/transform", ["gl/src/matrix"], function (exports_4, cont
                     0, 0, 0, 1
                 ];
             });
-            exports_4("sum", sum = function (a, b) {
-                return [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+            exports_4("sum", sum = function () {
+                var vectors = [];
+                for (var _i = 0; _i < arguments.length; _i++) {
+                    vectors[_i] = arguments[_i];
+                }
+                return vectors[0].map(function (_, i) { return vectors.reduce(function (s, v) { return v[i] + s; }, 0); });
+            });
+            exports_4("scale", scale = function (vector, scalar) {
+                return [vector[0] * scalar, vector[1] * scalar, vector[2] * scalar];
             });
             exports_4("diff", diff = function (a, b) {
                 return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
@@ -323,6 +330,9 @@ System.register("gl/src/transform", ["gl/src/matrix"], function (exports_4, cont
             exports_4("deg", deg = tau / 360);
             exports_4("length", length = function (a) {
                 return Math.sqrt(a[0] * a[0] + a[1] * a[1] + a[2] * a[2]);
+            });
+            exports_4("lengthUnder", lengthUnder = function (a, maxLen) {
+                return a[0] * a[0] + a[1] * a[1] + a[2] * a[2] < maxLen * maxLen;
             });
             exports_4("substract", substract = function (a, b) {
                 return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
@@ -610,17 +620,24 @@ System.register("gl/src/scene-helpers", ["gl/src/mesh", "lib/color", "gl/src/tra
                         res.push(a[j]);
                 return res;
             };
-            exports_8("makeGrid", makeGrid = function (gl, n, m, d, color) {
-                var mesh = makeDodecahedronMesh(.1);
+            exports_8("makeGrid", makeGrid = function (gl, center, radius, d, color) {
+                var mesh = makeSimplexMesh([0, 0, 0], .7);
                 var p = new mesh_1.SimpleProgram(gl, 'vertex', 'fragment');
                 var colors = new Float32Array(repeat(color, mesh.length));
                 var res = [];
-                var l = Math.ceil((n + m) / 2);
-                var offset = [-n * d / 2, -m * d / 2, -l * d / 2];
-                for (var i = 0; i < n; ++i)
-                    for (var j = 0; j < m; ++j) {
-                        for (var k = 0; k < l; ++k) {
-                            res.push(new mesh_1.Mesh(gl, p, mesh, colors, transform_2.sum(offset, [i * d, j * d, k * d])));
+                var sq34 = Math.sqrt(3 / 4);
+                var ext = radius * 2 / d;
+                var offset = transform_2.sum(center, [-radius, -radius, -radius]);
+                for (var i = 0; i < ext; ++i)
+                    for (var j = 0; j < ext; ++j) {
+                        for (var k = 0; k < ext; ++k) {
+                            var pos = transform_2.sum(offset, [
+                                i * d,
+                                j * d,
+                                k * d
+                            ]);
+                            if (transform_2.lengthUnder(pos, radius))
+                                res.push(new mesh_1.Mesh(gl, p, mesh, colors, pos));
                         }
                     }
                 return res;
@@ -808,14 +825,22 @@ System.register("gl/src/mouse", ["gl/src/matrix", "gl/src/transform"], function 
                 ViewController.prototype.turn = function (dx, dy) {
                     var cam = this.cam;
                     cam.lookat = transform_3.rotateAArroundB(cam.lookat, cam.pos, dx * this.qpanh, cam.up);
-                    cam.lookat = transform_3.rotateAArroundB(cam.lookat, cam.pos, dy * this.qpanv, transform_3.cross(cam.up, transform_3.diff(cam.pos, cam.lookat)));
+                    cam.lookat = transform_3.rotateAArroundB(cam.lookat, cam.pos, -dy * this.qpanv, transform_3.cross(cam.up, transform_3.diff(cam.pos, cam.lookat)));
                 };
                 ViewController.prototype.orbit = function (dx, dy) {
                     var cam = this.cam;
                     var v = transform_3.cross(cam.up, transform_3.diff(cam.pos, cam.lookat));
                     cam.pos = transform_3.rotateAArroundB(cam.pos, cam.lookat, dx * this.qorbh, cam.up);
-                    cam.pos = transform_3.rotateAArroundB(cam.pos, cam.lookat, -dy * this.qorbv, v);
-                    cam.up = matrix_3.mul44v(transform_3.rotate3d(transform_3.vectorAngleQuaternion(v, -dy * this.qorbv)), [cam.up[0], cam.up[1], cam.up[2], 1]).slice(0, 3);
+                    cam.pos = transform_3.rotateAArroundB(cam.pos, cam.lookat, dy * this.qorbv, v);
+                    cam.up = matrix_3.mul44v(transform_3.rotate3d(transform_3.vectorAngleQuaternion(v, dy * this.qorbv)), [cam.up[0], cam.up[1], cam.up[2], 1]).slice(0, 3);
+                };
+                ViewController.prototype.move = function (v) {
+                    var cam = this.cam;
+                    var dir = transform_3.norm(transform_3.diff(cam.lookat, cam.pos));
+                    var side = transform_3.norm(transform_3.cross(dir, cam.up));
+                    v = transform_3.sum(transform_3.scale(dir, v[0]), transform_3.scale(side, v[1]), transform_3.scale(cam.up, v[2]));
+                    cam.pos = transform_3.sum(cam.pos, v);
+                    cam.lookat = transform_3.sum(cam.lookat, v);
                 };
                 return ViewController;
             }());
@@ -827,7 +852,35 @@ System.register("gl/src/mouse", ["gl/src/matrix", "gl/src/transform"], function 
                     addEventListener('wheel', function (e) { return _this.handleWheel(e); });
                     addEventListener('contextmenu', function (e) { return _this.handleContextMenu(e); }, true);
                     addEventListener('mousemove', function (e) { return _this.handleMouseMove(e); });
+                    addEventListener('keydown', function (e) { return _this.handleKey(e); });
                 }
+                MouseAdapter.prototype.handleKey = function (e) {
+                    var unhandled = false;
+                    switch (e.code) {
+                        case 'KeyW':
+                            this.controller.move([1, 0, 0]);
+                            break;
+                        case 'KeyA':
+                            this.controller.move([0, -1, 0]);
+                            break;
+                        case 'KeyS':
+                            this.controller.move([-1, 0, 0]);
+                            break;
+                        case 'KeyD':
+                            this.controller.move([0, 1, 0]);
+                            break;
+                        case 'Space':
+                            this.controller.move([0, 0, 1]);
+                            break;
+                        case 'ControlLeft':
+                            this.controller.move([0, 0, -1]);
+                            break;
+                        default:
+                            unhandled = true;
+                    }
+                    if (!unhandled)
+                        e.preventDefault();
+                };
                 MouseAdapter.prototype.handleWheel = function (e) {
                     this.controller.zoom(e.deltaY);
                     e.preventDefault();
@@ -885,7 +938,7 @@ System.register("gl/src/main", ["lib/canvas", "gl/src/scene-helpers", "gl/src/ma
                     gl: gl,
                     aspect: gl.canvas.width / gl.canvas.height,
                     cam: new transform_4.Camera([20, 20, 10], [0, 0, 0], [0, 0, 1], 80 * transform_4.deg),
-                    meshes: __spreadArray(__spreadArray([scene_helpers_1.makeCube(gl)], scene_helpers_1.makeGrid(gl, 20, 20, 5, [1, 1, 1]), true), scene_helpers_1.makeDodecahedrons(gl, 3, 7, 7, 5), true)
+                    meshes: __spreadArray(__spreadArray([scene_helpers_1.makeCube(gl)], scene_helpers_1.makeGrid(gl, [0, 0, 0], 100, 10, [1, 1, 1]), true), scene_helpers_1.makeDodecahedrons(gl, 3, 3, 5, 7), true)
                 };
                 var mouse = new mouse_1.MouseAdapter(new mouse_1.ViewController(state.cam));
                 return state;

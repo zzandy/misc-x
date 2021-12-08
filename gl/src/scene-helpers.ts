@@ -1,7 +1,7 @@
 import { Mesh, SimpleProgram } from './mesh';
 import { Vec3, Matrix4, Vec4 } from './types';
 import { hcy } from '../../lib/color';
-import { deg, rotate3d, sum, vectorAngleQuaternion } from './transform';
+import { deg, lengthUnder, rotate3d, substract, sum, vectorAngleQuaternion } from './transform';
 import { mul44v } from './matrix';
 
 const s3 = Math.sqrt(3);
@@ -40,20 +40,26 @@ function quad(a: Vec3, b: Vec3, c: Vec3, d: Vec3) {
     return [...tri(a, b, c), ...tri(c, d, a)];
 }
 
-export const makeGrid = (gl: WebGLRenderingContext, n: number, m: number, d: number, color: [number, number, number]) => {
-    const mesh = makeDodecahedronMesh(.1)
+export const makeGrid = (gl: WebGLRenderingContext, center: Vec3, radius: number, d: number, color: [number, number, number]) => {
+    const mesh = makeSimplexMesh([0, 0, 0], .7);
     const p = new SimpleProgram(gl, 'vertex', 'fragment');
     const colors = new Float32Array(repeat(color, mesh.length));
     const res = []
+    const sq34 = Math.sqrt(3 / 4);
 
-    let l = Math.ceil((n + m) / 2);
+    let ext = radius * 2 / d;
+    let offset: Vec3 = sum(center, [-radius, -radius, -radius]);
 
-    let offset: Vec3 = [-n * d / 2, -m * d / 2, -l * d / 2];
+    for (let i = 0; i < ext; ++i)
+        for (let j = 0; j < ext; ++j) {
+            for (let k = 0; k < ext; ++k) {
+                let pos = sum(offset, [
+                    i * d,
+                    j * d,
+                    k * d]);
 
-    for (let i = 0; i < n; ++i)
-        for (let j = 0; j < m; ++j) {
-            for (let k = 0; k < l; ++k) {
-                res.push(new Mesh(gl, p, mesh, colors, sum(offset, [i*d, j*d, k*d])))
+                if (lengthUnder(pos, radius))
+                    res.push(new Mesh(gl, p, mesh, colors, pos))
             }
         }
 

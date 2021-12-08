@@ -1,40 +1,37 @@
-import { TColor } from "./color";
+import { triplet } from "../../lib/hcl";
 
 export interface IInterpolator<TValue> {
     getValue(ratio: number): TValue;
 }
 
-export type Interpolation<TValue> = (min: TValue, max: TValue, ratio: number) => TValue;
+type easing = (v: number) => number;
 
 export function lerp(min: number, max: number, ratio: number) {
     return min + (max - min) * ratio;
 }
 
-export class Interpolator implements IInterpolator<number>{
-    constructor(private readonly min: number, private readonly max: number, private readonly funk: Interpolation<number>) { }
+export function linear(x: number): number { return x }
+export function easeInOut(x: number): number { return x * x * x * (x * (x * 6 - 15) + 10) }
+export function easeOut(x: number): number { return easeInOut(x / 2) * 2 }
+export function easeIn(x: number): number { return easeInOut(x / 2 + .5) * 2 - 1 }
 
-    getValue(ratio: number): number {
-        return this.funk(this.min, this.max, ratio);
-    }
-}
+export class Gradient implements IInterpolator<triplet>{
 
-export class Gradient implements IInterpolator<TColor>{
-    
-    private stops: [number, TColor][];
+    private stops: [number, triplet, easing][];
 
-    constructor(private readonly startColor: TColor, private readonly endColor: TColor, private readonly funk: Interpolation<number>) {
+    constructor(startColor: triplet, endColor: triplet, easeFn: easing | null = null) {
         this.stops = [
-            [0, startColor],
-            [1, endColor]
+            [0, startColor, linear],
+            [1, endColor, easeFn ?? linear]
         ]
     }
 
-    addStop(ratio: number, color: TColor) {
-        this.stops.push([ratio, color]);
+    addStop(ratio: number, color: triplet, easeFn: easing | null = null) {
+        this.stops.push([ratio, color, easeFn ?? linear]);
         this.stops = this.stops.sort((a, b) => a[0] - b[0]);
     }
 
-    getValue(ratio: number): TColor {
+    getValue(ratio: number): triplet {
         let idx = this.stops.findIndex(s => s[0] > ratio);
 
         let next = idx == -1 ? this.stops.length - 1 : idx;
@@ -42,14 +39,14 @@ export class Gradient implements IInterpolator<TColor>{
 
         let a = this.stops[curr];
         let b = this.stops[next];
-        let fn = this.funk;
+        let ease = this.stops[next][2];
 
         let r = a == b ? 0 : (ratio - a[0]) / (b[0] - a[0]);
 
         return [
-            fn(a[1][0], b[1][0], r),
-            fn(a[1][1], b[1][1], r),
-            fn(a[1][2], b[1][2], r)
+            lerp(a[1][0], b[1][0], ease(r)),
+            lerp(a[1][1], b[1][1], ease(r)),
+            lerp(a[1][2], b[1][2], ease(r))
         ]
     }
 }
