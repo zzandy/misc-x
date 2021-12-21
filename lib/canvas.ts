@@ -4,6 +4,7 @@ export interface ICanvasRenderingContext2D extends CanvasRenderingContext2D {
     makePath(vertices: number[]): ICanvasRenderingContext2D;
     fillCircle(x: number, y: number, r: number): ICanvasRenderingContext2D;
     strokeCircle(x: number, y: number, r: number): ICanvasRenderingContext2D;
+    fillHex(x: number, y: number, r: number): ICanvasRenderingContext2D;
 }
 
 export const getCanvas = (isRelative: boolean = false): HTMLCanvasElement => {
@@ -71,7 +72,25 @@ export function fullscreenCanvas(relative: boolean = false, noAlpha: boolean = f
         return ctx;
     }
 
-    document.body.style.overflow='hidden';
+    ctx.fillHex = function (x: number, y: number, r: number) {
+        ctx.beginPath();
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.moveTo(r / sq32, 0)
+        for (let i = 0; i < 5; ++i) {
+            ctx.rotate(Math.PI / 3);
+            ctx.lineTo(r / sq32, 0);
+        }
+        ctx.restore();
+        ctx.closePath();
+        ctx.fill();
+
+        return ctx;
+    }
+
+    document.body.style.overflow = 'hidden';
     document.body.appendChild(can);
     return ctx;
 }
+
+const sq32 = Math.sqrt(3) / 2;
