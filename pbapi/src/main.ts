@@ -14,6 +14,8 @@ async function main() {
             .filter(isSeeded)
             .filter(isLargeEnough);
 
+        matches = await filterAsync(matches, isDescriptionClean);
+
         if (matches.length > 0)
             data.push(...matches.map(m => [m.id, m.seeders, humanSize(m.size), m.name, humanDate(m.added)]));
         else
@@ -56,7 +58,7 @@ async function readTerms() {
         });
     });
 
-    return data.split(/\r?\n/).map(x=>x.trim()).filter(x=>x.length > 0);
+    return data.split(/\r?\n/).map(x => x.trim()).filter(x => x.length > 0);
 }
 
 async function query(term: string): Promise<record[]> {
@@ -65,13 +67,27 @@ async function query(term: string): Promise<record[]> {
     return <record[]>await res.json();
 }
 
+async function details(id: number): Promise<detail> {
+    let url = `https://apibay.org/t.php?id=${encodeURIComponent(id)}`
+    let res = await fetch(url);
+    return <detail>await res.json();
+}
+
+async function filterAsync<TItem>(items: TItem[], predicate: (item: TItem) => Promise<boolean>) {
+    return await items.reduce(async (res: Promise<TItem[]>, item: TItem) => await predicate(item) ? [...await res, item] : res, Promise.resolve([]))
+}
+
 function isPromisingName(record: record) {
-    return !record.name.match(/hdcam|camrip|\.cam\.|hd[-.]?ts/i)
+    return !containsStopwords(record.name);
+}
+
+function containsStopwords(text: string) {
+    return !!text.match(/hdcam|camrip|pre-dvdrip|\Wcam\W|hd[-.]?ts|hindi/i);
 }
 
 function isRecentEnough(record: record) {
     let age = Date.now() - (+record.added * 1000);
-    return age / (1000 * 60 * 60 * 24 * 7) < 2; // less than two weeks ago
+    return age / (1000 * 60 * 60 * 24 * 7) < 3; // less than three weeks ago
 }
 
 function isSeeded(record: record) {
@@ -80,6 +96,10 @@ function isSeeded(record: record) {
 
 function isLargeEnough(record: record) {
     return +record.size > 200000000;
+}
+
+async function isDescriptionClean(record: record) {
+    return !containsStopwords((await details(parseInt(record.id, 10))).descr);
 }
 
 function humanSize(size: string) {
@@ -117,7 +137,6 @@ function humanDate(date: string) {
         }
     }
 
-
     return date;
 }
 
@@ -142,4 +161,22 @@ type record = {
     status: string,
     category: string,
     imdb: string,
+}
+
+type detail = {
+    id: number,
+    category: number,
+    status: string,
+    name: string,
+    num_files: number,
+    size: number,
+    seeders: number,
+    leechers: number,
+    username: string,
+    added: number,
+    descr: string,
+    imdb: string,
+    language: string,
+    textlanguage: string,
+    info_hash: string,
 }
