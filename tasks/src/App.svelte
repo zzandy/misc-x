@@ -1,11 +1,25 @@
 <script lang="ts">
-    export let title = "hello";
+  import { Task } from './task';
+  import TaskDisplay from './TaskDisplay.svelte';
+
+  export let title = 'hello';
+  export let tasks: Task[];
 </script>
 
-<div>Hello {title}!</div>
+<div>
+  Hello {title}!
+
+  <div class="action">Add new</div>
+  <div class="tasks">
+    {#each tasks as task}
+      <TaskDisplay {task} />
+    {/each}
+  </div>
+</div>
 
 <style>
-    div {
-        color: red;
-    }
+  .tasks {
+    display: grid;
+    grid-template-columns: 1fr 5fr;
+  }
 </style>

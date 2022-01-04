@@ -1,6 +1,7 @@
 const path = require("path");
 const html = require("html-webpack-plugin");
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const sveltePreprocess = require("svelte-preprocess");
 
 module.exports = {
     mode: 'development',
@@ -27,6 +28,7 @@ module.exports = {
                     loader: 'svelte-loader',
                     options: {
                         emitCss: true,
+                        preprocess: sveltePreprocess({})
                     },
                 },
             },
