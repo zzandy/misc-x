@@ -5,9 +5,38 @@ export interface IInterpolator<TValue> {
 }
 
 type easing = (v: number) => number;
+type mixing<T> = (min: T, max: T, q: number) => T;
 
 export function lerp(min: number, max: number, ratio: number) {
     return min + (max - min) * ratio;
+}
+
+function mixHue(begin: number, end: number, q: number): number {
+    let dist = end > begin
+        ? end - begin
+        : end + 360 - begin;
+
+    let alt = (dist - 360) % 360;
+
+    return Math.abs(dist) < Math.abs(alt)
+        ? begin + dist * q
+        : begin + alt * q;
+}
+
+export function colorLerp(min: triplet, max: triplet, q: number): triplet {
+    return [
+        lerp(min[0], max[0], q),
+        lerp(min[1], max[1], q),
+        lerp(min[2], max[2], q)
+    ];
+}
+
+export function colorMix(min: triplet, max: triplet, q: number): triplet {
+    return [
+        mixHue(min[0], max[0], q),
+        lerp(min[1], max[1], q),
+        lerp(min[2], max[2], q)
+    ];
 }
 
 export function linear(x: number): number { return x }
@@ -17,13 +46,16 @@ export function easeIn(x: number): number { return easeInOut(x / 2 + .5) * 2 - 1
 
 export class Gradient implements IInterpolator<triplet>{
 
-    private stops: [number, triplet, easing][];
+    public stops: [number, triplet, easing][];
+    mixFn: mixing<triplet>;
 
-    constructor(startColor: triplet, endColor: triplet, easeFn: easing | null = null) {
+    constructor(startColor: triplet, endColor: triplet, easeFn: easing | null = null, mixFn: mixing<triplet> | null = null) {
         this.stops = [
             [0, startColor, linear],
             [1, endColor, easeFn ?? linear]
         ]
+
+        this.mixFn = mixFn ?? colorMix;
     }
 
     addStop(ratio: number, color: triplet, easeFn: easing | null = null) {
@@ -43,10 +75,6 @@ export class Gradient implements IInterpolator<triplet>{
 
         let r = a == b ? 0 : (ratio - a[0]) / (b[0] - a[0]);
 
-        return [
-            lerp(a[1][0], b[1][0], ease(r)),
-            lerp(a[1][1], b[1][1], ease(r)),
-            lerp(a[1][2], b[1][2], ease(r))
-        ]
+        return this.mixFn(a[1], b[1], ease(r));
     }
 }
