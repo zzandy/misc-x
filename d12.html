@@ -4,6 +4,7 @@
 <head>
     <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
     <meta http-equiv="content-language" content="en" />
+    <title>D12</title>
 
     <style type="text/css">
         .container {
@@ -12,11 +13,17 @@
 
         .container div {
             position: absolute;
+            font-size: 120%
         }
 
         .container .tri {
-            font-size: 80%;
+            font-size: 70%;
             color: darkgreen;
+        }
+
+        .container .quad {
+            font-size: 70%;
+            color: darkred;
         }
     </style>
 </head>
@@ -44,14 +51,13 @@
         let uiCurrent = makeUI();
         let uiBest = makeUI();
 
-
         loop();
 
         function loop() {
 
             let ok = frame();
 
-            if (ok) setTimeout(loop, 20)
+            if (ok) requestAnimationFrame(loop)
         }
 
         function frame() {
@@ -64,32 +70,33 @@
 
             let score = appraise(figures);
             render(figures, score, uiCurrent);
-            if (score < bestScore) {
+
+            if (score <= bestScore) {
                 render(figures, score, uiBest)
                 bestScore = score;
             }
 
-            return false;
+            return true;
         }
 
         function getFaceValue(initials, n) {
-            return n < 6
+            return 1 + (n < 6
                 ? initials[n]
-                : 11 - initials[11 - n];
+                : 11 - initials[11 - n]);
         }
 
         function expand(initials) {
-            let expanded = [...initials];
+            let expanded = initials.map(i => i + 1);
 
             for (let tr of triangles) {
                 expanded.push(
-                    tr.reduce((sum, n) => sum + getFaceValue(initials, n) + 1, 0)
+                    tr.reduce((sum, n) => sum + getFaceValue(initials, n), 0)
                 );
             }
 
             for (let qu of quads) {
                 expanded.push(
-                    qu.reduce((sum, n) => sum + getFaceValue(initials, n) + 1, 0)
+                    qu.reduce((sum, n) => sum + getFaceValue(initials, n), 0)
                 );
             }
 
@@ -97,12 +104,11 @@
         }
 
         function render(figures, score, ui) {
-            console.log(figures, score);
-
             for (let i = 0; i < figures.length; ++i) {
-                ui[i].innerText = 1 + figures[i];
-                if (i < 5)
-                    ui[i + figures.length + 1].innerText = 12 - figures[i];
+                ui[i].innerText = figures[i];
+
+                if (i < 6)
+                    ui[figures.length + 1 + 11 - i - 6].innerText = 13 - figures[i];
             }
 
             ui[figures.length].innerText = score;
@@ -114,59 +120,45 @@
 
             let container = document.createElement('div');
             container.className = 'container';
-            container.style.height = container.style.width = (s * 4) + 'rem';
+            container.style.height = container.style.width = (s * 5) + 'rem';
             container.style.left = (s * 6 * nui++) + 'rem';
 
-            let points = [[1, 1], [3, 1], [5, 1], [2, 2], [4, 2], [1, 3]];
-            let tris = [[3, 0.5], [3, 1.5], [1.5, 3], [4.5, 3], [5.5, 3], [0.5, 3], [3, 4.5], [3, 5.5]];
-            let qs = []
-
-            for (let i = 0; i < 6; ++i) {
+            function div(xy, className) {
                 let div = document.createElement('div');
 
-                div.style.left = 3 * points[i][0] + 'rem'
-                div.style.top = 3 * points[i][1] + 'rem'
+                div.style.left = 3 * xy[0] + 'rem'
+                div.style.top = 3 * xy[1] + 'rem'
+
+                if (className)
+                    div.className = className;
 
                 divs.push(div);
                 container.appendChild(div);
+            }
+
+            let points = [[1, 1], [3, 1], [5, 1], [2.3, 2.3], [3.7, 2.3], [1, 3], [5, 3], [1, 5], [5, 5], [2.3, 3.7], [3, 5], [3.7, 3.7]];
+            let tris = [[3, 0.5], [3, 1.7], [1.7, 3], [4.3, 3], [5.5, 3], [0.5, 3], [3, 4.3], [3, 5.5]];
+            let qs = [[0.5, 1], [1.6, 1.6], [4.4, 1.6], [4.4, 4.4], [1.6, 4.4], [3, 3]];
+
+            for (let i = 0; i < 6; ++i) {
+                div(points[i])
             }
 
             let n = 0;
             for (let _ of triangles) {
-                let div = document.createElement('div');
-                div.className = 'tri'
-                div.style.left = 3 * tris[n][0] + 'rem'
-                div.style.top = 3 * tris[n++][1] + 'rem'
-                divs.push(div);
-                container.appendChild(div);
+                div(tris[n++], 'tri')
             }
 
             n = 0;
             for (let _ of quads) {
-                let div = document.createElement('div');
-                // div.style.left = 3 * qs[n][0] + 'rem'
-                // div.style.top = 3 * qs[n++][1] + 'rem'
-                divs.push(div);
-                container.appendChild(div);
+                div(qs[n++], 'quad')
             }
+
+            div([3, 6], 'score')
 
             for (let i = 0; i < 6; ++i) {
-                let div = document.createElement('div');
-
-                div.style.left = 3 * (6 - points[i][0]) + 'rem';
-                div.style.top = 3 * (6 - points[i][1]) + 'rem';
-
-                divs.push(div);
-                container.appendChild(div);
+                div(points[i + 6])
             }
-
-            let div = document.createElement('div');
-
-            div.style.left = 3 * 3 + 'rem'
-            div.style.top = 3 * 7 + 'rem'
-
-            divs.push(div);
-            container.appendChild(div);
 
             document.body.appendChild(container);
             return divs;
@@ -174,8 +166,15 @@
 
         function appraise(figures) {
             let score = 0;
-            for (let i = 6; i < figures.length; ++i)
-                score += figures[i];
+
+            for (let i = 0; i < triangles.length; ++i)
+                score += Math.pow(Math.abs(6.5 * 3 - figures[6 + i]), 2);
+
+            for (let i = 0; i < quads.length; ++i) {
+
+                score += Math.pow(Math.abs(6.5 * 4 - figures[6 + triangles.length + i]), 2);
+            }
+
             return score;
         }
 
