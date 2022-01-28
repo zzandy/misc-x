@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+
+<html id="doc" lang="en" xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <title>Sorts</title>
+    <meta charset="utf-8" />
+    <script type="text/javascript" src="system.js"></script>
+    <script type="text/javascript" src="bundle.js"></script>
+</head>
+
+<body>
+    <script type="text/javascript">
+        System.import('misc/src/sort').then(function (main) {
+            window.render = main.main();
+        }).catch(function (e) { console.log(e) });
+    </script>
+</body>
+
+</html>

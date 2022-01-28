@@ -1,6 +1,6 @@
 System.register("lib/canvas", [], function (exports_1, context_1) {
     "use strict";
-    var getCanvas, fullscreenCanvas3d;
+    var getCanvas, fullscreenCanvas3d, sq32;
     var __moduleName = context_1 && context_1.id;
     function fullscreenCanvas(relative, noAlpha) {
         if (relative === void 0) { relative = false; }
@@ -36,7 +36,21 @@ System.register("lib/canvas", [], function (exports_1, context_1) {
             ctx.fill();
             return ctx;
         };
-        document.body.style.margin = '0';
+        ctx.fillHex = function (x, y, r) {
+            ctx.beginPath();
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.moveTo(r / sq32, 0);
+            for (var i = 0; i < 5; ++i) {
+                ctx.rotate(Math.PI / 3);
+                ctx.lineTo(r / sq32, 0);
+            }
+            ctx.restore();
+            ctx.closePath();
+            ctx.fill();
+            return ctx;
+        };
+        document.body.style.overflow = 'hidden';
         document.body.appendChild(can);
         return ctx;
     }
@@ -65,6 +79,7 @@ System.register("lib/canvas", [], function (exports_1, context_1) {
                 document.body.appendChild(can);
                 return gl;
             });
+            sq32 = Math.sqrt(3) / 2;
         }
     };
 });
@@ -204,10 +219,65 @@ System.register("misc/src/color", ["lib/canvas", "lib/color"], function (exports
         }
     };
 });
-System.register("misc/src/map", [], function (exports_4, context_4) {
+System.register("misc/src/huff", [], function (exports_4, context_4) {
+    "use strict";
+    var __moduleName = context_4 && context_4.id;
+    function main() {
+        makeUI();
+    }
+    exports_4("main", main);
+    function makeUI() {
+        var input = document.createElement('textarea');
+        input.setAttribute('cols', '80');
+        input.setAttribute('rows', '25');
+        var output = document.createElement('div');
+        input.addEventListener('keyup', function () { return render(calc(input.value), output); });
+        var form = document.createElement('div');
+        form.appendChild(input);
+        form.appendChild(output);
+        document.body.appendChild(form);
+    }
+    function calc(text) {
+        var freqs = {};
+        for (var _i = 0, _a = text.split(''); _i < _a.length; _i++) {
+            var char = _a[_i];
+            if (!(char in freqs))
+                freqs[char] = 1;
+            else
+                freqs[char]++;
+        }
+        var a = [];
+        for (var char in freqs) {
+            a.push([freqs[char], char]);
+        }
+        if (a.length > 1)
+            do {
+                a.sort(function (a, b) { return a[0] - b[0]; });
+                a.splice(0, 2, [a[0][0] + a[1][0], { right: a[0][1], left: a[1][1] }]);
+            } while (a.length > 1);
+        var res = { tree: a[0][1] };
+        return res;
+    }
+    function render(huff, output) {
+        output.innerHTML = renderNode(huff.tree, '');
+    }
+    function renderNode(node, prefix) {
+        if (typeof (node) == 'string')
+            return "".concat(node == ' ' ? '_' : node, " ").concat(prefix);
+        var left = renderNode(node.left, prefix + '0');
+        var right = renderNode(node.right, prefix + '1');
+        return "<div>".concat(left, "</div><div>").concat(right, "</div>");
+    }
+    return {
+        setters: [],
+        execute: function () {
+        }
+    };
+});
+System.register("misc/src/map", [], function (exports_5, context_5) {
     "use strict";
     var Point, Token, Cell, Rule, RuleStub, RuleBuilder, None, Reef, Sea, Bay, Marsh, Mountain, Forest, Lake, Shore, Meadow, RectMap, Solver, RectRender, main;
-    var __moduleName = context_4 && context_4.id;
+    var __moduleName = context_5 && context_5.id;
     function rnd(a, b) {
         if (a !== undefined && b !== undefined) {
             return (b + (a - b) * Math.random()) | 0;
@@ -412,7 +482,7 @@ System.register("misc/src/map", [], function (exports_4, context_4) {
                 };
                 return RectRender;
             }());
-            exports_4("main", main = function () {
+            exports_5("main", main = function () {
                 var _a = [7, 7], w = _a[0], h = _a[1];
                 var map = new RectMap(w, h);
                 map.each(function (cell, pos, map) {
@@ -441,10 +511,10 @@ System.register("misc/src/map", [], function (exports_4, context_4) {
         }
     };
 });
-System.register("lib/random", [], function (exports_5, context_5) {
+System.register("lib/random", [], function (exports_6, context_6) {
     "use strict";
     var Random;
-    var __moduleName = context_5 && context_5.id;
+    var __moduleName = context_6 && context_6.id;
     return {
         setters: [],
         execute: function () {
@@ -472,14 +542,14 @@ System.register("lib/random", [], function (exports_5, context_5) {
                 };
                 return Random;
             }());
-            exports_5("Random", Random);
+            exports_6("Random", Random);
         }
     };
 });
-System.register("lib/simplex", ["lib/random"], function (exports_6, context_6) {
+System.register("lib/simplex", ["lib/random"], function (exports_7, context_7) {
     "use strict";
     var random_1, grad3, F2, G2, SimplexNoise2d, SimplexNoiseOctave;
-    var __moduleName = context_6 && context_6.id;
+    var __moduleName = context_7 && context_7.id;
     function generateShuffledArray(n, seed) {
         var a = new Array(n);
         for (var i = 0; i < n; ++i)
@@ -524,7 +594,7 @@ System.register("lib/simplex", ["lib/random"], function (exports_6, context_6) {
                 };
                 return SimplexNoise2d;
             }());
-            exports_6("SimplexNoise2d", SimplexNoise2d);
+            exports_7("SimplexNoise2d", SimplexNoise2d);
             SimplexNoiseOctave = (function () {
                 function SimplexNoiseOctave(seed) {
                     if (seed === void 0) { seed = 0; }
@@ -580,14 +650,14 @@ System.register("lib/simplex", ["lib/random"], function (exports_6, context_6) {
                 };
                 return SimplexNoiseOctave;
             }());
-            exports_6("SimplexNoiseOctave", SimplexNoiseOctave);
+            exports_7("SimplexNoiseOctave", SimplexNoiseOctave);
         }
     };
 });
-System.register("misc/src/simplex", ["lib/canvas", "lib/color", "lib/simplex"], function (exports_7, context_7) {
+System.register("misc/src/simplex", ["lib/canvas", "lib/color", "lib/simplex"], function (exports_8, context_8) {
     "use strict";
     var canvas_2, color_2, simplex_1, octaves, persistance, scale, main, render, waterlevel, sandlevel, greenslevel, depths, depths2, sand, grad;
-    var __moduleName = context_7 && context_7.id;
+    var __moduleName = context_8 && context_8.id;
     function renderNoise(ctx, octaves, persistance) {
         var noise = new simplex_1.SimplexNoise2d(persistance, octaves);
         var _a = ctx.canvas, w = _a.width, h = _a.height;
@@ -646,13 +716,13 @@ System.register("misc/src/simplex", ["lib/canvas", "lib/color", "lib/simplex"], 
             octaves = 7;
             persistance = .5;
             scale = 1000;
-            exports_7("main", main = function () {
+            exports_8("main", main = function () {
                 var ctx = canvas_2.fullscreenCanvas();
                 document.body.style.backgroundColor = 'black';
                 render(ctx, octaves, persistance);
                 return function (o, p) { return render(ctx, o, p); };
             });
-            exports_7("render", render = function (ctx, octaves, persistance) {
+            exports_8("render", render = function (ctx, octaves, persistance) {
                 var before = (new Date).getTime();
                 renderNoise(ctx, octaves, persistance);
                 var after = (new Date).getTime();
@@ -674,6 +744,103 @@ System.register("misc/src/simplex", ["lib/canvas", "lib/color", "lib/simplex"], 
                 [greenslevel + .001, color_2.wheelHcy(230, 1, .8)],
                 [1, color_2.wheelHcy(230, 1, .99)]
             ];
+        }
+    };
+});
+System.register("misc/src/sort", [], function (exports_9, context_9) {
+    "use strict";
+    var __moduleName = context_9 && context_9.id;
+    function main() {
+        var a = makeArray(10000);
+        runSort('bubble', bubble, a);
+        runSort('merge', merge, a);
+    }
+    exports_9("main", main);
+    function merge(a, from, to) {
+        var _a;
+        if (from === void 0) { from = 0; }
+        if (to === void 0) { to = -1; }
+        if (to == -1)
+            to = a.length - 1;
+        if (to == from)
+            return;
+        if (to == from + 1) {
+            if (a[from] > a[to])
+                _a = [a[from], a[to]], a[to] = _a[0], a[from] = _a[1];
+            return;
+        }
+        var k = (from + to) / 2 | 0;
+        merge(a, from, k);
+        merge(a, k + 1, to);
+        if (a[k] < a[k + 1])
+            return;
+        var nleft = k - from + 1;
+        var nright = to - k;
+        var left = new Uint32Array(nleft);
+        var right = new Uint32Array(nright);
+        for (var i_1 = 0; i_1 < nleft; ++i_1) {
+            left[i_1] = a[from + i_1];
+            if (i_1 < nright)
+                right[i_1] = a[k + 1 + i_1];
+        }
+        var i = from;
+        var ileft = 0;
+        var iright = 0;
+        while (ileft < nleft && iright < nright) {
+            if (left[ileft] <= right[iright])
+                a[i++] = left[ileft++];
+            else
+                a[i++] = right[iright++];
+        }
+        while (ileft < nleft)
+            a[i++] = left[ileft++];
+        while (iright < nright)
+            a[i++] = right[iright++];
+    }
+    function bubble(a) {
+        var _a;
+        for (var i = 0; i < a.length; ++i) {
+            for (var j = 0; j < a.length - 1; ++j)
+                if (a[j] > a[j + 1])
+                    _a = [a[j + 1], a[j]], a[j] = _a[0], a[j + 1] = _a[1];
+        }
+    }
+    function makeArray(n) {
+        var a = new Uint32Array(n);
+        for (var i = 0; i < n; ++i) {
+            a[i] = i;
+        }
+        shuffle(a);
+        return a;
+    }
+    function shuffle(a) {
+        var _a;
+        for (var i = 0; i < a.length - 1; ++i) {
+            var j = (Math.random() * (a.length - i)) | 0;
+            _a = [a[j], a[i]], a[i] = _a[0], a[j] = _a[1];
+        }
+    }
+    function runSort(title, sort, a) {
+        var b = new Uint32Array(a);
+        var ms = time(function () { return sort(b); });
+        console.log(b);
+        console.log("".concat(isSorted(b) ? 'OK  ' : 'FAIL', " ").concat(ms, "ms ").concat(title));
+    }
+    function isSorted(a) {
+        for (var i = 1; i < a.length; ++i) {
+            if (a[i - 1] > a[i])
+                return false;
+        }
+        return true;
+    }
+    function time(call) {
+        var then = performance.now();
+        call();
+        return performance.now() - then;
+    }
+    return {
+        setters: [],
+        execute: function () {
         }
     };
 });
