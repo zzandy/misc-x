@@ -22,12 +22,10 @@
         }
     </script>
     <script type="text/javascript">
-        const colors = ['#8fca32', '#1872cf', '#f7f4e6'];
+        const colors = ['#8fca32', '#1872cf', '#e7e4e6'];
         const secondary = [1, 2];
         const sq32 = Math.sqrt(3) / 2;
         const tau = Math.PI * 2;
-
-        const tile = [0, 0, 0, 0, 0, 0];
         const tiles = [];
 
         const p0 = (function (w, h) {
@@ -119,76 +117,52 @@
             return ctx.canvas;
         })(60, 60);
 
-        addTile(tile);
+        for (let i = 1; i <= 6; ++i) {
 
-        for (let i = 1; i < 6; ++i) {
-            place(tile, i, 6);
-        }
+            let tile = [1, 1, 1, 1, 1, 1];
 
-        function place(tile, from, to) {
-            if (from >= to) return;
+            for (let j = 0; j < i; ++j) {
+                tile[j] = 0;
+            }
 
-            for (let c of secondary) {
-                let clone = tile.slice();
-                for (let i = from; i < to; ++i) {
-                    clone[i] = c;
+            addTile(tile);
+
+            if (i > 2) {
+
+                for (let k = 1; k < i - 1; ++k) {
+                    let t2 = [...tile];
+                    let t3 = [...tile];
+
+                    for (let j = k; j <= i / 2 && j - k < 6 - i; ++j) {
+                        t2[j] = 1;
+                        t3[j] = 2;
+                        addTile([...t2]);
+                        addTile([...t3], j - k + 1 == 6 - i && k == i - j - 1);
+                    }
+
                 }
-
-                addTile(clone);
-
-                for (let i = 2; i < from; ++i)
-                    place(clone, 1, i)
-
-                for (let i = 2; i < from; ++i)
-                    place(clone, i, from - 1);
             }
         }
 
-        function canonical(tile) {
-            let tiles = [tile];
-            let clone = tile;
-            for (let i = 1; i < 6; ++i) {
-                clone = clone.slice();
-                clone.unshift(clone.pop());
-                tiles.push(clone);
-            }
+        console.log(`${tiles.length} total`);
 
-            tiles.sort(byScore);
-
-            return tiles[0];
-        }
-
-        function byScore(a, b) {
-            return score(b) - score(a);
-        }
-
-        function score(tile) {
-            const s = tile.reduce((a, t) => {
-
-                if (t != 0 && t < a.max) ++a.inv;
-
-                a.max = Math.max(a.max, t);
-                if (a.max == 0) ++a.max0;
-                return a;
-            }, { max0: 0, max: 0, inv: 0 });
-
-            return s.max0 - s.inv * 2;
-        }
-
-        console.log(`${tiles.length} total`)
-
-        tiles.sort(byScore);
+        // official tiles https://boardgamegeek.com/image/4319703/fjords
         tiles.map(draw);
 
-        function addTile(tile) {
-            tile = canonical(tile);
-            if (!tiles.some(t => t.every((c, i) => c == tile[i])))
-                tiles.push(tile)
+        function addTile(tile, dontFlip) {
+            tiles.push(tile);
+
+            if (!dontFlip && tile.some(t => t != 0)) {
+                tiles.push(tile.map(t => t == 0 ? t : 3 - t))
+            }
+
+            console.log(tile)
         }
 
         function draw(tile, i) {
-            const s = 220;
+            const s = 120;
             const ctx = addCanvas(s * sq32 + 2, s);
+            if ((i + 1) % 10 == 0) document.body.appendChild(document.createElement('br'));
 
             ctx.translate(s * sq32 / 2 + 1, s / 2);
 
@@ -215,7 +189,7 @@
             ctx.save();
 
             let prev = 0;
-            let a = 3 * tau / 12;
+            let a = -tau / 4;
             let start = a;
             const r = s / 2;
             const h = sq32 * r;
@@ -223,25 +197,28 @@
             const cos = Math.cos;
             const sin = Math.sin;
 
-            let path = new Path2D();
+            let shape = new Path2D();
 
             for (let i = 1; i < 7; ++i) {
                 let next = tile[i % 6];
 
                 if (prev != 0) {
-                    path.lineTo(r * cos(a), r * sin(a));
+                    // start divider
+                    shape.lineTo(r * cos(a), r * sin(a));
                 }
 
                 a += tau / 12;
 
                 if (prev != next) {
                     if (prev != 0) {
-                        path.lineTo(h * cos(a), h * sin(a));
+                        shape.lineTo(h * cos(a), h * sin(a));
 
-                        ctx.beginPath();
-                        ctx.moveTo(h * cos(a), h * sin(a));
+                        let border = new Path2D();
+                        border.moveTo(h * cos(a), h * sin(a));
 
-                        if (a - start >= tau / 3) {
+                        let both = [shape, border];
+
+                        if ((tau + a - start) % tau >= tau / 3) {
                             const b = (a + start) / 2;
                             const p = [c * cos(b), c * sin(b)]
 
@@ -249,33 +226,32 @@
                                 ? 2 * c
                                 : 2 * c / 3;
 
-                            path.bezierCurveTo(c * cos(a), c * sin(a), p[0] + k * cos(b + tau / 4), p[1] + k * sin(b + tau / 4), p[0], p[1]);
-                            path.bezierCurveTo(p[0] - k * cos(b + tau / 4), p[1] - k * sin(b + tau / 4), c * cos(start), c * sin(start), h * cos(start), h * sin(start));
-
-                            ctx.bezierCurveTo(c * cos(a), c * sin(a), p[0] + k * cos(b + tau / 4), p[1] + k * sin(b + tau / 4), p[0], p[1]);
-                            ctx.bezierCurveTo(p[0] - k * cos(b + tau / 4), p[1] - k * sin(b + tau / 4), c * cos(start), c * sin(start), h * cos(start), h * sin(start));
+                            both.forEach(path => {
+                                path.bezierCurveTo(c * cos(a), c * sin(a), p[0] + k * cos(b + tau / 4), p[1] + k * sin(b + tau / 4), p[0], p[1]);
+                                path.bezierCurveTo(p[0] - k * cos(b + tau / 4), p[1] - k * sin(b + tau / 4), c * cos(start), c * sin(start), h * cos(start), h * sin(start));
+                            });
                         }
                         else {
-                            path.bezierCurveTo(c * cos(a), c * sin(a), c * cos(start), c * sin(start), h * cos(start), h * sin(start));
-                            ctx.bezierCurveTo(c * cos(a), c * sin(a), c * cos(start), c * sin(start), h * cos(start), h * sin(start));
+                            both.forEach(path =>
+                                path.bezierCurveTo(c * cos(a), c * sin(a), c * cos(start), c * sin(start), h * cos(start), h * sin(start)));
                         }
 
-                        path.closePath();
+                        shape.closePath();
                         ctx.fillStyle = patterns[prev];
 
-                        ctx.fill(path);
+                        ctx.fill(shape);
 
                         ctx.strokeStyle = 'rgba(0,0,0,.5)'
 
                         ctx.save();
                         ctx.globalCompositeOperation = 'multiply'
-                        ctx.stroke();
+                        ctx.stroke(border);
                         ctx.restore();
                     }
                     else {
                         start = a;
-                        path = new Path2D();
-                        path.moveTo(h * cos(a), h * sin(a));
+                        shape = new Path2D();
+                        shape.moveTo(h * cos(a), h * sin(a));
                     }
                 }
 
@@ -284,6 +260,7 @@
                 prev = next;
             }
 
+            // Hex outline
             ctx.save();
             ctx.beginPath();
             for (let i = 0; i < 6; ++i) {
