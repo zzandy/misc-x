@@ -27,7 +27,7 @@ async function main() {
 }
 
 function init(): WorldState {
-    let can = fullscreenCanvas(false, true);
+    let ctx = fullscreenCanvas(false, true);
 
     let player = {
         x: .35, y: .53, azimuth: -60, alt: height.data[(height.data.length / 2) | 0] + 20,
@@ -52,7 +52,7 @@ function init(): WorldState {
     addEventListener('keyup', release(inputs));
 
     return {
-        can, color, height, player, camera, inputs, movement
+        ctx, color, height, player, camera, inputs, movement
     }
 }
 
@@ -79,11 +79,11 @@ function clamp(v: number): number {
 }
 
 function render(delta: number, state: WorldState) {
-    let { can, player: { x, y, azimuth, alt }, color, height, camera: { fov, range } } = state;
+    let { ctx, player: { x, y, azimuth, alt }, color, height, camera: { fov, range } } = state;
 
-    can.putImageData(color, 0, 0);
+    ctx.putImageData(color, 0, 0);
 
-    let k =600;
+    let k = 600;
     let dq = 1.01
     let vfov = 70;
 
@@ -99,8 +99,8 @@ function render(delta: number, state: WorldState) {
 
     function putPar(color: triplet, ray: number, alt1: number, alt2: number) {
         let w = viewport.width / numRays;
-        can.fillStyle = format(color);
-        can.fillRect(viewport.ox + ray * w, viewport.oy + viewport.height - alt2 * viewport.height, w, (alt2 - alt1) * viewport.height);
+        ctx.fillStyle = format(color);
+        ctx.fillRect(viewport.ox + ray * w, viewport.oy + viewport.height - alt2 * viewport.height, w, (alt2 - alt1) * viewport.height);
     }
 
     for (let i = 0; i < numRays; ++i) {
@@ -158,15 +158,15 @@ function render(delta: number, state: WorldState) {
         putPar(sky, i, ylevel, 1);
     }
 
-    can.save()
-    can.translate(x * color.width, y * color.height);
+    ctx.save()
+    ctx.translate(x * color.width, y * color.height);
 
-    can.strokeCircle(0, 0, 10);
+    ctx.strokeCircle(0, 0, 10);
 
-    can.rotate(azimuth * deg)
-    can.strokeRect(0, 0, 100, 0);
+    ctx.rotate(azimuth * deg)
+    ctx.strokeRect(0, 0, 100, 0);
 
-    can.restore();
+    ctx.restore();
 }
 
 function sample1d(image: ImageData, x: number, y: number): number {

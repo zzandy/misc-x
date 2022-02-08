@@ -25,7 +25,7 @@ export type Inputs = {
 }
 
 export type WorldState = {
-    can: ICanvasRenderingContext2D,
+    ctx: ICanvasRenderingContext2D,
     color: ImageData,
     height: Heightmap,
     player: Player,
