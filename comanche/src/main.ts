@@ -83,7 +83,7 @@ function render(delta: number, state: WorldState) {
 
     can.putImageData(color, 0, 0);
 
-    let k = 1000;
+    let k =600;
     let dq = 1.01
     let vfov = 70;
 
@@ -93,6 +93,7 @@ function render(delta: number, state: WorldState) {
         width: 640,
         height: 480
     };
+
     let numRays = viewport.width / 2;
     let sky: triplet = [0, 130, 137]
 
@@ -134,7 +135,7 @@ function render(delta: number, state: WorldState) {
                 let c = sample(color, x + tx * q, y + ty * q);
 
                 if (onscreensize > 0) {
-                    putPar(ylevel == 0 ? c : prevC, i, ylevel, onscreensize)
+                    putPar(c, i, ylevel, onscreensize)
                 }
 
                 // if (debug) {
