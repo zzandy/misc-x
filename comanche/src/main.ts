@@ -12,10 +12,6 @@ const tan = Math.tan;
 
 let color: ImageData, height: Heightmap;
 
-let first = true;
-let debug = false;
-let debugSample = false;
-
 main();
 
 async function main() {
@@ -122,9 +118,7 @@ function render(delta: number, state: WorldState) {
     }
 
     for (let i = 0; i < numRays; ++i) {
-        debug = i == 50
         let ylevel = 0;
-        let prevC: triplet = [255, 0, 255];
 
         let a = ((azimuth - fov / 2) + (i + .5) * fov / numRays) * deg;
 
@@ -144,11 +138,6 @@ function render(delta: number, state: WorldState) {
 
             let onscreensize = h < screenfloor ? 0 : h > screenfloor + screenheight ? 1 : (h - screenfloor) / screenheight;
 
-            // if (debug) {
-            //     if (first) console.log(alt, h, d, screenheight, screenfloor, onscreensize)
-            //     can.strokeCircle((x + tx * q) * color.width, (y + ty * q) * color.height, 2);
-            // }
-
             if (onscreensize > ylevel) {
                 let c = sample(color, x + tx * q, y + ty * q);
 
@@ -156,12 +145,6 @@ function render(delta: number, state: WorldState) {
                     putPar(c, i, ylevel, onscreensize)
                 }
 
-                // if (debug) {
-                //     can.fillStyle = 'red';
-                //     can.fillCircle((x + tx * q) * color.width, (y + ty * q) * color.height, 5);
-                // }
-
-                prevC = c;
                 ylevel = onscreensize;
             }
 
@@ -169,13 +152,8 @@ function render(delta: number, state: WorldState) {
             dz *= dq;
         }
 
-        if (debug && first) {
-            first = false;
-        }
-
         putPar(sky, i, ylevel, 1);
     }
-
 
     ctx.putImageData(renderTarget, viewport.ox, viewport.oy)
     ctx.save()
