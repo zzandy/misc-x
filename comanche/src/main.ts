@@ -11,7 +11,7 @@ const cos = Math.cos;
 const tan = Math.tan;
 
 let color: ImageData, height: Heightmap;
-let maps = ["C10W.png", "C13.png", "C15.png", "C18W.png", "C20W.png", "C23W.png", "C26W.png", "C29W.png", "C4.png", "C7W.png", "C11W.png", "C14.png", "C16W.png", "C19W.png", "C21.png", "C24W.png", "C27W.png", "C2W.png", "C5W.png", "C8.png", "C12W.png", "C14W.png", "C17W.png", "C1W.png", "C22W.png", "C25W.png", "C28W.png", "C3.png", "C6W.png", "C9W.png"];
+let maps = ['C1W.png', 'C2W.png', 'C3.png', 'C4.png', 'C5W.png', 'C6.png', 'C6W.png', 'C7W.png', 'C9W.png', 'C10W.png', 'C11.png', 'C11W.png', 'C13.png', 'C14.png', 'C15.png', 'C15W.png', 'C16.png', 'C16W.png', 'C17W.png', 'C18.png', 'C18W.png', 'C19W.png', 'C20W.png', 'C21.png', 'C21W.png', 'C22W.png', 'C24W.png', 'C25.png', 'C25W.png'];
 let currentMap = 0;
 
 main();
