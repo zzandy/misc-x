@@ -11,12 +11,13 @@ const cos = Math.cos;
 const tan = Math.tan;
 
 let color: ImageData, height: Heightmap;
+let maps = ["C10W.png", "C13.png", "C15.png", "C18W.png", "C20W.png", "C23W.png", "C26W.png", "C29W.png", "C4.png", "C7W.png", "C11W.png", "C14.png", "C16W.png", "C19W.png", "C21.png", "C24W.png", "C27W.png", "C2W.png", "C5W.png", "C8.png", "C12W.png", "C14W.png", "C17W.png", "C1W.png", "C22W.png", "C25W.png", "C28W.png", "C3.png", "C6W.png", "C9W.png"];
+let currentMap = 0;
 
 main();
 
 async function main() {
-    let maps = ["C10W.png", "C13.png", "C15.png", "C18W.png", "C20W.png", "C23W.png", "C26W.png", "C29W.png", "C4.png", "C7W.png", "C11W.png", "C14.png", "C16W.png", "C19W.png", "C21.png", "C24W.png", "C27W.png", "C2W.png", "C5W.png", "C8.png", "C12W.png", "C14W.png", "C17W.png", "C1W.png", "C22W.png", "C25W.png", "C28W.png", "C3.png", "C6W.png", "C9W.png"];
-    [color, height] = await loadImages(maps[0]);
+    [color, height] = await loadImages(maps[currentMap]);
 
     let loop = new Loop(1000 / 60, init, update, render);
     loop.start();
@@ -26,12 +27,15 @@ function init(): WorldState {
     let ctx = fullscreenCanvas(false, true);
 
     let player = {
-        x: .35, y: .53, azimuth: -60, alt: height.data[(height.data.length / 2) | 0] + 20,
+        x: .35, y: .53, azimuth: -60, alt: 0,
     }
+
+    player.alt = sample1d(height, player.x, player.y) + 10;
 
     let movement = {
         heading: new Inertial(10, 2, .1, 5),
-        velocity: new Inertial(100, 10, .1, 100000)
+        velocity: new Inertial(100, 10, .1, 100000),
+        altitude: new Inertial(10, 1, .1, 30)
     };
 
     let camera = {
@@ -41,11 +45,17 @@ function init(): WorldState {
 
     let inputs = {
         throttle: 0,
-        steer: 0
+        steer: 0,
+        alt: 0,
+        nextMap: 0
     }
 
-    addEventListener('keydown', press(inputs));
-    addEventListener('keyup', release(inputs));
+    bind(inputs, [
+        ['throttle', 'KeyS', 'KeyW'],
+        ['steer', 'KeyA', 'KeyD'],
+        ['alt', 'ControlLeft', 'ShiftLeft'],
+        ['nextMap', 'KeyN', 'KeyM']
+    ]);
 
     return {
         ctx, color, height, player, camera, inputs, movement
@@ -55,10 +65,23 @@ function init(): WorldState {
 function update(delta: number, state: WorldState): WorldState {
     let { movement, player, inputs } = state;
 
+    if (inputs.nextMap) {
+
+        currentMap = (currentMap + maps.length + inputs.nextMap) % maps.length;
+        loadImages(maps[currentMap]).then((res) => [state.color, state.height] = res);
+
+        inputs.nextMap = 0;
+    }
+
     let velocity = movement.velocity.update(inputs.throttle);
     let heading = movement.heading.update(inputs.steer);
+    let altitude = movement.altitude.update(inputs.alt);
 
     player.azimuth += heading;
+
+    player.alt += altitude;
+    if (player.alt < 0) player.alt = 0;
+    else if (player.alt > 300) player.alt = 300;
 
     player.x += velocity * Math.cos(player.azimuth * deg);
     player.y += velocity * Math.sin(player.azimuth * deg);
@@ -116,6 +139,8 @@ function render(delta: number, state: WorldState) {
             }
         }
     }
+
+    alt = Math.max(alt, sample1d(height, x, y) + 10)
 
     for (let i = 0; i < numRays; ++i) {
         let ylevel = 0;
@@ -187,28 +212,27 @@ function sample(image: ImageData, x: number, y: number): triplet {
     ];
 }
 
-function format(c: triplet): string {
-    return `rgb(${c[0]},${c[1]},${c[2]})`;
-}
+function bind<T extends { [key in P]: number }, P extends keyof T>(inputs: T, map: [P, string, string][]) {
+    let keymap: { [key: string]: [P & keyof T, number] } = {};
 
-function press(inputs: Inputs) {
-    return (e: KeyboardEvent) => {
-        switch (e.code) {
-            case "KeyW": inputs.throttle = 1; break;
-            case "KeyS": inputs.throttle = -1; break;
-            case "KeyA": inputs.steer = -1; break;
-            case "KeyD": inputs.steer = 1; break;
-        }
+    for (let [prop, dec, inc] of map) {
+        keymap[inc] = [prop, 1];
+        keymap[dec] = [prop, -1];
     }
-}
 
-function release(inputs: Inputs) {
-    return (e: KeyboardEvent) => {
-        switch (e.code) {
-            case "KeyW":
-            case "KeyS": inputs.throttle = 0; break;
-            case "KeyA":
-            case "KeyD": inputs.steer = 0; break;
+    addEventListener('keydown', (e) => {
+        let prop = keymap[e.code];
+        if (prop !== undefined) {
+            (inputs as { [key in P]: number })[prop[0]] = prop[1];
+            e.preventDefault();
         }
-    }
+    });
+
+    addEventListener('keyup', (e) => {
+        let prop = keymap[e.code];
+        if (prop !== undefined) {
+            (inputs as { [key in P]: number })[prop[0]] = 0;
+            e.preventDefault();
+        }
+    });
 }

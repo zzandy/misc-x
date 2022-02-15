@@ -11,7 +11,8 @@ export type Player = {
 
 export type Movement = {
     velocity: Inertial,
-    heading: Inertial
+    heading: Inertial,
+    altitude: Inertial
 }
 
 export type Camera = {
@@ -21,7 +22,9 @@ export type Camera = {
 
 export type Inputs = {
     throttle: number,
-    steer: number
+    steer: number,
+    alt: number,
+    nextMap: number
 }
 
 export type WorldState = {
