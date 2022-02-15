@@ -13,6 +13,7 @@ const tan = Math.tan;
 let color: ImageData, height: Heightmap;
 let maps = ['C1W.png', 'C2W.png', 'C3.png', 'C4.png', 'C5W.png', 'C6.png', 'C6W.png', 'C7W.png', 'C9W.png', 'C10W.png', 'C11.png', 'C11W.png', 'C13.png', 'C14.png', 'C15.png', 'C15W.png', 'C16.png', 'C16W.png', 'C17W.png', 'C18.png', 'C18W.png', 'C19W.png', 'C20W.png', 'C21.png', 'C21W.png', 'C22W.png', 'C24W.png', 'C25.png', 'C25W.png'];
 let currentMap = 0;
+let debug = false;
 
 main();
 
@@ -39,7 +40,7 @@ function init(): WorldState {
     };
 
     let camera = {
-        fov: 110,
+        fov: 100,
         range: .5
     }
 
@@ -47,14 +48,16 @@ function init(): WorldState {
         throttle: 0,
         steer: 0,
         alt: 0,
-        nextMap: 0
+        nextMap: 0,
+        debug: 0
     }
 
     bind(inputs, [
         ['throttle', 'KeyS', 'KeyW'],
         ['steer', 'KeyA', 'KeyD'],
-        ['alt', 'ControlLeft', 'ShiftLeft'],
-        ['nextMap', 'KeyN', 'KeyM']
+        ['alt', 'ShiftLeft', 'Space'],
+        ['nextMap', 'KeyN', 'KeyM'],
+        ['debug', 'F3', 'F3']
     ]);
 
     return {
@@ -65,8 +68,10 @@ function init(): WorldState {
 function update(delta: number, state: WorldState): WorldState {
     let { movement, player, inputs } = state;
 
-    if (inputs.nextMap) {
+    debug = inputs.debug != 0;
+    inputs.debug = 0;
 
+    if (inputs.nextMap) {
         currentMap = (currentMap + maps.length + inputs.nextMap) % maps.length;
         loadImages(maps[currentMap]).then((res) => [state.color, state.height] = res);
 
@@ -80,37 +85,37 @@ function update(delta: number, state: WorldState): WorldState {
     player.azimuth += heading;
 
     player.alt += altitude;
+
+    if (altitude > 0)
+        player.alt = Math.max(player.alt, sample1d(height, player.x, player.y) + 10)
+
     if (player.alt < 0) player.alt = 0;
     else if (player.alt > 300) player.alt = 300;
 
-    player.x += velocity * Math.cos(player.azimuth * deg);
-    player.y += velocity * Math.sin(player.azimuth * deg);
-
-    if (player.x < 0 || player.x > 1) player.x -= (player.x | 0) - (player.x > 0 ? 0 : 1);
-    if (player.y < 0 || player.y > 1) player.y -= (player.y | 0) - (player.y > 0 ? 0 : 1);
+    player.x = wrap(player.x + velocity * Math.cos(player.azimuth * deg));
+    player.y = wrap(player.y + velocity * Math.sin(player.azimuth * deg));
 
     return state;
 }
 
-function clamp(v: number): number {
-    if (v < 0 || v > 1) return v - (v | 0) - (v > 0 ? 0 : 1);
-    else return v;
+function wrap(v: number): number {
+    while (v < 0) v += 1
+    while (v >= 1) v -= 1;
+    return v;
 }
 
 function render(delta: number, state: WorldState) {
     let { ctx, player: { x, y, azimuth, alt }, color, height, camera: { fov, range } } = state;
-
-    ctx.putImageData(color, 0, 0);
 
     let k = 600;
     let dq = 1.01
     let vfov = 70;
 
     let viewport = {
-        ox: 1100,
-        oy: 20,
-        width: 640,
-        height: 480
+        ox: 0,
+        oy: 0,
+        width: ctx.canvas.width,
+        height: ctx.canvas.height
     };
 
     let renderTarget = new ImageData(viewport.width, viewport.height);
@@ -118,7 +123,7 @@ function render(delta: number, state: WorldState) {
 
     let rayWidth = (viewport.width / numRays) | 0;
 
-    let sky: triplet = [0, 130, 137]
+    let sky: triplet = [0xa7, 0xed, 0xf3];
 
     const vw = viewport.width;
     const vh = viewport.height;
@@ -193,16 +198,16 @@ function render(delta: number, state: WorldState) {
 }
 
 function sample1d(image: ImageData, x: number, y: number): number {
-    let i = (image.height * clamp(y)) | 0;
-    let j = (image.width * clamp(x)) | 0;
+    let i = (image.height * wrap(y)) | 0;
+    let j = (image.width * wrap(x)) | 0;
     let k = i * image.width + j
 
     return image.data[k];
 }
 
 function sample(image: ImageData, x: number, y: number): triplet {
-    let i = (image.height * clamp(y)) | 0;
-    let j = (image.width * clamp(x)) | 0;
+    let i = (image.height * wrap(y)) | 0;
+    let j = (image.width * wrap(x)) | 0;
     let k = (i * image.width + j) * 4;
 
     return [

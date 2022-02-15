@@ -24,7 +24,8 @@ export type Inputs = {
     throttle: number,
     steer: number,
     alt: number,
-    nextMap: number
+    nextMap: number,
+    debug: number,
 }
 
 export type WorldState = {
