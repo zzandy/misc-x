@@ -94,13 +94,31 @@ function render(delta: number, state: WorldState) {
         height: 480
     };
 
+    let renderTarget = new ImageData(viewport.width, viewport.height);
     let numRays = viewport.width / 2;
+
+    let rayWidth = (viewport.width / numRays) | 0;
+
     let sky: triplet = [0, 130, 137]
 
+    const vw = viewport.width;
+    const vh = viewport.height;
+    const data = renderTarget.data;
+
     function putPar(color: triplet, ray: number, alt1: number, alt2: number) {
-        let w = viewport.width / numRays;
-        ctx.fillStyle = format(color);
-        ctx.fillRect(viewport.ox + ray * w, viewport.oy + viewport.height - alt2 * viewport.height, w, (alt2 - alt1) * viewport.height);
+        let top = ((1 - alt2) * vh) | 0;
+        let bottom = ((1 - alt1) * vh) | 0;
+
+        for (let y = top; y < bottom; ++y) {
+            let j = y * vw;
+            for (let x = 0; x < rayWidth; ++x) {
+                let i = j + ray * rayWidth + x;
+                data[i * 4] = color[0];
+                data[i * 4 + 1] = color[1];
+                data[i * 4 + 2] = color[2];
+                data[i * 4 + 3] = 255;
+            }
+        }
     }
 
     for (let i = 0; i < numRays; ++i) {
@@ -158,6 +176,8 @@ function render(delta: number, state: WorldState) {
         putPar(sky, i, ylevel, 1);
     }
 
+
+    ctx.putImageData(renderTarget, viewport.ox, viewport.oy)
     ctx.save()
     ctx.translate(x * color.width, y * color.height);
 
