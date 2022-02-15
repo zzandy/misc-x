@@ -109,7 +109,7 @@ function render(delta: number, state: WorldState) {
     let { ctx, player: { x, y, azimuth, alt }, color, height, camera: { fov, range } } = state;
 
     let k = 600;
-    let dq = 1.0001
+    let dq = 1.001
     let vfov = 70;
 
     let viewport = {
@@ -125,6 +125,7 @@ function render(delta: number, state: WorldState) {
     let rayWidth = (viewport.width / numRays) | 0;
 
     let sky: triplet = [0xa7, 0xed, 0xf3];
+    sky = [220, 225, 255];
 
     const vw = viewport.width;
     const vh = viewport.height;
@@ -174,7 +175,7 @@ function render(delta: number, state: WorldState) {
                 let c = sample(color, px, py);
 
                 if (onscreensize > 0) {
-                    putPar(c, i, ylevel, onscreensize)
+                    putPar(mix(c, sky, h / 255, q), i, ylevel, onscreensize)
                 }
 
                 ylevel = onscreensize;
@@ -197,6 +198,18 @@ function render(delta: number, state: WorldState) {
     ctx.strokeRect(0, 0, 100, 0);
 
     ctx.restore();
+}
+
+function mix(color: triplet, haze: triplet, ylevel: number, dist: number): triplet {
+    let factor = Math.min(1, 1 - sig((ylevel - .05) * 10) + dist * dist);
+    return [color[0] * (1 - factor) + factor * haze[0],
+    color[1] * (1 - factor) + factor * haze[1],
+    color[2] * (1 - factor) + factor * haze[2]
+    ]
+}
+
+function sig(n: number) {
+    return 1 / (1 + Math.exp(-n));
 }
 
 function sample1d(image: ImageData, x: number, y: number): number {
