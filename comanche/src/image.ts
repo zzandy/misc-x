@@ -7,15 +7,12 @@ async function fetchImage(url: string): Promise<ImageData> {
         img.setAttribute('crossOrigin', 'anonymous');
 
         img.onload = function () {
-            var canvas = document.createElement("canvas");
-            canvas.width = img.width;
-            canvas.height = img.height;
-
-            let ctx = canvas.getContext("2d");
+            let can = canvas(img.width, img.height);
+            let ctx = can.getContext("2d");
 
             if (ctx != null) {
                 ctx.drawImage(img, 0, 0);
-                resolve(ctx.getImageData(0, 0, canvas.width, canvas.height))
+                resolve(ctx.getImageData(0, 0, can.width, can.height))
             }
             else reject("Failed to load image");
         };
@@ -25,20 +22,39 @@ async function fetchImage(url: string): Promise<ImageData> {
 }
 
 export async function loadImages(src: string): Promise<[ImageData, Heightmap]> {
-    return [await fetchImage('./' + src), readHeaight(await fetchImage('./' + src.replace(/C/, 'D').replace(/W/, '')))]
+    const color = await fetchImage('./' + src);
+    return [color, readHeight(color.width, color.height, await fetchImage('./' + src.replace(/C/, 'D').replace(/W/, '')))]
 }
 
-function readHeaight(data: ImageData): Heightmap {
+function readHeight(targetWidth: number, targetHeight: number, data: ImageData): Heightmap {
     let res = {
-        width: data.width,
-        height: data.height,
-        data: new Uint8ClampedArray(data.width * data.height)
+        width: targetWidth,
+        height: targetHeight,
+        data: new Uint8ClampedArray(targetWidth * targetHeight)
     }
 
+    // resize to match color map
+    let canvasOriginal = canvas(data.width, data.height);
+    let contextOriginal = canvasOriginal.getContext('2d') as CanvasRenderingContext2D;
+    contextOriginal.putImageData(data, 0, 0)
+
+    let canvasResized = canvas(targetWidth, targetHeight);
+
+    let contextResized = canvasResized.getContext('2d') as CanvasRenderingContext2D;
+    contextResized.drawImage(canvasOriginal, 0, 0, targetWidth, targetHeight);
+    let resized = contextResized.getImageData(0, 0, targetWidth, targetHeight);
+
     for (let i = 0; i < res.data.length; ++i) {
-        res.data[i] = data.data[i * 4];
+        res.data[i] = resized.data[i * 4];
     }
 
     return res;
 }
 
+function canvas(width: number, height: number) {
+    var canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+
+    return canvas;
+}

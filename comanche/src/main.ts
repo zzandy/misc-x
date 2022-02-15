@@ -12,7 +12,7 @@ const tan = Math.tan;
 
 let color: ImageData, height: Heightmap;
 let maps = ['C1W.png', 'C2W.png', 'C3.png', 'C4.png', 'C5W.png', 'C6.png', 'C6W.png', 'C7W.png', 'C9W.png', 'C10W.png', 'C11.png', 'C11W.png', 'C13.png', 'C14.png', 'C15.png', 'C15W.png', 'C16.png', 'C16W.png', 'C17W.png', 'C18.png', 'C18W.png', 'C19W.png', 'C20W.png', 'C21.png', 'C21W.png', 'C22W.png', 'C24W.png', 'C25.png', 'C25W.png'];
-let currentMap = 0;
+let currentMap = 6;
 let debug = false;
 
 main();
@@ -28,10 +28,10 @@ function init(): WorldState {
     let ctx = fullscreenCanvas(false, true);
 
     let player = {
-        x: .35, y: .53, azimuth: -60, alt: 0,
+        x: .11, y: .133, azimuth: -192.84802576606054, alt: 55.93534841801423
     }
 
-    player.alt = sample1d(height, player.x, player.y) + 10;
+    //    player.alt = sample1d(height, player.x, player.y) + 10;
 
     let movement = {
         heading: new Inertial(10, 2, .1, 5),
@@ -40,7 +40,7 @@ function init(): WorldState {
     };
 
     let camera = {
-        fov: 100,
+        fov: 90,
         range: .5
     }
 
@@ -94,6 +94,7 @@ function update(delta: number, state: WorldState): WorldState {
 
     player.x = wrap(player.x + velocity * Math.cos(player.azimuth * deg));
     player.y = wrap(player.y + velocity * Math.sin(player.azimuth * deg));
+    if (debug) console.log(player)
 
     return state;
 }
@@ -108,7 +109,7 @@ function render(delta: number, state: WorldState) {
     let { ctx, player: { x, y, azimuth, alt }, color, height, camera: { fov, range } } = state;
 
     let k = 600;
-    let dq = 1.01
+    let dq = 1.0001
     let vfov = 70;
 
     let viewport = {
@@ -119,7 +120,7 @@ function render(delta: number, state: WorldState) {
     };
 
     let renderTarget = new ImageData(viewport.width, viewport.height);
-    let numRays = viewport.width / 2;
+    let numRays = viewport.width / 4;
 
     let rayWidth = (viewport.width / numRays) | 0;
 
@@ -159,8 +160,9 @@ function render(delta: number, state: WorldState) {
 
         while (z < k) {
             let q = z / k;
+            let px = x + tx * q, py = y + ty * q;
 
-            let h = sample1d(height, x + tx * q, y + ty * q);
+            let h = sample1d(height, px, py);
             let d = q * range;
 
             let screenheight = 2000 * d * tan(vfov / 2 * deg) * 2
@@ -169,7 +171,7 @@ function render(delta: number, state: WorldState) {
             let onscreensize = h < screenfloor ? 0 : h > screenfloor + screenheight ? 1 : (h - screenfloor) / screenheight;
 
             if (onscreensize > ylevel) {
-                let c = sample(color, x + tx * q, y + ty * q);
+                let c = sample(color, px, py);
 
                 if (onscreensize > 0) {
                     putPar(c, i, ylevel, onscreensize)
