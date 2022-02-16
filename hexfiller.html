@@ -1,142 +1,127 @@
 <!DOCTYPE html>
-<html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+
 <head>
-    <title>---</title>
-    <style type="text/css">
-        html, body  {
-            background-color: #262626;
-        }
-    </style>
+    <meta charset="utf-8" />
+    <title>Filler</title>
 </head>
+
 <body>
 
     <script type="text/javascript">
-        
-        // loop
-        (function(global){
-            'use strict';
 
-            global.makeLoop = function(fixedDelta, fixedUpdate, update){
-                var acc = 0;
+        function loop(targetFps, fixedUpdate, render) {
+            let fixedDelta = 1000 / targetFps;
+            let acc = fixedDelta;
+            let then = performance.now();
 
-                return function(delta){
-                    if(delta === undefined || isNaN(delta)){
-                        delta = fixedDelta;
-                    }
+            function tick(now) {
+                let delta = now - then;
+                acc += delta;
+                then = now;
+                let doRender = acc >= fixedDelta;
 
-                    acc += delta;
-
-                    while(acc>=fixedDelta){
-                        fixedUpdate(fixedDelta);
-                        acc -= fixedDelta;
-                    }
-                    update(delta);
-                }
-            }
-
-            global.loop = function(loopFunction, sheduleFunction){
-
-                var then;
-                var iteration = function(){
-                    var now = new Date().getTime();
-                    var delta = now - then;
-                    then = now;
-
-                    loopFunction(delta);
-
-                    sheduleFunction(iteration);
+                while (acc >= fixedDelta) {
+                    acc -= fixedDelta;
+                    fixedUpdate(fixedDelta);
                 }
 
-                iteration();
-            }
-        }(this));
+                if (doRender)
+                    render(delta);
 
+                requestAnimationFrame(tick);
+            }
+
+            tick(then);
+        }
     </script>
 
     <script type="text/javascript">
 
         // canvas w/ hex
-        (function(global){
-            'use strict';
+        function fullscreenCanvas() {
+            let [can, ctx] = makeCanvas(window.innerWidth, window.innerHeight, false)
+            ctx.translate(can.width / 2, can.height / 2);
 
-            global.fullscreenCanvas = function() {
+            document.body.appendChild(can);
+            document.body.style.overflow = "hidden";
+            document.body.style.margin = "0";
+            document.body.style.padding = "0";
 
-                var c = document.createElement('canvas');
-                var ctx = c.getContext('2d');
+            return ctx;
+        }
 
-                ctx.canvas.width = window.innerWidth;
-                ctx.canvas.height = window.innerHeight;
-                ctx.canvas.style.position = 'absolute';
-                ctx.canvas.style.top = 0;
-                ctx.canvas.style.left = 0;
+        function makeCanvas(width, height, alpha) {
 
-                ctx.clear = function(){
-                    ctx.clearRect(-ctx.canvas.width/2, -ctx.canvas.height/2, ctx.canvas.width, ctx.canvas.height);
-                };
+            let can = document.createElement('canvas');
+            let ctx = can.getContext('2d', { alpha });
 
-                var q = 1 / Math.sqrt(3);
+            ctx.canvas.width = width;
+            ctx.canvas.height = height;
+            ctx.canvas.style.display = 'block';
 
-                ctx.getHexPath = function(h){
-                    var dx = q * h / 2;
-                    var dy = h / 2;
+            ctx.clear = function () {
+                ctx.clearRect(-ctx.canvas.width / 2, -ctx.canvas.height / 2, ctx.canvas.width, ctx.canvas.height);
+            };
 
-                    return [2 * dx, 0
-                            ,dx, -dy
-                            ,-dx, -dy
-                            ,-2 * dx, 0
-                            ,-dx, dy
-                            ,dx, dy];
-                }
+            let q = 1 / Math.sqrt(3);
 
-                ctx.makePath = function(vertices){
-                    this.beginPath();
-                    this.moveTo(vertices[0], vertices[1]);
-                    for(var i=2;i<vertices.length;i+=2){
-                        this.lineTo(vertices[i], vertices[i+1]);
-                    }
-                    this.closePath();
-                }
+            ctx.getHexPath = function (h) {
+                let dx = q * h / 2;
+                let dy = h / 2;
 
-                ctx.pathHex = function (h) {
-                    this.makePath(this.getHexPath(h));
-                };
-
-                ctx.fillHex = function (x, y, h) {
-                    this.save();
-                    this.translate(x, y);
-                    this.pathHex(h);
-                    this.fill();
-                    this.restore();
-                };
-
-                ctx.strokeHex = function (x, y, a) {
-                    this.save();
-                    this.translate(x, y);
-                    this.pathHex(a);
-                    this.stroke();
-                    this.restore();
-                };
-
-                ctx.translate(ctx.canvas.width / 2, ctx.canvas.height / 2);
-                document.body.appendChild(c);
-                return ctx;
+                return [2 * dx, 0
+                    , dx, -dy
+                    , -dx, -dy
+                    , -2 * dx, 0
+                    , -dx, dy
+                    , dx, dy];
             }
-        }(this));
 
+            ctx.makePath = function (vertices) {
+                this.beginPath();
+                this.moveTo(vertices[0], vertices[1]);
+                for (let i = 2; i < vertices.length; i += 2) {
+                    this.lineTo(vertices[i], vertices[i + 1]);
+                }
+                this.closePath();
+            }
+
+            ctx.pathHex = function (h) {
+                this.makePath(this.getHexPath(h));
+            };
+
+            ctx.fillHex = function (x, y, h) {
+                this.save();
+                this.translate(x, y);
+                this.pathHex(h);
+                this.fill();
+                this.restore();
+            };
+
+            ctx.strokeHex = function (x, y, a) {
+                this.save();
+                this.translate(x, y);
+                this.pathHex(a);
+                this.stroke();
+                this.restore();
+            };
+
+            return [can, ctx];
+        }
     </script>
 
     <script type="text/javascript">
-        
-        // Field
-        (function(global){
+        // Field 
+        (function (global) {
             "use strict";
 
-            function Field(mi, mj, makeCell){
-                var body = [];
+            function Field(mi, mj, makeCell) {
+                let body = [];
 
-                for(var i=0;i<mi;++i){
-                    var row = [];
-                    for(var j=0;j<mj;++j){
+                for (let i = 0; i < mi; ++i) {
+                    let row = [];
+                    for (let j = 0; j < mj; ++j) {
                         row.push(makeCell(i, j));
                     }
                     body.push(row);
@@ -145,21 +130,21 @@
                 this.body = body;
             }
 
-            Field.prototype.forEach = function(processCell){
-                for(var i=0;i<this.body.length;++i)
-                    for(var j=0;j<this.body[i].length;++j)
-                        if(this.body[i][j] !== null)
+            Field.prototype.forEach = function (processCell) {
+                for (let i = 0; i < this.body.length; ++i)
+                    for (let j = 0; j < this.body[i].length; ++j)
+                        if (this.body[i][j] !== null)
                             processCell(i, j, this.body[i][j]);
             }
 
-            Field.prototype.evolve = function(processCell){
-                var body = [];
+            Field.prototype.evolve = function (processCell) {
+                let body = [];
 
-                for(var i=0;i<this.body.length;++i){
-                    var row = [];
+                for (let i = 0; i < this.body.length; ++i) {
+                    let row = [];
 
-                    for(var j=0;j<this.body[i].length;++j){
-                        var cell = this.body[i][j];
+                    for (let j = 0; j < this.body[i].length; ++j) {
+                        let cell = this.body[i][j];
                         row.push(cell === null ? null : processCell(i, j, cell));
                     }
 
@@ -178,38 +163,38 @@
     <script type="text/javascript">
 
         // SuperCell
-        (function(global){
+        (function (global) {
             "use strict";
 
-            function SuperCell(rank){
-                if(rank < 1)
+            function SuperCell(rank) {
+                if (rank < 1)
                     throw new Error('SuperCell rank cannot be less than 1');
 
                 this.rank = rank;
             }
 
-            function getDimension(){
+            function getDimension() {
                 return 4 * this.rank + 1;
             }
 
-            Object.defineProperty(SuperCell.prototype, 'width', {get: getDimension});
-            Object.defineProperty(SuperCell.prototype, 'height', {get: getDimension});
+            Object.defineProperty(SuperCell.prototype, 'width', { get: getDimension });
+            Object.defineProperty(SuperCell.prototype, 'height', { get: getDimension });
 
-            SuperCell.prototype.contains = function(i, j){
-                var r = this.rank;
+            SuperCell.prototype.contains = function (i, j) {
+                let r = this.rank;
 
-                var h2 = r * 2;
+                let h2 = r * 2;
 
-                var a = 8*r + 1;
-                var b = 6*r + 1;
-                var c = 4*r - 1;
+                let a = 8 * r + 1;
+                let b = 6 * r + 1;
+                let c = 4 * r - 1;
 
-                return j*2   - i + h2-(a + b)/2   <= 0
-                    && j*2   - i + h2-(a - b)/2   >= 0
-                    && j*1/2 - i + h2 - (c + b)/4 <= 0
-                    && j*1/2 - i + h2 - (c - b)/4 >= 0
-                    && j*-1  - i + h2 + (c + b)/2 >= 0
-                    && j*-1  - i + h2 + (c - b)/2 <= 0;
+                return j * 2 - i + h2 - (a + b) / 2 <= 0
+                    && j * 2 - i + h2 - (a - b) / 2 >= 0
+                    && j * 1 / 2 - i + h2 - (c + b) / 4 <= 0
+                    && j * 1 / 2 - i + h2 - (c - b) / 4 >= 0
+                    && j * -1 - i + h2 + (c + b) / 2 >= 0
+                    && j * -1 - i + h2 + (c - b) / 2 <= 0;
             }
 
             global.SuperCell = SuperCell;
@@ -219,22 +204,22 @@
 
     <script type="text/javascript">
 
-        var sq32 = Math.sqrt(3) / 2;
-        var tau = 2*Math.PI;
+        let sq32 = Math.sqrt(3) / 2;
+        let tau = 2 * Math.PI;
 
         function hexToPix(i, j, h) {
             return [
                 h * (j) * sq32,
-                -h * (i - j / 2) + h/4
+                -h * (i - j / 2) + h / 4
             ];
         }
 
-        function rnd(){
-            switch(arguments.length){
-                
+        function rnd() {
+            switch (arguments.length) {
+
                 case 1:
-                    if(arguments[0] instanceof Array)
-                        return arguments[0][Math.floor(Math.random()*arguments[0].length)];
+                    if (arguments[0] instanceof Array)
+                        return arguments[0][Math.floor(Math.random() * arguments[0].length)];
                     else return arguments[0] * Math.random();
                 case 2:
                     return arguments[0] + Math.random() * (arguments[1] - arguments[0]);
@@ -244,69 +229,89 @@
             }
         }
 
-        function getGenerator(sc, colors){
-            return function(i,j){
+        function getGenerator(sc, colors) {
+            return function (i, j) {
                 return sc.contains(i, j)
                     ? {
-                        current: rnd(colors),
+                        current: rnd(colors.length) | 0,
                         next: null
-                      }
+                    }
                     : null;
             }
         }
 
-        var colors = ["rgb(255,40,20)", "rgb(153,153,153)", "rgb(238,139,0)", "rgb(139,167,0)", "rgb(0,185,169)", "rgb(94,121,255)", "rgb(207,0,248)"];
+        let colors = ["rgb(255,40,20)", "rgb(153,153,153)", "rgb(238,139,0)", "rgb(139,167,0)", "rgb(0,185,169)", "rgb(94,121,255)", "rgb(207,0,248)"];
+        let ctx = fullscreenCanvas();
+        let s = 35;
+        let isSimple = true;
 
-        var ctx = fullscreenCanvas();
+        let prerendered = (() => {
 
-        var sc = new SuperCell(5);
-        var fld = new Field(sc.width, sc.height, getGenerator(sc, colors)); 
-        var ijorigin = sc.rank*2;
+            let outer = ctx.getHexPath(.98 * s);
+            let inner = ctx.getHexPath(.85 * s);
 
-        function render(i, j, cell){
-            var s = 30;
-            var pos = hexToPix(i-ijorigin, j-ijorigin, s);
-            var x = pos[0], y = pos[1];
+            let extent = outer.reduce((extent, coord, i) => {
 
+                let k = i % 2;
+                extent[k] = Math.min(extent[k], coord)
+                extent[k + 2] = Math.max(extent[k + 2], coord)
+                return extent;
+
+            }, [0, 0, 0, 0]);
+
+            let w = Math.ceil(extent[2]) - Math.floor(extent[0]);
+            let h = Math.ceil(extent[3]) - Math.floor(extent[1]);
+
+            return colors.map(color => {
+                let [can, c] = makeCanvas(w, h, true);
+                c.translate(w / 2, h / 2);
+                renderHex(c, s, color);
+                return can;
+            })
+        })();
+
+        let sc = new SuperCell(7);
+        let fld = new Field(sc.width, sc.height, getGenerator(sc, colors));
+        let ijorigin = sc.rank * 2;
+
+
+        function renderHex(ctx, s, color) {
             ctx.save();
-            ctx.translate(x, y)
-            
-            //var outer = ctx.getHexPath(.97*s);
-            //var inner = ctx.getHexPath(.75*s);
-            
-            ctx.fillStyle = cell.current;
-            ctx.beginPath();
-            ctx.arc(0,0,s/2.5,0,tau);
-            ctx.closePath();
-            //ctx.makePath(outer);
+
+            let outer = ctx.getHexPath(.98 * s);
+            let inner = ctx.getHexPath(.85 * s);
+
+            ctx.fillStyle = color;
+            ctx.makePath(outer);
             ctx.fill();
-            
+
             ctx.restore();
-            return;
-            
+
+            if (isSimple) return;
+
             ctx.globalCompositeOperation = 'screen';
-            
-            var grad = ctx.createLinearGradient(0, s/2, 0, -s/2);
+
+            let grad = ctx.createLinearGradient(0, s / 2, 0, -s / 2);
             grad.addColorStop(1, 'rgba(255,255,255, .3)');
             grad.addColorStop(.8, 'rgba(255,255,255,0)');
             grad.addColorStop(.6, 'rgba(255,255,255,0)');
             grad.addColorStop(.1, 'rgba(255,255,255, .4)');
             grad.addColorStop(0, 'rgba(255,255,255,.2)');
-            
+
             ctx.fillStyle = grad;
             ctx.fill();
 
-            grad = ctx.createLinearGradient(0, .7*s/2, 0, .7*-s/2);
+            grad = ctx.createLinearGradient(0, .7 * s / 2, 0, .7 * -s / 2);
             grad.addColorStop(1, 'rgba(255,255,255, .4)');
             grad.addColorStop(0, 'rgba(255,255,255,0)');
-            
+
             ctx.fillStyle = grad;
             ctx.makePath(inner);
             ctx.fill();
-            
-            var l = outer.length;
-            var mode = ['screen', 'screen', 'screen', 'screen', 'multiply', 'multiply'];
-            var tints = [
+
+            let l = outer.length;
+            let mode = ['screen', 'screen', 'screen', 'screen', 'multiply', 'multiply'];
+            let tints = [
                 'rgba(255, 255, 255, .0)', 'rgba(255, 255, 255, .0)',
                 'rgba(255, 255, 255, .2)', 'rgba(255, 255, 255, .4)',
                 'rgba(255, 255, 255, .2)', 'rgba(255, 255, 255, .1)',
@@ -314,107 +319,111 @@
                 'rgba(0, 0, 0, .1)', 'rgba(0, 0, 0, .3)',
                 'rgba(0, 0, 0, .3)', 'rgba(0, 0, 0, .2)'
             ];
-            
-            for(var i=0;i<l;i+=2){
-                
-                grad = ctx.createLinearGradient(outer[i], outer[i+1], inner[(i+3)%l], inner[(i+4)%l]);
-                
+
+            for (let i = 0; i < l; i += 2) {
+
+                grad = ctx.createLinearGradient(outer[i], outer[i + 1], inner[(i + 3) % l], inner[(i + 4) % l]);
+
                 grad.addColorStop(0, tints[i]);
-                grad.addColorStop(1, tints[i+1]);
-                
+                grad.addColorStop(1, tints[i + 1]);
+
                 ctx.fillStyle = grad;
-                
+
                 ctx.makePath([
-                    outer[i], outer[i+1], outer[(i+2)%l], outer[(i+3)%l],
-                    inner[(i+2)%l], inner[(i+3)%l], inner[i], inner[i+1]
+                    outer[i], outer[i + 1], outer[(i + 2) % l], outer[(i + 3) % l],
+                    inner[(i + 2) % l], inner[(i + 3) % l], inner[i], inner[i + 1]
                 ]);
-                
-                ctx.globalCompositeOperation = mode[i/2];
+
+                ctx.globalCompositeOperation = mode[i / 2];
                 ctx.fill();
             }
-            
+
             ctx.restore();
         }
-        var colorChange = new Accumulator(2000);
-        
-        
-        var phase = 0;
-        
-        function Accumulator(target){
+
+        function render(i, j, cell) {
+            let s = 35;
+            let pos = hexToPix(i - ijorigin, j - ijorigin, s);
+            let x = pos[0], y = pos[1];
+
+            ctx.drawImage(prerendered[cell.current], x, y);
+        }
+
+        let colorChange = new Accumulator(2000);
+        let phase = 0;
+
+        function Accumulator(target) {
             this.target = target;
             this.value = 0;
         }
-        
-        Accumulator.prototype.add = function(value){
+
+        Accumulator.prototype.add = function (value) {
             this.value += value;
-            
-            if(this.value > this.target)
-            {
+
+            if (this.value > this.target) {
                 this.value -= this.target;
                 return true;
             }
-            
+
             return false;
         }
-        
-        
-        function MovingAverage(n){
+
+        function MovingAverage(n) {
             this.samples = new Array(n);
             this.pointer = 0;
         }
-        
-        MovingAverage.prototype.addSample = function(sample){
+
+        MovingAverage.prototype.addSample = function (sample) {
             this.samples[this.pointer++] = sample;
-            if(this.pointer>=this.samples.length)
+            if (this.pointer >= this.samples.length)
                 this.pointer = 0;
         }
-        
-        MovingAverage.prototype.average = function(){
-            var res = this.samples.reduce(function(sumobj, value){return {sum: sumobj.sum + value, count: sumobj.count+1}}, {sum:0,count:0});
-            
+
+        MovingAverage.prototype.average = function () {
+            let res = this.samples.reduce(function (sumobj, value) { return { sum: sumobj.sum + value, count: sumobj.count + 1 } }, { sum: 0, count: 0 });
+
             return res.sum / res.count;
         }
-        
-        var fixedFps = new MovingAverage(100);
-        var updateFps = new MovingAverage(100);
-              
-        loop(makeLoop(16, fixedUpdate, update), window.requestAnimationFrame);
 
+        let fixedFps = new MovingAverage(100);
+        let updateFps = new MovingAverage(100);
 
-        function fixedUpdate(delta){
+        loop(60, fixedUpdate, update);
+
+        function fixedUpdate(delta) {
             fixedFps.addSample(delta);
-            
-            var newTarget = null;
-            
-            if(colorChange.add(delta))  {
-                newTarget = rnd(colors);
+
+            let newTarget = null;
+
+            if (colorChange.add(delta)) {
+                newTarget = rnd(colors.length) | 0;
             }
 
-            fld.evolve(function(i, j, cell){
-                if(cell.next && cell.next.in < delta)
+            fld.evolve(function (i, j, cell) {
+                if (cell.next && cell.next.in < delta)
                     cell.current = cell.next.value;
-                
-                if(newTarget)   {
+
+                if (newTarget) {
                     cell.next = {
-                            value : newTarget,
-                            in: 20*(i+j) * rnd(.8, 1.2)
+                        value: newTarget,
+                        in: 20 * (i + j) * rnd(.8, 1.2)
                     };
                 }
-                else if(cell.next){
+                else if (cell.next) {
                     cell.next.in -= delta;
                 }
-                
+
                 return cell;
             });
         }
-                
-        function reportfps(){
-            console.log('fixed: '+1000/fixedFps.average()+'; update: '+1000/updateFps.average())
+
+        function reportfps() {
+            console.log('fixed: ' + 1000 / fixedFps.average() + '; update: ' + 1000 / updateFps.average())
         }
-        
-        function update(delta){
+
+        function update(delta) {
             updateFps.addSample(delta);
-            
+
             ctx.clear();
             fld.forEach(render);
         }
@@ -422,4 +431,5 @@
     </script>
 
 </body>
+
 </html>
