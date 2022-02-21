@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Ulam</title>
+</head>
+
+<body>
+    <script name="canvas" type="text/javascript">
+
+        // canvas w/ hex
+        function fullscreenCanvas() {
+            let [can, ctx] = makeCanvas(window.innerWidth, window.innerHeight, false)
+            ctx.translate(can.width / 2, can.height / 2);
+
+            document.body.appendChild(can);
+            document.body.style.overflow = "hidden";
+            document.body.style.margin = "0";
+            document.body.style.padding = "0";
+
+            return ctx;
+        }
+
+        function makeCanvas(width, height, alpha) {
+
+            let can = document.createElement('canvas');
+            let ctx = can.getContext('2d', { alpha });
+
+            ctx.canvas.width = width;
+            ctx.canvas.height = height;
+            ctx.canvas.style.display = 'block';
+
+            return [can, ctx];
+        }
+    </script>
+
+    <script type="text/javascript">
+
+        let s = 10;
+
+        let ctx = fullscreenCanvas();
+        let n = 1;
+        let leg = 1;
+        let legN = -1;
+        let k = 0;
+
+        let dx = 1;
+        let dy = 0;
+
+        let x = 0;
+        let y = 0;
+
+
+        while (true) {
+            render();
+
+            if (n > 3000 && legN == leg-2) break;
+
+            update();
+        }
+
+        function update() {
+            ++n;
+
+            if (++legN >= leg) {
+                legN = 0;
+
+                if (dx == 1) {
+                    dy = -1;
+                    dx = 0;
+                }
+                else if (dy == -1) {
+                    dx = -1;
+                    dy = 0;
+                }
+                else if (dx == -1) {
+                    dx = 0;
+                    dy = 1;
+                }
+                else {
+                    dx = 1;
+                    dy = 0;
+                }
+                if (++k > 1) {
+                    k = 0;
+                    ++leg;
+                }
+            }
+
+            x += 2 * dx * s;
+            y += 2 * dy * s;
+        }
+
+        function render() {
+            ctx.fillStyle = ctx.strokeStyle = 'white';
+
+            if (isPrime(n))
+                ctx.fillRect(x, y, s, s);
+            else
+                ctx.strokeRect(x + s / 2 - s / 10, y + s / 2 - s / 10, s / 5, s / 5);
+        }
+
+        function isPrime(n) {
+            if (n % 2 == 0) return false;
+
+            for (let i = 3; i < Math.sqrt(n); i += 2) {
+                if (n % i == 0) return false;
+            }
+            return true;
+        }
+
+    </script>
+</body>
+
+</html>

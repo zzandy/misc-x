@@ -1,7 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
 
 <head>
+    <meta charset="utf-8" />
+    <title>Phyllotaxis</title>
 </head>
 
 <body>
@@ -89,13 +91,14 @@
         function fullscreenCanvas() {
 
             var c = document.createElement('canvas');
-            var ctx = c.getContext('2d');
+            var ctx = c.getContext('2d', { alpha: false });
 
             ctx.canvas.width = window.innerWidth;
             ctx.canvas.height = window.innerHeight;
             ctx.canvas.style.position = 'absolute';
             ctx.canvas.style.top = 0;
             ctx.canvas.style.left = 0;
+            ctx.canvas.style.display = 'block';
 
             ctx.clear = function () {
                 ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
@@ -127,6 +130,9 @@
             }
 
             document.body.appendChild(c);
+            document.body.style.overflow = "hidden";
+            document.body.style.margin = "0";
+            document.body.style.padding = "0";
             return ctx;
         }
     </script>
@@ -162,26 +168,7 @@
             return (r * r / c / c) | 0;
         }
 
-        function find(min, max, fn) {
-
-            if (max < min)
-                throw new Error(min, max);
-
-            if (Math.abs(max - min) < 2)
-                return max;
-
-            var t = ((min + max) / 2) | 0;
-            switch (fn(t)) {
-                case 0:
-                    return t;
-                case 1:
-                    return find(t, max, fn);
-                case -1:
-                    return find(min, t, fn);
-            }
-        }
-
-        split(n, sqrt(n / 10) | 0, render);
+        split(n, sqrt(n) | 0, render);
 
         function split(total, perFrame, fn) {
             const numPages = total / perFrame;
@@ -189,7 +176,7 @@
             function frame(frameNo) {
 
                 for (let i = 0; i < numPages; ++i) {
-                    const j = frameNo + i * perFrame;
+                    const j = frameNo * perFrame + i;
                     if (j > total)
                         break;
                     fn(j);
@@ -206,7 +193,7 @@
             var p = pos(i, a, c);
 
             var prime = isPrime(i);
-            ctx.fillStyle = prime ? 'black' : 'silver'
+            ctx.fillStyle = prime ? 'gold' : 'brown'
             ctx.fillCircle(p[0], p[1], (prime ? 1.3 : .7) * c);
         }
 
