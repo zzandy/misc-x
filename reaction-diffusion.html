@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Reaction Diffusion</title>
+</head>
+
+<body>
+    <script name="canvas" type="text/javascript">
+
+        // canvas w/ hex
+        function fullscreenCanvas() {
+            let [can, ctx] = makeCanvas(window.innerWidth, window.innerHeight, false)
+
+            document.body.appendChild(can);
+            document.body.style.overflow = "hidden";
+            document.body.style.margin = "0";
+            document.body.style.padding = "0";
+
+            return ctx;
+        }
+
+        function makeCanvas(width, height, alpha) {
+
+            let can = document.createElement('canvas');
+            let ctx = can.getContext('2d', { alpha });
+
+            ctx.canvas.width = width;
+            ctx.canvas.height = height;
+            ctx.canvas.style.display = 'block';
+
+            return [can, ctx];
+        }
+    </script>
+
+    <script name="loop" type="text/javascript">
+
+        function loop(targetFps, fixedUpdate, render) {
+            let fixedDelta = 1000 / targetFps;
+            let acc = fixedDelta;
+            let then = performance.now();
+
+            function tick(now) {
+                let delta = now - then;
+                acc += delta;
+                then = now;
+                let doRender = acc >= fixedDelta;
+                let reps = 0;
+
+                while (acc >= fixedDelta && ++reps < 20) {
+                    acc -= fixedDelta;
+                    fixedUpdate(fixedDelta);
+                }
+
+                if (reps == 20) acc = 0;
+
+                if (doRender)
+                    render(delta);
+
+                requestAnimationFrame(tick);
+            }
+
+            tick(then);
+        }
+    </script>
+
+    <script type="text/javascript">
+        const width = 200;
+        const height = 200;
+
+        let da = 1;
+        let db = .5;
+        let feed = .055;
+        let kill = .062;
+
+        let t = 1;
+
+        let screen = fullscreenCanvas();
+        let [can, ctx] = makeCanvas(width, height, false);
+        let imgdata = ctx.getImageData(0, 0, width, height);
+        let [ox, oy, scale] = calculateScaling(screen, width, height);
+
+        let current = makeGrid(width, height);
+        let next = makeGrid(width, height);
+
+        function makeGrid(w, h) {
+            let res = [];
+            for (let i = 0; i < h; ++i) {
+                let row = [];
+                for (let j = 0; j < w; ++j)
+                    row.push({ a: .9 + Math.random() * .1, b: (i > h * .45 && i < h * .55 && j > h * .45 && j < h * .55) ? (Math.random() * .1 + .9) : Math.random() * .1 });
+                res.push(row);
+            }
+            return res;
+        }
+
+        loop(60, update, render);
+
+        function update() {
+            for (let i = 0; i < height; ++i) {
+                for (let j = 0; j < width; ++j) {
+                    let a = current[i][j].a;
+                    let b = current[i][j].b;
+                    let ab2 = a * b * b;
+
+                    next[i][j].a = limit(a + t * (da * laplacea(i, j) - ab2 + feed * (1 - a)));
+                    next[i][j].b = limit(b + t * (db * laplaceb(i, j) + ab2 - (kill + feed) * b));
+                }
+            }
+
+            let tmp = current;
+            current = next;
+            next = tmp;
+        }
+
+        function limit(v) {
+            return Math.max(0, Math.min(1, v));
+        }
+
+        function laplacea(i, j) {
+            return (current[wrap(i + 1, height)][j].a * .2
+                + current[wrap(i - 1, height)][j].a * .2
+                + current[i][wrap(j + 1, width)].a * .2
+                + current[i][wrap(j - 1, width)].a * .2
+                + current[wrap(i + 1, height)][wrap(j + 1, width)].a * .05
+                + current[wrap(i + 1, height)][wrap(j - 1, width)].a * .05
+                + current[wrap(i - 1, height)][wrap(j + 1, width)].a * .05
+                + current[wrap(i - 1, height)][wrap(j - 1, width)].a * .05
+                - current[i][j].a);
+        }
+
+
+        function laplaceb(i, j) {
+            return (current[wrap(i + 1, height)][j].b * .2
+                + current[wrap(i - 1, height)][j].b * .2
+                + current[i][wrap(j + 1, width)].b * .2
+                + current[i][wrap(j - 1, width)].b * .2
+                + current[wrap(i + 1, height)][wrap(j + 1, width)].b * .05
+                + current[wrap(i + 1, height)][wrap(j - 1, width)].b * .05
+                + current[wrap(i - 1, height)][wrap(j + 1, width)].b * .05
+                + current[wrap(i - 1, height)][wrap(j - 1, width)].b * .05
+                - current[i][j].b);
+        }
+
+        function wrap(x, w) {
+            return x < 0 ? w - 1 : x >= w ? 0 : x;
+        }
+
+        function render() {
+
+            for (let i = 0; i < height; ++i) {
+                for (let j = 0; j < width; ++j) {
+                    let color = getColor(current[i][j]);
+                    let idx = (i * width + j) * 4;
+
+                    imgdata.data[idx] = color[0]
+                    imgdata.data[idx + 1] = color[1]
+                    imgdata.data[idx + 2] = color[2]
+                    imgdata.data[idx + 3] = color[3]
+                }
+            }
+
+            ctx.putImageData(imgdata, 0, 0);
+            screen.imageSmoothingEnabled = false;
+            screen.drawImage(can, ox, oy, width * scale, height * scale);
+            screen.imageSmoothingEnabled = true;
+        }
+
+        function getColor(cell) {
+            return [(255 * cell.a) | 0, 0, (255 * cell.b) | 0, 255];
+        }
+
+        function calculateScaling(ctx, w, h) {
+            let s = Math.min(ctx.canvas.width / w, ctx.canvas.height / h) | 0;
+
+            let x = (ctx.canvas.width - w * s) / 2;
+            let y = (ctx.canvas.height - h * s) / 2;
+
+            return [x, y, s];
+        }
+
+    </script>
+</body>
+
+</html>
