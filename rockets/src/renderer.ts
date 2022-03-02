@@ -32,14 +32,6 @@ export class Renderer {
             ctx.strokeCircle(goal.x, goal.y, 50);
         }
 
-        ctx.fillStyle = 'white';
-        for (let expl of explosions) {
-            ctx.fillCircle(expl.pos.x, expl.pos.y, expl.age / 5);
-            ctx.globalCompositeOperation = "destination-out";
-            ctx.fillCircle(expl.pos.x, expl.pos.y, Math.max(0, expl.age / 5 - 5));
-            ctx.globalCompositeOperation = "source-over";
-        }
-
         for (let rocket of rockets) {
             if (rocket.isDead) continue;
 
@@ -58,6 +50,14 @@ export class Renderer {
             ctx.stroke();
 
             ctx.restore();
+        }
+
+        ctx.fillStyle = 'white';
+        for (let expl of explosions) {
+            ctx.fillCircle(expl.pos.x, expl.pos.y, expl.age / 4);
+            // ctx.globalCompositeOperation = "destination-out";
+            // ctx.fillCircle(expl.pos.x, expl.pos.y, Math.max(0, expl.age / 4 - 5));
+            // ctx.globalCompositeOperation = "source-over";
         }
 
         this.ctx.restore();

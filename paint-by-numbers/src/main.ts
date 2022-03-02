@@ -31,7 +31,10 @@ function init(): TState {
 
     let state: TState = { ctx, width: ctx.canvas.width, height: ctx.canvas.height, image: null, cursor: [0, 0] };
 
-    fetchImage('https://static.wikia.nocookie.net/amphibiapedia/images/d/de/5)_Hop_Pop.png')
+    let img='https://static.wikia.nocookie.net/amphibiapedia/images/d/de/5)_Hop_Pop.png';
+    img='https://vignette.wikia.nocookie.net/amphibiapedia/images/4/4e/Anne_Boonchuy.png/revision/latest?cb=20190923114113';
+    img='https://image.tmdb.org/t/p/w1280/8aZnAFumv1NwiRHeZNl8s3hlYjy.jpg'
+    fetchImage(img)
         .then(imgdata => state.image = convertImageData(imgdata));
 
     ctx.canvas.addEventListener('mousemove', e => state.cursor = [e.clientX, e.clientY]);

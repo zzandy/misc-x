@@ -87,6 +87,10 @@
         }
 
         let random = new Case(path.length);
+        let brute = new Case(path.length)
+        let numBrute = 0;
+        let totalBrute = fac(path.length)
+        let it = getPermInter(path.length)
 
         loop(60, update, render);
 
@@ -96,7 +100,20 @@
             if (score < random.highScore) {
                 random.bestOrder = [...random.order];
                 random.highScore = score;
-                console.log(score);
+                console.log('random', score);
+            }
+
+            let next = it();
+            ++numBrute;
+
+            if (next !== undefined) {
+                brute.order = next;
+                score = measure(next);
+                if (score < brute.highScore) {
+                    brute.bestOrder = [...brute.order];
+                    brute.highScore = score;
+                    console.log('brute ' + (100 * numBrute / totalBrute).toFixed(3) + '%', score);
+                }
             }
         }
 
@@ -130,14 +147,16 @@
 
         function render() {
             ctx.clearRect(0, 0, w, h);
-            ctx.lineWidth = 2;
 
-            ctx.lineWidth *= 3;
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = 'green';
+            renderPoints(brute.bestOrder);
+
+            ctx.lineWidth = 2;
             ctx.strokeStyle = 'gold';
-            ctx.fillStyle = 'yellow';
             renderPoints(random.bestOrder);
 
-            ctx.lineWidth /= 3;
+            ctx.lineWidth = 1;
             ctx.strokeStyle = 'grey';
             ctx.fillStyle = 'silver';
             renderPoints(random.order);
@@ -175,7 +194,6 @@
             let i = a.length;
 
             while (0 !== i) {
-
                 let idx = rnd(i--);
 
                 [a[i], a[idx]] = [a[idx], a[i]];
@@ -187,6 +205,59 @@
         function rnd(n) {
             return (Math.random() * n) | 0
         }
+
+        // Steinhaus–Johnson–Trotter
+        function getPermInter(n) {
+            const up = true;
+            const down = false;
+
+            let values = [];
+            let directions = [];
+            let first = true;
+
+            for (let i = 0; i < n; ++i) {
+                values.push(i);
+                directions.push(down);
+            }
+
+            function getTarget(i) {
+                return i + (directions[i] == up ? 1 : -1);
+            }
+
+            function validMove(i) {
+                let target = getTarget(i);
+                return target >= 0 && target < n ? values[target] < values[i] : false
+            }
+
+            return () => {
+                if (first) {
+                    first = false;
+                    return [...values];
+                }
+
+                let largestMobileId = values.reduce((best, _, current) => best < 0 || values[best] < values[current] ? validMove(current) ? current : best : best, -1);
+
+                if (largestMobileId == -1) return undefined;
+
+                let target = getTarget(largestMobileId);
+
+                for (let i = 0; i < n; ++i) {
+                    if (values[i] > values[largestMobileId]) directions[i] = !directions[i];
+                }
+
+                [values[largestMobileId], values[target]] = [values[target], values[largestMobileId]];
+                [directions[largestMobileId], directions[target]] = [directions[target], directions[largestMobileId]];
+
+                return [...values];
+            }
+        }
+
+        function fac(n) {
+            if (n < 2) return 1;
+
+            return n * fac(n - 1);
+        }
+
 
     </script>
 </body>

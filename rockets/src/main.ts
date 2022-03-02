@@ -82,7 +82,7 @@ function update(delta: number, state: State) {
 
         const dist = state.goals.reduce((min, goal) => Math.min(min, goal.distance(rocket.pos)), Infinity);
         const won = dist < d;
-        const score = (d / dist - interval / 1000 / maxInterval / 3) / (won ? 1 : 2);
+        const score = (dist / d + interval / 1000 / maxInterval) / (won ? 1 : 2);
 
         rocket.score(score);
 
@@ -117,7 +117,7 @@ function update(delta: number, state: State) {
     if ((interval += delta) > maxInterval * 1000 || numAlive == 0) {
         interval = 0;
 
-        console.log(state.best.toFixed(3), state.wins, state.first.toFixed(2), state.bestCommands, (state.avgCommands / state.avgCommandsCount).toFixed(1));
+        //console.log(state.best.toFixed(3), state.wins, state.first.toFixed(2), state.bestCommands, (state.avgCommands / state.avgCommandsCount).toFixed(1));
         state.best = state.wins = state.first = state.bestCommands = 0;
 
         const prev = state.rockets;
