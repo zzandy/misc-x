@@ -71,23 +71,37 @@
         const h = ctx.canvas.height;
 
         let path = makePoints(12, w, h);
-        let best = [...path];
-        let bestScore = measure(best);
+
+        class Case {
+            constructor(n) {
+                this.order = []
+
+                for (let i = 0; i < n; ++i)
+                    this.order.push(i);
+
+                shuffle(this.order);
+
+                this.highScore = measure(this.order);
+                this.bestOrder = [...this.order];
+            }
+        }
+
+        let random = new Case(path.length);
 
         loop(60, update, render);
 
         function update() {
-            swapSome(path);
-            let score = measure(path);
-            if (score < bestScore) {
-                best = [...path];
-                bestScore = score;
+            swapSome(random.order);
+            let score = measure(random.order);
+            if (score < random.highScore) {
+                random.bestOrder = [...random.order];
+                random.highScore = score;
                 console.log(score);
             }
         }
 
         function swapSome(path) {
-            let numSwaps = 1 + (Math.random() < .2 ? 1 : 0) + (Math.random() < .1 ? 1 : 0) + (Math.random() < .05 ? 1 : 0)
+            let numSwaps = 1 + (Math.random() < .1 ? 1 : 0) + (Math.random() < .05 ? 1 : 0) + (Math.random() < .025 ? 1 : 0)
 
             while (numSwaps-- > 0) {
                 let a = (Math.random() * path.length) | 0;
@@ -99,16 +113,16 @@
             }
         }
 
-        function measure(path) {
+        function measure(order) {
             let len = 0;
             let prev = null;
-            for (let [x, y] of path) {
+            for (let i of order) {
                 if (prev != null) {
-                    const dx = x - prev[0];
-                    const dy = y - prev[1];
+                    const dx = path[i][0] - path[prev][0];
+                    const dy = path[i][1] - path[prev][1];
                     len += dx * dx + dy * dy;
                 }
-                prev = [x, y]
+                prev = i
             }
 
             return len;
@@ -121,30 +135,29 @@
             ctx.lineWidth *= 3;
             ctx.strokeStyle = 'gold';
             ctx.fillStyle = 'yellow';
-            renderPoints(best);
+            renderPoints(random.bestOrder);
 
             ctx.lineWidth /= 3;
             ctx.strokeStyle = 'grey';
             ctx.fillStyle = 'silver';
-            renderPoints(path);
+            renderPoints(random.order);
         }
 
-        function renderPoints(points) {
+        function renderPoints(order) {
             const s = 4;
 
             let prev = null;
-            for (let [x, y] of points) {
-
+            for (let i of order) {
                 if (prev != null) {
                     ctx.beginPath();
-                    ctx.moveTo(prev[0], prev[1]);
-                    ctx.lineTo(x, y)
+                    ctx.moveTo(path[prev][0], path[prev][1]);
+                    ctx.lineTo(path[i][0], path[i][1])
                     ctx.stroke();
                 }
 
-                prev = [x, y];
+                prev = i;
 
-                ctx.fillRect(x - s / 2, y - s / 2, s, s)
+                ctx.fillRect(path[i][0] - s / 2, path[i][1] - s / 2, s, s)
             }
         }
 
@@ -156,6 +169,23 @@
                 points.push([(pad + Math.random() * (w - pad * 2)) | 0, (pad + Math.random() * (h - pad * 2)) | 0]);
 
             return points;
+        }
+
+        function shuffle(a) {
+            let i = a.length;
+
+            while (0 !== i) {
+
+                let idx = rnd(i--);
+
+                [a[i], a[idx]] = [a[idx], a[i]];
+            }
+
+            return a;
+        }
+
+        function rnd(n) {
+            return (Math.random() * n) | 0
         }
 
     </script>
