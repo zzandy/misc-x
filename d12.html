@@ -196,7 +196,7 @@
             return score;
         }
 
-        function flioOneIter(v, wrap) {
+        function flipOneIter(v, wrap) {
             let n = 0;
             return () => {
                 switch (n++) {
@@ -208,8 +208,8 @@
         }
 
         function flipArrayIter(a, n) {
-            if (n == a.length - 1) return flioOneIter(a[n], true);
-            let headIt = flioOneIter(a[n]);
+            if (n == a.length - 1) return flipOneIter(a[n], true);
+            let headIt = flipOneIter(a[n]);
             let tailIt = flipArrayIter(a, n + 1);
 
             let head = headIt();
@@ -293,7 +293,6 @@
                 return [...values];
             }
         }
-
 
         function goodValues() {
             return [[6, 12, 2, 3, 4, 5]
