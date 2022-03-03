@@ -15,7 +15,7 @@
 </head>
 
 <body>
-    <canvas id="can"></canvas>
+
 
     <div style="position: absolute">
         <button onclick="toggleGrid()">Grid</button>
@@ -24,6 +24,7 @@
         <button onclick="toggleBalls()">Cores</button>
         <div id="fps"></div>
     </div>
+    <canvas id="can"></canvas>
 
     <!-- random -->
     <script type="text/javascript">
@@ -155,46 +156,38 @@
             return [origin, data];
         }
 
-        function MakeHexStore(extremes, initFn, cloneFn) {
+        function MakeHexStore(extremes, initFn) {
             const originData = MakeData(extremes, initFn);
 
-            return new HexStore(originData[0], originData[1], initFn, cloneFn);
+            return new HexStore(originData[0], originData[1], initFn);
         }
 
-        function HexStore(origin, data, initFn, cloneFn) {
+        function HexStore(origin, data, initFn) {
             this.origin = origin;
             this.data = data;
             this.initFn = initFn;
-            this.cloneFn = cloneFn;
         }
 
         HexStore.prototype.set = function (pos, value) {
             const n = this.data.length;
             const m = this.data[0].length;
 
-            const xo = this.origin[0];
-            const yo = this.origin[1];
-
-            const j = pos.j + xo;
-            const i = pos.i + yo;
+            const j = pos.j + this.origin[0];
+            const i = pos.i + this.origin[1];
 
             if (i >= 0 && j >= 0 && i < n && j < m) this.data[i][j] = value;
         }
 
         HexStore.prototype.forEach = function (processFn) {
-
             const n = this.data.length;
             const m = this.data[0].length;
-
-            const xo = this.origin[0];
-            const yo = this.origin[1];
 
             let i = -1;
             while (++i < n) {
                 let j = -1;
                 while (++j < m)
                     if (this.data[i][j] != null)
-                        processFn(this.data[i][j], new GridPoint(i - yo, j - xo));
+                        processFn(this.data[i][j]);
             }
         }
 
@@ -254,58 +247,22 @@
             });
 
         }
-
-        HexStore.prototype.copy = function () {
-
-            const n = this.data.length;
-            const m = this.data[0].length;
-
-            const copy = [];
-
-            for (let i = 0; i < n; ++i) {
-                const row = [];
-                for (let j = 0; j < m; ++j) {
-                    const val = this.data[i][j];
-                    row.push(val == null ? null : this.cloneFn(val));
-                }
-                copy.push(row);
-            }
-
-            return new HexStore(this.origin, copy, this.initFn, this.cloneFn);
-        }
-
-        HexStore.prototype.nextGen = function (cellCellStoreStoreFunc) {
-
-            const newStore = this.copy();
-
-            const n = this.data.length;
-            const m = this.data[0].length;
-
-            const xo = this.origin[0];
-            const yo = this.origin[1];
-
-            for (let i = 0; i < n; ++i) {
-                for (let j = 0; j < m; ++j) {
-                    const pos = new GridPoint(i - yo, j - xo);
-                    cellCellStoreStoreFunc(this.data[i][j], newStore.data[i][j], pos, this, newStore);
-                }
-            }
-
-            return newStore;
-        }
     </script>
 
     <!-- Fullscreen canvas -->
     <script type="text/javascript">
         function fullscreenCanvas(id) {
             const c = window.document.getElementById(id);
-            const ctx = c.getContext('2d');
+            const ctx = c.getContext('2d', { alpha: false });
 
             ctx.canvas.width = window.innerWidth;
             ctx.canvas.height = window.innerHeight;
-            ctx.canvas.style.position = 'absolute';
-            ctx.canvas.style.top = 0;
-            ctx.canvas.style.left = 0;
+
+            ctx.canvas.style.display = 'block';
+
+            document.body.style.overflow = "hidden";
+            document.body.style.margin = "0";
+            document.body.style.padding = "0";
 
             return ctx;
         }
@@ -428,16 +385,18 @@
             requestAnimationFrame(tick);
 
             function tick(now) {
-
                 time += now - then;
                 then = now;
                 let doRender = false;
+                let n = 20;
 
-                while (time > delta) {
+                while (time > delta && n-- > 0) {
                     time -= delta;
                     world = update(world);
                     doRender = true;
                 }
+
+                if (n == 0) time = 0;
 
                 if (doRender)
                     render(world);
@@ -517,26 +476,19 @@
                 return balls;
             })(maxd, mind);
 
-
             state.zoom = Math.min(w, h) / extremes.reduce(function (max, c) { return Math.max(max, dist(zero, c)) }, 0) * sq32;
+            state.thisGen = 0;
+            state.nextGen = 1;
 
-            function CellValue(v) {
-                this.v = v;
-            }
+            state.store = new MakeHexStore(extremes, (gridpos) => {
+                if (!supercell.contains(gridpos)) return null;
 
-            function CloneCellValue(arg) {
-                return new CellValue(arg.v);
-            }
-
-            function MakeCellValue(arg) {
-                if (supercell.contains(arg)) {
-                    return new CellValue(0);
+                return {
+                    value: [0, 0], // gen A, gen B
+                    gridpos,
+                    worldpos: world(gridpos)
                 }
-
-                return null;
-            }
-
-            state.store = new MakeHexStore(extremes, MakeCellValue, CloneCellValue);
+            });
 
             return state;
         }
@@ -545,22 +497,6 @@
             const balls = state.balls;
             const ballSpeed = state.minBallDistance;
             const maxd = state.maxBallDistance;
-
-            state.store = state.store.nextGen(function (oldCell, newCell, pos, oldStore, newStore) {
-
-                if (oldCell != null) {
-                    const p = world(pos);
-                    const sum = balls.reduce(function (s, b) {
-                        const d = dist(p, b.pos) / b.r / 2;
-
-                        if (d > 1) return s;
-
-                        return s + fade(1 - d);
-                    }, 0);
-
-                    newCell.v = sum;
-                }
-            });
 
             for (const b of state.balls) {
                 let nextpos = b.pos.plus(b.v);
@@ -574,105 +510,119 @@
                 b.pos = nextpos;
             }
 
+            state.store.forEach((cell) =>
+                cell.value[state.nextGen] = balls.reduce((sum, ball) => {
+                    const d = dist(cell.worldpos, ball.pos) / ball.r / 2;
+                    return d > 1 ? sum : (sum + fade(1 - d))
+                }, 0)
+            );
+
+            [state.nextGen, state.thisGen] = [state.thisGen, state.nextGen];
+
             return state;
         }
 
         function render(state) {
-
-            const store = state.store;
+            const balls = state.balls;
             const zoom = state.zoom;
 
-            function z(a, b, c) {
-                return (a >= 1 && b < 1 && c < 1) || (a < 1 && b >= 1 && c >= 1);
-            }
+            const store = state.store;
+            const paths = oneOnly
+                ? [[.5, colors[(numColors / 2) | 0], new Path2D()]]
+                : colors.map((c, i) => [i / (numColors - 1), c, new Path2D()]);
 
-            function calcpoint(a, b, k) {
-                a = ps[a];
-                b = ps[b];
+            function drawCell(cell) {
+                const x = cell.worldpos.x;
+                const y = cell.worldpos.y;
 
-                return a.plus(b.plus(a.times(-1)).times(k))
-            }
 
-            function line(dc, dk, a1, a2, b1, b2, ka, kb) {
-                const a = calcpoint(dk + a1, dk + a2, ka);
-                const b = calcpoint(dk + b1, dk + b2, kb);
 
-                ctx.beginPath();
-                ctx.moveTo(a.x, a.y);
-                ctx.lineTo(b.x, b.y);
-                ctx.stroke();
-            }
+                const o = cell.value[state.thisGen];
+                const ca = store.get(cell.gridpos, dirup);
+                const cb = store.get(cell.gridpos, dirul);
+                const cc = store.get(cell.gridpos, dirdl);
 
-            function getk(v0, v1) {
-                return enableLepr
-                    ? (1 - v0) / (v1 - v0)
-                    : .5;
-            }
+                const a = ca == null ? 0 : ca.value[state.thisGen];
+                const b = cb == null ? 0 : cb.value[state.thisGen];
+                const c = cc == null ? 0 : cc.value[state.thisGen];
 
-            function triangle(a, b, c, t, x) {
-                const va = (a == null ? 0 : a.v) / t;
-                const vb = (b == null ? 0 : b.v) / t;
-                const vc = (c == null ? 0 : c.v) / t;
-
-                a = va >= 1 ? 1 : 0;
-                b = vb >= 1 ? 1 : 0;
-                c = vc >= 1 ? 1 : 0;
-
-                if ((a == 0 && b == 0 && c == 0) || (a != 0 && b != 0 && c != 0))
-                    return;
-
-                if (z(a, b, c)) line(0, x, 0, 2, 0, 3, getk(va, vb), getk(va, vc));
-                else if (z(b, c, a)) line(1, x, 0, 2, 2, 3, getk(va, vb), getk(vb, vc));
-                else if (z(c, a, b)) line(2, x, 2, 3, 0, 3, getk(vb, vc), getk(va, vc));
-            }
-
-            function drawCell(cell, pos) {
-                const screen = world(pos);
-                const x = screen.x;
-                const y = screen.y;
-
-                ctx.save();
-                ctx.translate(x, y);
-
-                const a = store.get(pos, dirup);
-                const b = store.get(pos, dirul);
-                const c = store.get(pos, dirdl);
-
-                if (oneOnly) {
-                    ctx.strokeStyle = colors[numColors / 2 | 0];
-                    triangle(cell, a, b, .5, 0);
-                    triangle(cell, b, c, .5, 1);
-                }
-                else {
-                    for (let i = 0; i < numColors; ++i) {
-                        ctx.strokeStyle = colors[i];
-                        triangle(cell, a, b, i / (numColors - 1), 0);
-                        triangle(cell, b, c, i / (numColors - 1), 1);
-                    }
+                for (let [t, _, path] of paths) {
+                    triangle(x, y, o, a, b, t, path, 0);
+                    triangle(x, y, o, b, c, t, path, 1);
                 }
 
                 if (showGrid) {
+                    ctx.save();
+                    ctx.translate(x, y);
                     ctx.fillStyle = 'white';
                     ctx.fillRect(-1 / (2 * zoom), -1 / (2 * zoom), 1 / zoom, 1 / zoom);
+                    ctx.restore();
                 }
 
-                ctx.restore();
+
             }
 
             ctx.clearRect(-ctx.canvas.width / 2, -ctx.canvas.height / 2, ctx.canvas.width, ctx.canvas.height);
 
             ctx.save();
             ctx.scale(zoom, zoom);
-            const lw = ctx.lineWidth = 1 / zoom;
+            const lw = ctx.lineWidth = 1.5 / zoom;
 
             ctx.strokeStyle = '#fff';
+
             store.forEach(drawCell);
+
+            for (let [_, color, path] of paths) {
+                ctx.strokeStyle = color;
+                ctx.stroke(path);
+            }
 
             if (showBalls) state.balls.forEach(renderBall);
 
             ctx.restore();
 
             logFrame();
+        }
+
+        function triangle(ox, oy, a, b, c, t, path, x) {
+            const va = a / t;
+            const vb = b / t;
+            const vc = c / t;
+
+            a = va >= 1 ? 1 : 0;
+            b = vb >= 1 ? 1 : 0;
+            c = vc >= 1 ? 1 : 0;
+
+            if (a == b && b == c) return;
+
+            if (firstOdd(a, b, c)) line(ox, oy, path, x, 0, 2, 0, 3, getk(va, vb), getk(va, vc));
+            else if (firstOdd(b, c, a)) line(ox, oy, path, x, 0, 2, 2, 3, getk(va, vb), getk(vb, vc));
+            else if (firstOdd(c, a, b)) line(ox, oy, path, x, 2, 3, 0, 3, getk(vb, vc), getk(va, vc));
+        }
+
+        function calcpoint(a, b, k) {
+            a = ps[a];
+            b = ps[b];
+
+            return a.plus(b.plus(a.times(-1)).times(k))
+        }
+
+        function line(x, y, path, dk, a1, a2, b1, b2, ka, kb) {
+            const a = calcpoint(dk + a1, dk + a2, ka);
+            const b = calcpoint(dk + b1, dk + b2, kb);
+
+            path.moveTo(x + a.x, y + a.y);
+            path.lineTo(x + b.x, y + b.y);
+        }
+
+        function getk(v0, v1) {
+            return enableLepr
+                ? (1 - v0) / (v1 - v0)
+                : .5;
+        }
+
+        function firstOdd(a, b, c) {
+            return (a >= 1 && b < 1 && c < 1) || (a < 1 && b >= 1 && c >= 1);
         }
 
         function renderBall(ball) {
