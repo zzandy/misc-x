@@ -74,7 +74,7 @@
 
         class Method {
             constructor(n, title, color) {
-                this.title = title;
+                this._title = title;
                 this.color = color;
 
                 this.order = [];
@@ -86,17 +86,143 @@
                 this.bestOrder = [...this.order];
             }
 
+            get title() {
+                return this._title
+            }
+
             update() { throw 'not implemented' }
         }
 
-        class RandomMutation extends Method {
-            constructor(n, color) {
-                super(n, 'random', color)
+        class CountingMethod extends Method {
+            constructor(n, title, color) {
+                super(n, title, color)
+
+                this.num = 0;
+                this.total = fac(n)
             }
 
             update() {
-                swapSome(this.order);
+                ++this.num;
+            }
 
+            get title() {
+                return this._title + ' #' + this.num + ' ' + (100 * this.num / this.total).toFixed(4) + '%'
+            }
+        }
+
+        class Genetic extends Method {
+
+            #pop;
+            #selectionRate;
+            #mutationRate;
+            #currentGen;
+            #genNo = 0;
+
+            constructor(n, color, pop, selectionRate, mutationRate) {
+                super(n, 'genetic', color);
+
+                this.#pop = pop;
+                this.#selectionRate = selectionRate;
+                this.#mutationRate = mutationRate;
+
+                let gen = [];
+                for (let i = 0; i < pop; ++i) {
+                    gen.push([Math.random(), [...shuffle(this.order)]]);
+                }
+
+                this.#currentGen = gen
+            }
+
+            makeNextGen() {
+                ++this.#genNo;
+
+                let nextGen = [];
+                let sum = 0;
+
+                while (nextGen.length < this.#pop) {
+                    let a = pick(this.#currentGen);
+                    let b = pick(this.#currentGen);
+
+                    if (a == b) continue;
+
+                    let obj = this.cross(a, b);
+                    let score = measure(obj);
+                    sum += score;
+
+                    nextGen.push([score, obj]);
+                }
+
+                nextGen.sort(byScore)
+
+                // normalize
+                nextGen.forEach(a => a[0] /= sum * this.#selectionRate);
+
+                return nextGen;
+            }
+
+            cross(a, b) {
+
+                let n = (3 * Math.random()) | 0;
+                let t;
+
+                if (n == 0) { t = [...a] }
+                else if (n == 1) { t = [...b] }
+                else {
+                    let len = (a.length / 4 + 2 * Math.random() * a.length / 4) | 0;
+                    t = a.slice(0, len);
+
+                    for (let c of b) {
+                        if (!t.includes(c)) t.push(c);
+                    }
+                }
+
+                if (Math.random() < this.#mutationRate)
+                    swapSome(t)
+
+                return t;
+            }
+
+            update() {
+                this.#currentGen = this.makeNextGen();
+
+                this.order = this.#currentGen[0][1];
+                let score = measure(this.order);
+
+                if (score < this.highScore) {
+                    this.bestOrder = [...this.order];
+                    this.highScore = score;
+                    console.log(this.title, score);
+                    return true;
+                }
+
+                return false;
+            }
+
+            get title() {
+                return super.title + ' #' + this.#genNo;
+            }
+        }
+
+        function pick(scored) {
+            let t = Math.random();
+            for (let [score, value] of scored) {
+                if ((t -= score) < 0) return value;
+            }
+        }
+
+        function byScore([a, _], [b, __]) {
+            return a - b;
+        }
+
+        class RandomMutation extends CountingMethod {
+            constructor(n, color) {
+                super(n, 'random', color)
+                shuffle(this.order);
+            }
+
+            update() {
+                super.update();
+                swapSome(this.order);
                 let score = measure(this.order);
                 if (score < this.highScore) {
                     this.bestOrder = [...this.order];
@@ -109,30 +235,26 @@
             }
         }
 
-        class BruteForce extends Method {
-            #num = 0
-            #total;
+        class BruteForce extends CountingMethod {
             #iter;
 
             constructor(n, color) {
                 super(n, 'bruteforce', color);
 
-                this.#total = fac(path.length)
                 this.#iter = getPermInter(path.length)
             }
 
             update() {
                 let next = this.#iter();
 
-
                 if (next !== undefined) {
-                    ++this.#num;
+                    super.update();
                     this.order = next;
                     var score = measure(next);
                     if (score < this.highScore) {
                         this.bestOrder = [...this.order];
                         this.highScore = score;
-                        console.log(this.title + ' ' + (100 * this.#num / this.#total).toFixed(3) + '%', score);
+                        console.log(this.title, score);
                         return true;
                     }
                 }
@@ -146,6 +268,7 @@
             constructor(parent, color) {
                 super(parent.order.length, 'debug', color);
                 this.#parent = parent;
+                this.highScore = ''
             }
 
             update() {
@@ -159,11 +282,12 @@
         let methods = [
             new BruteForce(path.length, '#1b5496'),
             randomMut,
-            // new Method(path.length, 'genetic', '#f3bf01', nextGenetic),
-            new ShowCurrent(randomMut, 'grey'),
+            new Genetic(path.length, '#f3bf01', 20, .1, .1),
+            //            new ShowCurrent(randomMut, 'grey'),
         ];
 
         let doRender = true;
+        let skipped = 0;
 
         loop(120, update, render);
 
@@ -202,7 +326,8 @@
         }
 
         function render() {
-            if (!doRender) return;
+            if (!doRender && ++skipped < 100) return;
+            skipped = 0;
             doRender = false;
 
             ctx.clearRect(0, 0, w, h);
@@ -222,6 +347,14 @@
             ctx.fillStyle = 'silver';
             renderDots();
             ctx.restore();
+
+            i = 0;
+            for (let method of methods) {
+                ctx.fillStyle = method.color;
+                ctx.fillText(method.title + ' ' + method.highScore, 20, 20 + 20 * i)
+
+                ++i;
+            }
         }
 
         function renderPoints(order) {
