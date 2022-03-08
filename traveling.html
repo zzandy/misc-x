@@ -72,48 +72,104 @@
 
         let path = makePoints(12, w, h);
 
-        class Case {
-            constructor(n) {
-                this.order = []
+        class Method {
+            constructor(n, title, color) {
+                this.title = title;
+                this.color = color;
+
+                this.order = [];
 
                 for (let i = 0; i < n; ++i)
                     this.order.push(i);
 
-                shuffle(this.order);
-
                 this.highScore = measure(this.order);
                 this.bestOrder = [...this.order];
             }
+
+            update() { throw 'not implemented' }
         }
 
-        let random = new Case(path.length);
-        let brute = new Case(path.length)
-        let numBrute = 0;
-        let totalBrute = fac(path.length)
-        let it = getPermInter(path.length)
-
-        loop(60, update, render);
-
-        function update() {
-            swapSome(random.order);
-            let score = measure(random.order);
-            if (score < random.highScore) {
-                random.bestOrder = [...random.order];
-                random.highScore = score;
-                console.log('random', score);
+        class RandomMutation extends Method {
+            constructor(n, color) {
+                super(n, 'random', color)
             }
 
-            let next = it();
-            ++numBrute;
+            update() {
+                swapSome(this.order);
 
-            if (next !== undefined) {
-                brute.order = next;
-                score = measure(next);
-                if (score < brute.highScore) {
-                    brute.bestOrder = [...brute.order];
-                    brute.highScore = score;
-                    console.log('brute ' + (100 * numBrute / totalBrute).toFixed(3) + '%', score);
+                let score = measure(this.order);
+                if (score < this.highScore) {
+                    this.bestOrder = [...this.order];
+                    this.highScore = score;
+                    console.log(this.title, score);
+                    return true;
                 }
+
+                return false;
+            }
+        }
+
+        class BruteForce extends Method {
+            #num = 0
+            #total;
+            #iter;
+
+            constructor(n, color) {
+                super(n, 'bruteforce', color);
+
+                this.#total = fac(path.length)
+                this.#iter = getPermInter(path.length)
+            }
+
+            update() {
+                let next = this.#iter();
+
+
+                if (next !== undefined) {
+                    ++this.#num;
+                    this.order = next;
+                    var score = measure(next);
+                    if (score < this.highScore) {
+                        this.bestOrder = [...this.order];
+                        this.highScore = score;
+                        console.log(this.title + ' ' + (100 * this.#num / this.#total).toFixed(3) + '%', score);
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
+
+        class ShowCurrent extends Method {
+            #parent;
+            constructor(parent, color) {
+                super(parent.order.length, 'debug', color);
+                this.#parent = parent;
+            }
+
+            update() {
+                this.bestOrder = this.#parent.order;
+                return true;
+            }
+        }
+
+        let randomMut = new RandomMutation(path.length, '#e22f11');
+
+        let methods = [
+            new BruteForce(path.length, '#1b5496'),
+            randomMut,
+            // new Method(path.length, 'genetic', '#f3bf01', nextGenetic),
+            new ShowCurrent(randomMut, 'grey'),
+        ];
+
+        let doRender = true;
+
+        loop(120, update, render);
+
+        function update() {
+            for (let method of methods) {
+                doRender ||= method.update(method);
             }
         }
 
@@ -146,20 +202,26 @@
         }
 
         function render() {
+            if (!doRender) return;
+            doRender = false;
+
             ctx.clearRect(0, 0, w, h);
 
-            ctx.lineWidth = 4;
-            ctx.strokeStyle = 'green';
-            renderPoints(brute.bestOrder);
+            let i = 0;
+            for (let method of methods) {
+                ctx.strokeStyle = method.color;
+                ctx.save();
+                ctx.translate(i * 2, i * 4);
+                renderPoints(method.bestOrder);
+                ctx.restore();
+                ++i;
+            }
 
-            ctx.lineWidth = 2;
-            ctx.strokeStyle = 'gold';
-            renderPoints(random.bestOrder);
-
-            ctx.lineWidth = 1;
-            ctx.strokeStyle = 'grey';
+            ctx.save();
+            ctx.translate(i, i * 2);
             ctx.fillStyle = 'silver';
-            renderPoints(random.order);
+            renderDots();
+            ctx.restore();
         }
 
         function renderPoints(order) {
@@ -175,8 +237,14 @@
                 }
 
                 prev = i;
+            }
+        }
 
-                ctx.fillRect(path[i][0] - s / 2, path[i][1] - s / 2, s, s)
+        function renderDots(order) {
+            const s = 4;
+
+            for (let p of path) {
+                ctx.fillRect(p[0] - s / 2, p[1] - s / 2, s, s)
             }
         }
 
