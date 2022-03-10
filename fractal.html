@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Traveling</title>
+</head>
+
+<body>
+    <script name="canvas" type="text/javascript">
+        // canvas w/ hex
+        function fullscreenCanvas() {
+            let [can, ctx] = makeCanvas(window.innerWidth, window.innerHeight, false)
+
+            document.body.appendChild(can);
+            document.body.style.overflow = "hidden";
+            document.body.style.margin = "0";
+            document.body.style.padding = "0";
+
+            return ctx;
+        }
+
+        function makeCanvas(width, height, alpha) {
+
+            let can = document.createElement('canvas');
+            let ctx = can.getContext('2d', { alpha });
+
+            ctx.canvas.width = width;
+            ctx.canvas.height = height;
+            ctx.canvas.style.display = 'block';
+
+            return [can, ctx];
+        }
+    </script>
+
+    <script name="loop" type="text/javascript">
+
+        function loop(targetFps, fixedUpdate, render) {
+            let fixedDelta = 1000 / targetFps;
+            let acc = fixedDelta;
+            let then = performance.now();
+
+            function tick(now) {
+                let delta = now - then;
+                acc += delta;
+                then = now;
+                let doRender = acc >= fixedDelta;
+                let reps = 0;
+
+                while (acc >= fixedDelta && ++reps < 20) {
+                    acc -= fixedDelta;
+                    fixedUpdate(fixedDelta);
+                }
+
+                if (reps == 20) acc = 0;
+
+                if (doRender)
+                    render(delta);
+
+                requestAnimationFrame(tick);
+            }
+
+            tick(then);
+        }
+    </script>
+
+    <script type="text/javascript">
+        const ctx = fullscreenCanvas();
+
+        const w = ctx.canvas.width;
+        const h = ctx.canvas.height;
+
+        const img = ctx.getImageData(0, 0, w, h)
+
+        let maxiterations = 500;
+
+        let s = 0;
+        let q = Math.pow(2, s);
+
+        let updateRequired = true;
+
+        let startCursor = null;
+        let endCursor = null;
+
+        ctx.canvas.addEventListener('mousedown', down);
+        ctx.canvas.addEventListener('mouseup', up);
+        ctx.canvas.addEventListener('mousemove', move);
+
+        let vw = 8;
+        let viewport = {
+            ox: 0,
+            oy: 0,
+            w: vw,
+            h: vw * h / w
+        }
+
+        loop(60, update, render);
+
+        function update() {
+            if (updateRequired) {
+                updateRequired = false;
+                for (let y = 0; y < h; ++y) {
+                    for (let x = 0; x < w; ++x) {
+                        let v = mandlebrot(...scale(x, y, w, h, viewport));
+
+                        for (let k = 0; k < q; ++k) {
+
+                            let idx = (q * y * w + q * x + k) * 4;
+                            let color = v == maxiterations ? [0, 0, 0] : getRainbowRGB(Math.sqrt(v / maxiterations));
+                            img.data[idx + 0] = color[0] | 0
+                            img.data[idx + 1] = color[1] | 0
+                            img.data[idx + 2] = color[2] | 0
+                            img.data[idx + 3] = 255;
+                        }
+                    }
+                }
+            }
+        }
+
+        function render() {
+            ctx.putImageData(img, 0, 0);
+
+            if (startCursor != null && endCursor != null) {
+                ctx.strokeStyle = 'silver'
+                ctx.strokeRect(startCursor[0] - .5, startCursor[1] - .5, endCursor[0] - startCursor[0], endCursor[1] - startCursor[1]);
+            }
+
+        }
+
+        function mandlebrot(x, y) {
+            let a = x;
+            let b = y;
+            let n = 0;
+
+            while (n++ < maxiterations) {
+
+                let aa = a * a;
+                let bb = b * b;
+                let twoab = 2 * a * b;
+
+                a = aa - bb + x
+                b = twoab + y
+
+                if (aa * aa + bb * bb > 16) { return n }
+            }
+
+            return maxiterations;
+        }
+
+        function scale(x, y, w, h, viewport) {
+            return [
+                (x / w - .5) * viewport.w + viewport.ox,
+                (y / h - .5) * viewport.h + viewport.oy,
+            ]
+        }
+
+        function down(e) {
+            startCursor = [e.clientX, e.clientY];
+        }
+        function up(e) {
+
+            endCursor = [e.clientX, e.clientY];
+
+            p1 = scale(startCursor[0], startCursor[1], w, h, viewport)
+            p2 = scale(endCursor[0], endCursor[1], w, h, viewport)
+
+            viewport.ox = (p1[0] + p2[0]) / 2;
+            viewport.oy = (p1[1] + p2[1]) / 2;
+
+            viewport.w = Math.abs((p1[0] - p2[0]))
+            viewport.h = Math.abs((p1[1] - p2[1]))
+
+            updateRequired = true;
+
+            startCursor = null;
+            endCursor = null;
+        }
+        function move(e) {
+            endCursor = [e.clientX, e.clientY];
+        }
+
+        function getPositiveAngleDiff(a, b) {
+            return a < b ? a + 360 - b : a - b
+        }
+
+        function getRainbowRGB(num) {
+            let angle = num * 360
+            let components = []
+            for (let i = 0; i < 3; ++i) {
+                let startAngle = ((i + 1) * 120) % 360
+                let diffFromStart = getPositiveAngleDiff(angle, startAngle)
+                if (diffFromStart < 60)
+                    components[i] = diffFromStart / 60 * 255
+                else if (diffFromStart <= 180)
+                    components[i] = 255
+                else if (diffFromStart < 240)
+                    components[i] = (240 - diffFromStart) / 60 * 255
+                else
+                    components[i] = 0
+            }
+            return components
+        }
+
+    </script>
+</body>
+
+</html>
