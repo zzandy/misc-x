@@ -69,11 +69,14 @@
 
         const w = ctx.canvas.width;
         const h = ctx.canvas.height;
+
+        const d2 = (w * w + h * h) / 4;
+
         const ar = w / h;
 
         const img = ctx.getImageData(0, 0, w, h)
 
-        let colorOffset = Math.random();
+        let colorOffset = 0;//Math.random();
         let maxiterations = 500;
 
         let maxScale = 5;
@@ -93,7 +96,6 @@
         let view = new AABB(-vw / 2 - .5, -vw / ar / 2, vw, vw / ar);
         let protoview = null;
         let undoQueue = [];
-        let first = true;
 
         loop(60, update, render);
 
@@ -137,41 +139,51 @@
                 }
 
                 if (tile.scale > 0) {
-                    let w3 = (tile.bb.w / 3) | 0;
-                    let h3 = (tile.bb.h / 3) | 0;
+                    let debuff = black / n;
+                    debuff = (Math.pow(debuff - .65, 2) + debuff / 2 - .25) * 0.3725 * 200
 
-                    let tx0 = tile.bb.x;
-                    let ty0 = tile.bb.y;
-                    let tx1 = tx0 + w3;
-                    let ty1 = ty0 + h3;
-                    let tx2 = tx1 + w3;
-                    let ty2 = ty1 + h3;
-
-                    let v3 = tile.bb.w - w3 * 2;
-                    let g3 = tile.bb.h - h3 * 2;
-
-                    if (v3 < 0 && first) {
-                        console.log(tile.bb, tx0, tx1, tx2, w3, v3)
-                        first = false;
-                    }
-
-                    tilequeue.push(new Tile(new AABB(tx1, ty1, w3, h3), tile.scale - 1, 0));
-
-                    tilequeue.push(new Tile(new AABB(tx1, ty0, w3, h3), tile.scale - 1, 0));
-                    tilequeue.push(new Tile(new AABB(tx2, ty1, v3, h3), tile.scale - 1, 0));
-                    tilequeue.push(new Tile(new AABB(tx1, ty2, w3, g3), tile.scale - 1, 0));
-                    tilequeue.push(new Tile(new AABB(tx0, ty1, w3, h3), tile.scale - 1, 0));
-
-                    tilequeue.push(new Tile(new AABB(tx0, ty0, w3, h3), tile.scale - 1, 0));
-                    tilequeue.push(new Tile(new AABB(tx2, ty0, v3, h3), tile.scale - 1, 0));
-                    tilequeue.push(new Tile(new AABB(tx2, ty2, v3, g3), tile.scale - 1, 0));
-                    tilequeue.push(new Tile(new AABB(tx0, ty2, w3, g3), tile.scale - 1, 0));
+                    distribute(tile.bb, tile.scale - 1, (maxScale / tile.scale) * 50 + tile.priority + debuff);
                 }
 
                 if (performance.now() - then > 15) {
+                    tilequeue.sort(byPriority)
                     break;
                 }
             }
+        }
+
+        function distribute(bb, scale, priority) {
+            let w3 = (bb.w / 3) | 0;
+            let h3 = (bb.h / 3) | 0;
+
+            if (w3 < 50 || h3 < 50) {
+                tilequeue.push(new Tile(bb, scale, priority));
+                return;
+            }
+
+            let tx0 = bb.x;
+            let ty0 = bb.y;
+            let tx1 = tx0 + w3;
+            let ty1 = ty0 + h3;
+            let tx2 = tx1 + w3;
+            let ty2 = ty1 + h3;
+
+            let v3 = bb.w - w3 * 2;
+            let g3 = bb.h - h3 * 2;
+
+            tilequeue.push(new Tile(new AABB(tx1, ty1, w3, h3), scale, priority));
+            tilequeue.push(new Tile(new AABB(tx1, ty0, w3, h3), scale, priority));
+            tilequeue.push(new Tile(new AABB(tx2, ty1, v3, h3), scale, priority));
+            tilequeue.push(new Tile(new AABB(tx1, ty2, w3, g3), scale, priority));
+            tilequeue.push(new Tile(new AABB(tx0, ty1, w3, h3), scale, priority));
+            tilequeue.push(new Tile(new AABB(tx0, ty0, w3, h3), scale, priority));
+            tilequeue.push(new Tile(new AABB(tx2, ty0, v3, h3), scale, priority));
+            tilequeue.push(new Tile(new AABB(tx2, ty2, v3, g3), scale, priority));
+            tilequeue.push(new Tile(new AABB(tx0, ty2, w3, g3), scale, priority));
+        }
+
+        function byPriority(a, b) {
+            return a.priority - b.priority
         }
 
         function render() {
@@ -269,7 +281,7 @@
         }
 
         function resetRendering() {
-            tilequeue = [new Tile(new AABB(0, 0, w, h), maxScale, 0)];
+            distribute(new AABB(0, 0, w, h), maxScale, 0)
         }
 
         function key(e) {
@@ -317,7 +329,14 @@
         function Tile(bb, scale, priority) {
             this.bb = bb;
             this.scale = scale;
-            this.priority = priority;
+
+            let dx = w / 2 - (bb.x + bb.w / 2)
+            let dy = h / 2 - (bb.y + bb.w / 2)
+
+            let d = dx * dx + dy * dy;
+
+
+            this.priority = priority + 20 * d / d2;
         }
 
     </script>
