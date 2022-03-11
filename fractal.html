@@ -77,7 +77,7 @@
         const img = ctx.getImageData(0, 0, w, h)
 
         let colorOffset = 0;//Math.random();
-        let maxiterations = 500;
+        let maxiterations = 200;
 
         let maxScale = 5;
 
@@ -122,6 +122,7 @@
                         let v = mandlebrot(...screenToView(x + q / 2, y + q / 2));
 
                         let color = v == maxiterations ? [0, 0, 0] : getRainbowRGB(colorOffset + Math.pow(v / maxiterations, .5));
+
                         ++n;
                         black += +(v == maxiterations);
 
@@ -221,7 +222,7 @@
                 a = aa - bb + x
                 b = twoab + y
 
-                if (aa * aa + bb * bb > 16) { return n }
+                if (aa + bb > 16) return n;
             }
 
             return maxiterations;
