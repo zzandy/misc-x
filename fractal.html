@@ -73,12 +73,14 @@
 
         const img = ctx.getImageData(0, 0, w, h)
 
+        let colorOffset = Math.random();
         let maxiterations = 500;
 
-        let starts = 5;
-        let s = starts;
+        let maxScale = 5;
 
+        let tilequeue = [];
         let updateRequired = true;
+        resetRendering();
 
         ctx.canvas.addEventListener('mousedown', down);
         ctx.canvas.addEventListener('mouseup', up);
@@ -91,19 +93,35 @@
         let view = new AABB(-vw / 2 - .5, -vw / ar / 2, vw, vw / ar);
         let protoview = null;
         let undoQueue = [];
+        let first = true;
 
         loop(60, update, render);
 
         function update() {
-            if (updateRequired) {
+            if (!updateRequired) return;
+
+            let then = performance.now();
+            let tilesRendered = 0;
+            while (tilequeue.length > 0) {
                 updateRequired = false;
+                let tile = tilequeue.shift();
 
-                let q = Math.pow(2, s);
+                let q = Math.pow(2, tile.scale);
 
-                for (let y = 0; y < h; y += q) {
-                    for (let x = 0; x < w; x += q) {
+                let n = 0;
+                let black = 0;
+
+                let ox = tile.bb.x;
+                let oy = tile.bb.y;
+                let mx = ox + tile.bb.w;
+                let my = oy + tile.bb.h;
+                for (let y = oy; y < my; y += q) {
+                    for (let x = ox; x < mx; x += q) {
                         let v = mandlebrot(...screenToView(x + q / 2, y + q / 2));
-                        let color = v == maxiterations ? [0, 0, 0] : getRainbowRGB(Math.sqrt(v / maxiterations));
+
+                        let color = v == maxiterations ? [0, 0, 0] : getRainbowRGB(colorOffset + Math.pow(v / maxiterations, .5));
+                        ++n;
+                        black += +(v == maxiterations);
 
                         for (let sx = 0; sx < q; ++sx) {
                             for (let sy = 0; sy < q; ++sy) {
@@ -116,6 +134,42 @@
                             }
                         }
                     }
+                }
+
+                if (tile.scale > 0) {
+                    let w3 = (tile.bb.w / 3) | 0;
+                    let h3 = (tile.bb.h / 3) | 0;
+
+                    let tx0 = tile.bb.x;
+                    let ty0 = tile.bb.y;
+                    let tx1 = tx0 + w3;
+                    let ty1 = ty0 + h3;
+                    let tx2 = tx1 + w3;
+                    let ty2 = ty1 + h3;
+
+                    let v3 = tile.bb.w - w3 * 2;
+                    let g3 = tile.bb.h - h3 * 2;
+
+                    if (v3 < 0 && first) {
+                        console.log(tile.bb, tx0, tx1, tx2, w3, v3)
+                        first = false;
+                    }
+
+                    tilequeue.push(new Tile(new AABB(tx1, ty1, w3, h3), tile.scale - 1, 0));
+
+                    tilequeue.push(new Tile(new AABB(tx1, ty0, w3, h3), tile.scale - 1, 0));
+                    tilequeue.push(new Tile(new AABB(tx2, ty1, v3, h3), tile.scale - 1, 0));
+                    tilequeue.push(new Tile(new AABB(tx1, ty2, w3, g3), tile.scale - 1, 0));
+                    tilequeue.push(new Tile(new AABB(tx0, ty1, w3, h3), tile.scale - 1, 0));
+
+                    tilequeue.push(new Tile(new AABB(tx0, ty0, w3, h3), tile.scale - 1, 0));
+                    tilequeue.push(new Tile(new AABB(tx2, ty0, v3, h3), tile.scale - 1, 0));
+                    tilequeue.push(new Tile(new AABB(tx2, ty2, v3, g3), tile.scale - 1, 0));
+                    tilequeue.push(new Tile(new AABB(tx0, ty2, w3, g3), tile.scale - 1, 0));
+                }
+
+                if (performance.now() - then > 15) {
+                    break;
                 }
             }
         }
@@ -135,10 +189,7 @@
             ctx.fillStyle = 'white';
             ctx.fillText(text, 20, ctx.canvas.height - 30)
 
-            if (s > 0) {
-                --s;
-                updateRequired = true;
-            }
+            if (tilequeue.length > 0) updateRequired = true;
         }
 
         function scaleFormatted() {
@@ -218,8 +269,7 @@
         }
 
         function resetRendering() {
-            s = starts;
-            updateRequired = true;
+            tilequeue = [new Tile(new AABB(0, 0, w, h), maxScale, 0)];
         }
 
         function key(e) {
@@ -262,6 +312,12 @@
             this.y = y;
             this.w = w;
             this.h = h;
+        }
+
+        function Tile(bb, scale, priority) {
+            this.bb = bb;
+            this.scale = scale;
+            this.priority = priority;
         }
 
     </script>
