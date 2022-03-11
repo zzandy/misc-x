@@ -254,7 +254,7 @@
 
             if (e.button != 0) return;
 
-            if (protoview == null || protoview.w < 3 || protoview.h < 3) {
+            if (protoview == null || Math.abs(protoview.w) < 3 || Math.abs(protoview.h) < 3) {
                 protoview = null;
                 return;
             }
@@ -269,7 +269,7 @@
 
             let w = bx - ax;
             let h = by - ay;
-            let a = w / h;
+            let a = Math.abs(w / h);
 
             if (ar > a) w = Math.abs(h) * ar * Math.sign(w);
             else h = Math.abs(w) / ar * Math.sign(h);
@@ -324,6 +324,17 @@
             this.y = y;
             this.w = w;
             this.h = h;
+
+            if (w < 0) {
+                this.x += w;
+                this.w = -w;
+            }
+
+            if (h < 0) {
+                this.y += h;
+                this.h = -h;
+            }
+
         }
 
         function Tile(bb, scale, priority) {
