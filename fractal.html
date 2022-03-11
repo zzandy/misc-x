@@ -83,13 +83,14 @@
         ctx.canvas.addEventListener('mousedown', down);
         ctx.canvas.addEventListener('mouseup', up);
         ctx.canvas.addEventListener('mousemove', move);
+        ctx.canvas.addEventListener('contextmenu', e => e.preventDefault());
         window.addEventListener('keydown', key)
 
         let vw = 5;
 
         let view = new AABB(-vw / 2 - .5, -vw / ar / 2, vw, vw / ar);
         let protoview = null;
-        let undo = [];
+        let undoQueue = [];
 
         loop(60, update, render);
 
@@ -171,34 +172,46 @@
         }
 
         function down(e) {
-            startCursor = [e.clientX, e.clientY];
+            if (e.button != 0) return;
             protoview = new AABB(e.clientX, e.clientY, 0, 0);
         }
 
         function move(e) {
             if (protoview != null) {
-                let w = e.clientX - protoview.x;
-                let h = e.clientY - protoview.y;
-
-                let a = Math.abs(w / h);
-
-                protoview.w = ar > a ? Math.abs(h) * ar * Math.sign(w) : w
-                protoview.h = ar > a ? h : Math.abs(w) / ar * Math.sign(h)
+                protoview.w = e.clientX - protoview.x;
+                protoview.h = e.clientY - protoview.y;
             }
         }
 
         function up(e) {
+            if (e.button == 2) {
+                undo();
+                return;
+            }
+
+            if (e.button != 0) return;
+
             if (protoview == null || protoview.w < 3 || protoview.h < 3) {
                 protoview = null;
                 return;
             }
 
-            undo.push(view);
+            undoQueue.push(view);
 
             let [ax, ay] = screenToView(protoview.x, protoview.y);
             let [bx, by] = screenToView(protoview.x + protoview.w, protoview.y + protoview.h);
 
-            view = new AABB(ax, ay, bx - ax, by - ay);
+            let cx = (ax + bx) / 2
+            let cy = (ay + by) / 2;
+
+            let w = bx - ax;
+            let h = by - ay;
+            let a = w / h;
+
+            if (ar > a) w = Math.abs(h) * ar * Math.sign(w);
+            else h = Math.abs(w) / ar * Math.sign(h);
+
+            view = new AABB(cx - w / 2, cy - h / 2, w, h);
             protoview = null;
 
             resetRendering();
@@ -211,10 +224,14 @@
 
         function key(e) {
             if (e.key == 'Escape') {
-                if (undo.length > 0) {
-                    view = undo.pop();
-                    resetRendering();
-                }
+                undo();
+            }
+        }
+
+        function undo() {
+            if (undoQueue.length > 0) {
+                view = undoQueue.pop();
+                resetRendering();
             }
         }
 
