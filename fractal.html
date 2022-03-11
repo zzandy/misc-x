@@ -80,21 +80,15 @@
 
         let updateRequired = true;
 
-        let startCursor = null;
-        let endCursor = null;
-
         ctx.canvas.addEventListener('mousedown', down);
         ctx.canvas.addEventListener('mouseup', up);
         ctx.canvas.addEventListener('mousemove', move);
         window.addEventListener('keydown', key)
 
         let vw = 5;
-        let viewport = {
-            ox: -.5,
-            oy: 0,
-            w: vw,
-            h: vw / ar
-        }
+
+        let view = new AABB(-vw / 2 - .5, -vw / ar / 2, vw, vw / ar);
+        let protoview = null;
         let undo = [];
 
         loop(60, update, render);
@@ -107,7 +101,7 @@
 
                 for (let y = 0; y < h; y += q) {
                     for (let x = 0; x < w; x += q) {
-                        let v = mandlebrot(...scale(x + q / 2, y + q / 2, w, h, viewport));
+                        let v = mandlebrot(...screenToView(x + q / 2, y + q / 2));
                         let color = v == maxiterations ? [0, 0, 0] : getRainbowRGB(Math.sqrt(v / maxiterations));
 
                         for (let sx = 0; sx < q; ++sx) {
@@ -128,16 +122,9 @@
         function render() {
             ctx.putImageData(img, 0, 0);
 
-            if (startCursor != null && endCursor != null) {
+            if (protoview != null) {
                 ctx.strokeStyle = 'silver';
-
-                let [cx, cy] = startCursor;
-                let [ex, ey] = endCursor;
-
-                let w = Math.abs(cx - ex) * 2
-                let h = Math.abs(cy - ey) * 2
-
-                ctx.strokeRect(cx - w / 2 + .5, cy - h / 2 + .5, w, h);
+                ctx.strokeRect(protoview.x + .5, protoview.y + .5, protoview.w, protoview.h);
             }
 
             let text = scaleFormatted();
@@ -154,7 +141,7 @@
         }
 
         function scaleFormatted() {
-            return viewport.w < 0.01 ? viewport.w.toExponential(1) : viewport.w.toFixed(2)
+            return view.w < 0.01 ? view.w.toExponential(1) : view.w.toFixed(2)
         }
 
         function mandlebrot(x, y) {
@@ -163,7 +150,6 @@
             let n = 0;
 
             while (n++ < maxiterations) {
-
                 let aa = a * a;
                 let bb = b * b;
                 let twoab = 2 * a * b;
@@ -177,79 +163,59 @@
             return maxiterations;
         }
 
-        function scale(x, y, w, h, viewport) {
+        function screenToView(x, y) {
             return [
-                (x / w - .5) * viewport.w + viewport.ox,
-                (y / h - .5) * viewport.h + viewport.oy,
+                view.x + x * view.w / w,
+                view.y + y * view.h / h
             ]
         }
 
         function down(e) {
             startCursor = [e.clientX, e.clientY];
+            protoview = new AABB(e.clientX, e.clientY, 0, 0);
+        }
+
+        function move(e) {
+            if (protoview != null) {
+                let w = e.clientX - protoview.x;
+                let h = e.clientY - protoview.y;
+
+                let a = Math.abs(w / h);
+
+                protoview.w = ar > a ? Math.abs(h) * ar * Math.sign(w) : w
+                protoview.h = ar > a ? h : Math.abs(w) / ar * Math.sign(h)
+            }
         }
 
         function up(e) {
-            let [ex, ey] = scaleEndCursor(e.clientX, e.clientY);
-            let [cx, cy] = startCursor
-
-            startCursor = null;
-            endCursor = null;
-
-            let dx = ex - cx;
-            let dy = ey - cy;
-
-            if (dx * dx + dy * dy < 3) return;
-
-            p1 = scale(cx, cy, w, h, viewport)
-            p2 = scale(ex, ey, w, h, viewport)
-
-            undo.push(viewport);
-
-            viewport = {
-                ox: p1[0],
-                oy: p1[1],
-
-                w: Math.abs((p1[0] - p2[0])) * 2,
-                h: Math.abs((p1[1] - p2[1])) * 2
+            if (protoview == null || protoview.w < 3 || protoview.h < 3) {
+                protoview = null;
+                return;
             }
 
+            undo.push(view);
+
+            let [ax, ay] = screenToView(protoview.x, protoview.y);
+            let [bx, by] = screenToView(protoview.x + protoview.w, protoview.y + protoview.h);
+
+            view = new AABB(ax, ay, bx - ax, by - ay);
+            protoview = null;
+
+            resetRendering();
+        }
+
+        function resetRendering() {
             s = starts;
             updateRequired = true;
         }
 
-        function move(e) {
-            if (startCursor != null)
-                endCursor = scaleEndCursor(e.clientX, e.clientY);
-        }
-
         function key(e) {
             if (e.key == 'Escape') {
-
                 if (undo.length > 0) {
-                    viewport = undo.pop();
-
+                    view = undo.pop();
+                    resetRendering();
                 }
-                else {
-                    viewport.w *= 1.3
-                    viewport.h *= 1.3
-                }
-
-                s = starts;
-                updateRequired = true;
             }
-        }
-
-        function scaleEndCursor(x, y) {
-
-            let [cx, cy] = startCursor;
-            let w = Math.abs(cx - x) * 2;
-            let h = Math.abs(cy - y) * 2;
-
-            let a = w / h;
-
-            return a > ar
-                ? [cx + w / 2, cy + w / ar / 2]
-                : [cx + h * ar / 2, cy + h / 2]
         }
 
         function getPositiveAngleDiff(a, b) {
@@ -272,6 +238,13 @@
                     components[i] = 0
             }
             return components
+        }
+
+        function AABB(x, y, w, h) {
+            this.x = x;
+            this.y = y;
+            this.w = w;
+            this.h = h;
         }
 
     </script>
