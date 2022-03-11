@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="utf-8" />
-    <title>Traveling</title>
+    <title>Mandelbrot</title>
 </head>
 
 <body>
@@ -69,6 +69,7 @@
 
         const w = ctx.canvas.width;
         const h = ctx.canvas.height;
+        const ar = w / h;
 
         const img = ctx.getImageData(0, 0, w, h)
 
@@ -91,7 +92,7 @@
             ox: 0,
             oy: 0,
             w: vw,
-            h: vw * h / w
+            h: vw / ar
         }
 
         loop(60, update, render);
@@ -104,7 +105,6 @@
                         let v = mandlebrot(...scale(x, y, w, h, viewport));
 
                         for (let k = 0; k < q; ++k) {
-
                             let idx = (q * y * w + q * x + k) * 4;
                             let color = v == maxiterations ? [0, 0, 0] : getRainbowRGB(Math.sqrt(v / maxiterations));
                             img.data[idx + 0] = color[0] | 0
@@ -121,8 +121,15 @@
             ctx.putImageData(img, 0, 0);
 
             if (startCursor != null && endCursor != null) {
-                ctx.strokeStyle = 'silver'
-                ctx.strokeRect(startCursor[0] - .5, startCursor[1] - .5, endCursor[0] - startCursor[0], endCursor[1] - startCursor[1]);
+                ctx.strokeStyle = 'silver';
+
+                let [cx, cy] = startCursor;
+                let [ex, ey] = endCursor;
+
+                let w = Math.abs(cx - ex) * 2
+                let h = Math.abs(cy - ey) * 2
+
+                ctx.strokeRect(cx - w / 2 + .5, cy - h / 2 + .5, w, h);
             }
 
         }
@@ -157,26 +164,41 @@
         function down(e) {
             startCursor = [e.clientX, e.clientY];
         }
-        function up(e) {
 
-            endCursor = [e.clientX, e.clientY];
+        function up(e) {
+            endCursor = scaleEndCursor(e.clientX, e.clientY);
 
             p1 = scale(startCursor[0], startCursor[1], w, h, viewport)
             p2 = scale(endCursor[0], endCursor[1], w, h, viewport)
 
-            viewport.ox = (p1[0] + p2[0]) / 2;
-            viewport.oy = (p1[1] + p2[1]) / 2;
+            viewport.ox = p1[0];
+            viewport.oy = p1[1];
 
-            viewport.w = Math.abs((p1[0] - p2[0]))
-            viewport.h = Math.abs((p1[1] - p2[1]))
+            viewport.w = Math.abs((p1[0] - p2[0]))*2
+            viewport.h = Math.abs((p1[1] - p2[1]))*2
 
             updateRequired = true;
 
             startCursor = null;
             endCursor = null;
         }
+
         function move(e) {
-            endCursor = [e.clientX, e.clientY];
+            if (startCursor != null)
+                endCursor = scaleEndCursor(e.clientX, e.clientY);
+        }
+
+        function scaleEndCursor(x, y) {
+
+            let [cx, cy] = startCursor;
+            let w = Math.abs(cx - x) * 2;
+            let h = Math.abs(cy - y) * 2;
+
+            let a = w / h;
+
+            return a > ar
+                ? [cx + w / 2, cy + w / ar / 2]
+                : [cx + h * ar / 2, cy + h / 2]
         }
 
         function getPositiveAngleDiff(a, b) {
