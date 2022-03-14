@@ -123,22 +123,13 @@
 
         const gravity = new Vector(0, -50 * zoom)
         const vrocket = 80 * zoom;
-        const vparticle = 10 * zoom;
+        const vparticle = 50 * zoom;
 
         const rocketDrag = .001;
-        const particleDrag = .0051;
+        const particleDrag = .1;
 
         for (let i = 0; i < numRockets; ++i) {
             rockets.push(newRocket());
-        }
-
-        function newRocket() {
-            return new Particle(
-                new Vector(rnd(w), 0),
-                dir(around(vrocket, .4), around(90, .2)),
-                rnd(360),
-                around(1.5, .5)
-            );
         }
 
         loop(30, update, render)
@@ -170,12 +161,23 @@
             });
         }
 
+
+        function newRocket() {
+            return new Particle(
+                new Vector(rnd(w), 0),
+                dir(around(vrocket, .4), around(90, .2)),
+                rnd(360),
+                around(1.5, .5)
+            );
+        }
+
         function spawnParticles(pos, hue) {
             let n = around(avgParticles, .4);
 
             for (let i = 0; i < n; ++i) {
-                let vel = vparticle * Math.sin(rnd(tau))
-                particles.push(new Particle(pos, dir(vel, rnd(360)), around(hue, .1), around(.7, .1)))
+                let q = rnd(1);
+                let vel = vparticle * Math.sin(rnd(tau / 2))
+                particles.push(new Particle(pos, dir(vel, rnd(360)), around(hue, .1), around(1.7, .1)))
             }
         }
 
@@ -210,7 +212,7 @@
 
         function renderParticle(particle, size) {
             ctx.fillStyle = ctx.strokeStyle = color(particle.hue, 70);
-            
+
             line(ctx, particle.prev, particle.pos);
 
             // box(ctx, particle.pos, 3)
