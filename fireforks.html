@@ -116,8 +116,10 @@
         let numRockets = 10;
         let rockets = [];
 
-        let avgParticles = 100;
+        let avgParticles = 200;
         let particles = [];
+
+
 
         const zoom = 10;
 
@@ -128,6 +130,8 @@
         const rocketDrag = .001;
         const particleDrag = .1;
 
+        let hue = 0;
+
         for (let i = 0; i < numRockets; ++i) {
             rockets.push(newRocket());
         }
@@ -136,6 +140,31 @@
 
         function update(delta) {
 
+        }
+
+        function newRocket() {
+            hue += around(360 / numRockets, .3)
+            if (hue > 360) hue %= 360;
+
+            return new Particle(
+                new Vector(rnd(w), 0),
+                dir(around(vrocket, .4), around(90, .2)),
+                hue,
+                around(1.5, .5)
+            );
+        }
+
+        function spawnParticles(pos, hue) {
+            let n = around(avgParticles, .4);
+
+            for (let i = 0; i < n; ++i) {
+                let q = rnd(1);
+                let vel = vparticle * Math.sin(rnd(tau / 2))
+                particles.push(new Particle(pos, dir(vel, rnd(360)), around(hue, .1), around(1.7, .1)))
+            }
+        }
+
+        function render(delta) {
             for (let i = 0; i < rockets.length; ++i) {
                 let rocket = rockets[i];
 
@@ -159,31 +188,15 @@
 
                 return p.ttl > 0 && !p.pos.outside(0, 0, w, h);
             });
-        }
 
-
-        function newRocket() {
-            return new Particle(
-                new Vector(rnd(w), 0),
-                dir(around(vrocket, .4), around(90, .2)),
-                rnd(360),
-                around(1.5, .5)
-            );
-        }
-
-        function spawnParticles(pos, hue) {
-            let n = around(avgParticles, .4);
-
-            for (let i = 0; i < n; ++i) {
-                let q = rnd(1);
-                let vel = vparticle * Math.sin(rnd(tau / 2))
-                particles.push(new Particle(pos, dir(vel, rnd(360)), around(hue, .1), around(1.7, .1)))
-            }
-        }
-
-        function render() {
             ctx.fillStyle = 'rgba(0,0,0,.1)';
             ctx.fillRect(0, 0, w, h)
+
+            ctx.fillStyle = 'white';
+            for (let i = 0; i < 10; ++i) {
+                let s = around(2, .9)
+                ctx.fillRect(rnd(w), h * (1 - rnd(1) * rnd(1)), s, s);
+            }
 
             for (let rocket of rockets) {
                 renderParticle(rocket, 3)
@@ -214,8 +227,6 @@
             ctx.fillStyle = ctx.strokeStyle = color(particle.hue, 70);
 
             line(ctx, particle.prev, particle.pos);
-
-            // box(ctx, particle.pos, 3)
         }
 
         function line(ctx, start, end) {
