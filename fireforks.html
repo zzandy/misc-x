@@ -139,7 +139,27 @@
         loop(30, update, render)
 
         function update(delta) {
+            for (let i = 0; i < rockets.length; ++i) {
+                let rocket = rockets[i];
 
+                rocket.pos = rocket.pos.plus(rocket.vel.times(delta / 1000))
+                rocket.vel = rocket.vel.plus(gravity.times(delta / 1000)).times(1 - rocketDrag)
+                rocket.ttl -= delta / 1000;
+
+                if (rocket.ttl < 0 || rocket.pos.outside(0, 0, w, h)) {
+                    if (rocket.ttl < 0) spawnParticles(rocket.pos, rocket.hue);
+
+                    rockets[i] = newRocket();
+                }
+            }
+
+            particles = particles.filter(p => {
+                p.pos = p.pos.plus(p.vel.times(delta / 1000))
+                p.vel = p.vel.plus(gravity.times(delta / 1000 / 10)).times(1 - particleDrag);
+                p.ttl -= delta / 1000;
+
+                return p.ttl > 0 && !p.pos.outside(0, 0, w, h);
+            });
         }
 
         function newRocket() {
@@ -165,29 +185,7 @@
         }
 
         function render(delta) {
-            for (let i = 0; i < rockets.length; ++i) {
-                let rocket = rockets[i];
 
-                rocket.savePos();
-                rocket.pos = rocket.pos.plus(rocket.vel.times(delta / 1000))
-                rocket.vel = rocket.vel.plus(gravity.times(delta / 1000)).times(1 - rocketDrag)
-                rocket.ttl -= delta / 1000;
-
-                if (rocket.ttl < 0 || rocket.pos.outside(0, 0, w, h)) {
-                    if (rocket.ttl < 0) spawnParticles(rocket.pos, rocket.hue);
-
-                    rockets[i] = newRocket();
-                }
-            }
-
-            particles = particles.filter(p => {
-                p.savePos();
-                p.pos = p.pos.plus(p.vel.times(delta / 1000))
-                p.vel = p.vel.plus(gravity.times(delta / 1000 / 10)).times(1 - particleDrag);
-                p.ttl -= delta / 1000;
-
-                return p.ttl > 0 && !p.pos.outside(0, 0, w, h);
-            });
 
             ctx.fillStyle = 'rgba(0,0,0,.1)';
             ctx.fillRect(0, 0, w, h)
@@ -200,10 +198,12 @@
 
             for (let rocket of rockets) {
                 renderParticle(rocket, 3)
+                rocket.savePos();
             }
 
             for (let particle of particles) {
                 renderParticle(particle, 3)
+                particle.savePos();
             }
         }
 
