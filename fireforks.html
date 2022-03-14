@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Fireworks</title>
+</head>
+
+<body>
+    <script name="canvas" type="text/javascript">
+        // canvas w/ hex
+        function fullscreenCanvas() {
+            let [can, ctx] = makeCanvas(window.innerWidth, window.innerHeight, false)
+
+            document.body.appendChild(can);
+            document.body.style.overflow = "hidden";
+            document.body.style.margin = "0";
+            document.body.style.padding = "0";
+
+            return ctx;
+        }
+
+        function makeCanvas(width, height, alpha) {
+
+            let can = document.createElement('canvas');
+            let ctx = can.getContext('2d', { alpha });
+
+            ctx.canvas.width = width;
+            ctx.canvas.height = height;
+            ctx.canvas.style.display = 'block';
+
+            return [can, ctx];
+        }
+    </script>
+
+    <script name="loop" type="text/javascript">
+
+        function loop(targetFps, fixedUpdate, render) {
+            let fixedDelta = 1000 / targetFps;
+            let acc = fixedDelta;
+            let then = performance.now();
+
+            function tick(now) {
+                let delta = now - then;
+                acc += delta;
+                then = now;
+                let doRender = acc >= fixedDelta;
+                let reps = 0;
+
+                while (acc >= fixedDelta && ++reps < 20) {
+                    acc -= fixedDelta;
+                    fixedUpdate(fixedDelta);
+                }
+
+                if (reps == 20) acc = 0;
+
+                if (doRender)
+                    render(delta);
+
+                requestAnimationFrame(tick);
+            }
+
+            tick(then);
+        }
+    </script>
+
+    <script type="text/javascript">
+
+        const maxTrailLength = 10;
+
+        class Vector {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+            }
+
+            plus(other) {
+                return new Vector(this.x + other.x, this.y + other.y);
+            }
+
+            times(factor) {
+                return new Vector(this.x * factor, this.y * factor);
+            }
+
+            outside(x, y, w, h) {
+                return this.x < x || this.y < y || this.x > x + w || this.y > x + h
+            }
+        }
+
+        class Particle {
+            constructor(pos, vel, hue, ttl) {
+                this.pos = pos;
+                this.vel = vel;
+                this.hue = hue;
+                this.ttl = ttl;
+                this.prev = pos;
+            }
+
+            savePos() {
+                this.prev = this.pos;
+            }
+        }
+
+        const ctx = fullscreenCanvas();
+        ctx.lineWidth *= 2;
+        const w = ctx.canvas.width;
+        const h = ctx.canvas.height;
+
+        ctx.translate(0, h);
+        ctx.scale(1, -1);
+        ctx.fillStyle = ctx.strokeStyle = 'red'
+
+        const tau = 2 * Math.PI;
+        const deg = tau / 360;
+
+        let numRockets = 10;
+        let rockets = [];
+
+        let avgParticles = 100;
+        let particles = [];
+
+        const zoom = 10;
+
+        const gravity = new Vector(0, -50 * zoom)
+        const vrocket = 80 * zoom;
+        const vparticle = 10 * zoom;
+
+        const rocketDrag = .001;
+        const particleDrag = .0051;
+
+        for (let i = 0; i < numRockets; ++i) {
+            rockets.push(newRocket());
+        }
+
+        function newRocket() {
+            return new Particle(
+                new Vector(rnd(w), 0),
+                dir(around(vrocket, .4), around(90, .2)),
+                rnd(360),
+                around(1.5, .5)
+            );
+        }
+
+        loop(30, update, render)
+
+        function update(delta) {
+
+            for (let i = 0; i < rockets.length; ++i) {
+                let rocket = rockets[i];
+
+                rocket.savePos();
+                rocket.pos = rocket.pos.plus(rocket.vel.times(delta / 1000))
+                rocket.vel = rocket.vel.plus(gravity.times(delta / 1000)).times(1 - rocketDrag)
+                rocket.ttl -= delta / 1000;
+
+                if (rocket.ttl < 0 || rocket.pos.outside(0, 0, w, h)) {
+                    if (rocket.ttl < 0) spawnParticles(rocket.pos, rocket.hue);
+
+                    rockets[i] = newRocket();
+                }
+            }
+
+            particles = particles.filter(p => {
+                p.savePos();
+                p.pos = p.pos.plus(p.vel.times(delta / 1000))
+                p.vel = p.vel.plus(gravity.times(delta / 1000 / 10)).times(1 - particleDrag);
+                p.ttl -= delta / 1000;
+
+                return p.ttl > 0 && !p.pos.outside(0, 0, w, h);
+            });
+        }
+
+        function spawnParticles(pos, hue) {
+            let n = around(avgParticles, .4);
+
+            for (let i = 0; i < n; ++i) {
+                let vel = vparticle * Math.sin(rnd(tau))
+                particles.push(new Particle(pos, dir(vel, rnd(360)), around(hue, .1), around(.7, .1)))
+            }
+        }
+
+        function render() {
+            ctx.fillStyle = 'rgba(0,0,0,.1)';
+            ctx.fillRect(0, 0, w, h)
+
+            for (let rocket of rockets) {
+                renderParticle(rocket, 3)
+            }
+
+            for (let particle of particles) {
+                renderParticle(particle, 3)
+            }
+        }
+
+        function dir(m, a) {
+            return new Vector(m * Math.cos(a * deg), m * Math.sin(a * deg));
+        }
+
+        function rnd(n) {
+            return Math.random() * n;
+        }
+
+        function around(n, varianceRatio) {
+            return n + rnd(n * varianceRatio) - n * varianceRatio / 2
+        }
+
+        function color(hue, level) {
+            return 'hsl(' + hue.toFixed(0) + ', 100%, ' + level + '%)';
+        }
+
+        function renderParticle(particle, size) {
+            ctx.fillStyle = ctx.strokeStyle = color(particle.hue, 70);
+            
+            line(ctx, particle.prev, particle.pos);
+
+            // box(ctx, particle.pos, 3)
+        }
+
+        function line(ctx, start, end) {
+            ctx.beginPath();
+            ctx.moveTo(start.x, start.y)
+            ctx.lineTo(end.x, end.y);
+            ctx.stroke();
+        }
+
+        function box(cxt, pos, s) {
+            ctx.fillRect(pos.x - s / 2, pos.y - s / 2, s, s)
+        }
+
+    </script>
+</body>
+
+</html>
