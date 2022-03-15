@@ -1,312 +1,315 @@
 <!DOCTYPE html>
-
-<html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
 
 <head>
     <meta charset="utf-8" />
-    <title>Cell</title>
+    <title>Cells</title>
 </head>
 
 <body>
-    <script type="text/javascript">
-        (function () {
-            document.createElement('canvas');
-            var c = document.createElement('canvas');
-            ctx = c.getContext('2d');
+    <script name="canvas" type="text/javascript">
+        function fullscreenCanvas() {
+            let [can, ctx] = makeCanvas(window.innerWidth, window.innerHeight, false)
 
-            ctx.w = ctx.canvas.width = window.innerWidth;
-            ctx.h = ctx.canvas.height = window.innerHeight;
-            ctx.canvas.style.position = 'absolute';
-            ctx.canvas.style.top = 0;
-            ctx.canvas.style.left = 0;
+            document.body.appendChild(can);
+            document.body.style.overflow = "hidden";
+            document.body.style.margin = "0";
+            document.body.style.padding = "0";
 
-            ctx.clear = function () {
-                ctx.clearRect(-ctx.canvas.width / 2, -ctx.canvas.height / 2, ctx.canvas.width, ctx.canvas.height);
-            };
-
-            document.body.appendChild(c);
-        })();
-    </script>
-
-    <script type="text/javascript">
-        // hue Chroma luma
-        function hcy2rgb(h, c, y, a) {
-            // 601
-            var r = .3;
-            var g = .59;
-            var b = .11;
-
-            var h0 = h;
-            h /= 60;
-
-            var k = (1 - Math.abs((h % 2) - 1));
-
-            var K = h < 1 ? r + k * g
-                : h < 2 ? g + k * r
-                    : h < 3 ? g + k * b
-                        : h < 4 ? b + k * g
-                            : h < 5 ? b + k * r
-                                : r + k * b;
-
-            var cmax = 1;
-
-            if (y <= 0 || y >= 1) cmax = 0;
-            else cmax *= K < y ? (y - 1) / (K - 1) : K > y ? y / K : 1;
-            //c *= cmax;
-            c = Math.min(c, cmax);
-
-            var x = c * k;
-            var rgb = h < 1 ? [c, x, 0]
-                : h < 2 ? [x, c, 0]
-                    : h < 3 ? [0, c, x]
-                        : h < 4 ? [0, x, c]
-                            : h < 5 ? [x, 0, c]
-                                : [c, 0, x];
-
-            var m = y - (r * rgb[0] + g * rgb[1] + b * rgb[2]);
-
-            var rgbdata = [rgb[0] + m, rgb[1] + m, rgb[2] + m];
-            return 'rgba(' + (rgbdata[0] * 255).toFixed(0) + ',' + (rgbdata[1] * 255).toFixed(0) + ',' + (rgbdata[2] * 255).toFixed(0) + ', ' + (a || 1) + ')';
+            return ctx;
         }
 
-        function wheel2rgb(h, c, y, a) {
-            var h2 = h < 180 ? 2 * h / 3 : 120 + (h - 180) * 4 / 3;
+        function makeCanvas(width, height, alpha) {
 
-            return hcy2rgb(h, c, y, a)
+            let can = document.createElement('canvas');
+            let ctx = can.getContext('2d', { alpha });
+
+            ctx.canvas.width = width;
+            ctx.canvas.height = height;
+            ctx.canvas.style.display = 'block';
+
+            return [can, ctx];
         }
     </script>
 
+    <script name="loop" type="text/javascript">
+
+        function loop(targetFps, fixedUpdate, render) {
+            let fixedDelta = 1000 / targetFps;
+            let acc = fixedDelta;
+            let then = performance.now();
+
+            function tick(now) {
+                let delta = now - then;
+                acc += delta;
+                then = now;
+                let doRender = acc >= fixedDelta;
+                let reps = 0;
+
+                while (acc >= fixedDelta && ++reps < 20) {
+                    acc -= fixedDelta;
+                    fixedUpdate(fixedDelta);
+                }
+
+                if (reps == 20) acc = 0;
+
+                if (doRender)
+                    render(delta);
+
+                requestAnimationFrame(tick);
+            }
+
+            tick(then);
+        }
+    </script>
+
+    <script name="hcl" type="text/javascript">
+        const TAU = 6.283185307179586476925287;
+        const ill = [0.96421, 1.00000, 0.82519];
+
+        /**
+         * @param h - hueue 0..360
+         * @param c - chroma 0..5, but realistically 0..1.2
+         * @param l - lightness 0..~1.7
+         * @returns 
+         */
+        function hcl2rgb(h, c, l) {
+            return lab2rgb(...hcl2lab(h, c, l));
+        }
+
+        function rgb2hcl(r, g, b) {
+            return lab2hcl(...rgb2lab(r, g, b));
+        }
+
+        function hcl2lab(h, c, l) {
+            h /= 360.0;
+            let L = l * 0.61 + 0.09;
+            let angle = TAU / 6 - h * TAU;
+            let r = (l * 0.311 + 0.125) * c;
+            let a = Math.sin(angle) * r;
+            let b = Math.cos(angle) * r;
+            return [L, a, b];
+        }
+
+        function lab2hcl(l, a, b) {
+            l = (l - 0.09) / 0.61;
+            let r = Math.sqrt(a * a + b * b);
+            let c = r / (l * 0.311 + 0.125);
+            let angle = Math.atan2(a, b);
+            let h = (TAU / 6 - angle) / TAU;
+            h *= 360;
+            if (h < 0) h += 360;
+
+            return [h, c, l];
+        }
+
+        function lab2rgb(l, a, b) {
+            return xyz2rgb(...lab2xyz(l, a, b));
+        }
+
+        function rgb2lab(r, g, b) {
+            return xyz2lab(...rgb2xyz(r, g, b))
+        }
+
+        function lab2xyz(l, a, b) {
+            let sl = (l + 0.16) / 1.16;
+
+            let y = ill[1] * finv(sl);
+            let x = ill[0] * finv(sl + (a / 5.0));
+            let z = ill[2] * finv(sl - (b / 2.0));
+
+            return [x, y, z];
+        }
+
+        function xyz2lab(x, y, z) {
+            let l = 1.16 * f(y / ill[1]) - 0.16;
+            let a = 5 * (f(x / ill[0]) - f(y / ill[1]));
+            let b = 2 * (f(y / ill[1]) - f(z / ill[2]));
+
+            return [l, a, b];
+        }
+
+        function xyz2rgb(x, y, z) {
+            let rl = 3.2406 * x - 1.5372 * y - 0.4986 * z;
+            let gl = -0.9689 * x + 1.8758 * y + 0.0415 * z;
+            let bl = 0.0557 * x - 0.2040 * y + 1.0570 * z;
+
+            let clip = Math.min(rl, gl, bl) < -0.001 || Math.max(rl, gl, bl) > 1.001;
+
+            if (clip) {
+                rl = rl < 0 ? 0 : rl > 1 ? 1 : rl;
+                gl = gl < 0 ? 0 : gl > 1 ? 1 : gl;
+                bl = bl < 0 ? 0 : bl > 1 ? 1 : bl;
+            }
+
+            let r = Math.round(255 * correctLin(rl));
+            let g = Math.round(255 * correctLin(gl));
+            let b = Math.round(255 * correctLin(bl));
+
+            return [r, g, b];
+        }
+
+        function rgb2xyz(r, g, b) {
+            let rl = correctGam(r / 255.0);
+            let gl = correctGam(g / 255.0);
+            let bl = correctGam(b / 255.0);
+            let x = 0.4124 * rl + 0.3576 * gl + 0.1805 * bl;
+            let y = 0.2126 * rl + 0.7152 * gl + 0.0722 * bl;
+            let z = 0.0193 * rl + 0.1192 * gl + 0.9505 * bl;
+            return [x, y, z];
+        }
+
+        const k1 = 6 / 29;
+        const k2 = 29 / 6;
+        const k = Math.pow(k1, 3);
+
+        const ka = k2 * k2 / 3
+        const kb = 2 * k1 * k1;
+
+        function f(t) {
+            return t > k
+                ? Math.pow(t, 1 / 3)
+                : ka * t + 4 / 29;
+        }
+
+        function finv(t) {
+            return t > k1
+                ? t * t * t
+                : kb * (t - 4 / 29);
+        }
+
+        function correctLin(cl) {
+            const a = 0.055;
+            return cl <= 0.0031308
+                ? 12.92 * cl
+                : (1 + a) * Math.pow(cl, 1 / 2.4) - a;
+        }
+
+        function correctGam(c) {
+            const a = 0.055;
+            return c <= 0.04045
+                ? c / 12.92
+                : Math.pow((c + a) / (1 + a), 2.4);
+        }
+
+    </script>
+
     <script type="text/javascript">
-        "use strict";
+        const tau = Math.PI * 2;
+        const sq32 = Math.sqrt(3) / 2;
+
+        const ctx = fullscreenCanvas();
+
+        const w = ctx.canvas.width;
+        const h = ctx.canvas.height;
+
+        let hex = new Path2D();
+        const r = 1;
+        hex.moveTo(r / 2 / sq32, -r);
+        hex.lineTo(r / sq32, 0);
+        hex.lineTo(r / 2 / sq32, r);
+        hex.lineTo(-r / 2 / sq32, r);
+        hex.lineTo(-r / sq32, 0);
+        hex.lineTo(-r / 2 / sq32, -r);
+        hex.closePath();
+
+        let numDots = 256;
+        let dotSize = Math.max(w, h) / numDots / sq32;
+
+        let numStates = 3;
+        let numRules = Math.pow(numStates, numStates);
+
+        let colorspread = 60 + rnd(30000 / numStates) / 100;
+        let rules = []
+        let colors = initArray(numStates, makeColors);
+        let changeIn = 0;
+
+        let line = initArray(numDots, () => rnd(numStates));
+        let toBeRendered = [];
+        let cursor = 0;
+
+        loop(60, update, render);
+
+        function update(delta) {
+            if (changeIn <= 0) {
+                reset();
+            }
+
+            toBeRendered.push(line = derive(rules, line));
+        }
+
+        function reset() {
+            changeIn = 2 + rnd(2);
+            rules = initArray(numRules, () => rnd(numStates));
+        }
+
+        function render() {
+            let lineNo = 0
+            for (let line of toBeRendered) {
+
+                let cellNo = 0;
+                ctx.clearRect(0, cursor, w, dotSize);
+                for (let cell of line) {
+                    ctx.save();
+                    ctx.translate(cellNo * dotSize * sq32, cursor + dotSize * (cellNo % 2) / 2)
+
+                    ctx.scale(.9 * dotSize / 2, .9 * dotSize / 2);
+                    ctx.fillStyle = colors[cell];
+                    ctx.fill(hex);
+                    ctx.restore();
+
+                    ++cellNo;
+                }
+
+                let above = cursor < h / 2
+                if ((cursor += dotSize) > h) {
+                    cursor = 0;
+                    colorspread = 60 + rnd(30000 / numStates) / 100;
+                    colors = initArray(numStates, makeColors);
+                }
+
+                if (above && cursor >= h / 2)
+                    --changeIn;
+            }
+            toBeRendered = [];
+        }
+
+        function makeColors(n) {
+            let hue = rnd(360) + colorspread * n;
+            let chroma = n % 3 == 0 ? .7 : 1.1;
+            let lightness = n % 2 == 0 ? 1.1 : .6;
+
+            let rgb = hcl2rgb(hue, chroma, lightness);
+            return `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+        }
+
+        function derive(rules, line) {
+            let next = [];
+            let n = line.length;
+
+            for (i = 0; i < n; i += 2) {
+                next[i] = fetchRule(line[(i - 1 + n) % n], line[i], line[(i + 1 + n) % n]);
+            }
+
+            for (i = 1; i < n; i += 2) {
+                next[i] = fetchRule(next[(i - 1 + n) % n], line[i], next[(i + 1 + n) % n]);
+            }
+
+            return next;
+        }
+
+        function fetchRule(a, b, c) {
+            return rules[numStates * (numStates * a + b) + c];
+        }
+
+        function initArray(n, callback) {
+            const arr = [];
+            for (let i = 0; i < n; ++i)arr.push(callback(i));
+            return arr;
+        }
 
         function rnd(a) {
             return Math.floor(Math.random() * a) | 0;
-        }
-
-        String.prototype.zerofill = function (w) {
-            return this.length < w
-                ? new Array(w - this.length + 1).join('0') + this
-                : this
-        }
-
-        const tau = Math.PI * 2;
-
-        CanvasRenderingContext2D.prototype.fillCircle = function (x, y, r) {
-            this.beginPath();
-            this.arc(x, y, r, 0, tau, false)
-            this.closePath();
-            this.fill();
-        }
-
-        CanvasRenderingContext2D.prototype.strokeCircle = function (x, y, r) {
-            this.beginPath();
-            this.arc(x, y, r, 0, tau, false)
-            this.closePath();
-            this.stroke();
-        }
-
-        function pointyDerive(row, rule, index) {
-            var next = [];
-            let isShort = (index % 2) == 0;
-
-            let prevDigit = '0', startIndex = 0;
-            if (isShort) {
-                prevDigit = row[0];
-                startIndex = 1;
-            }
-
-            for (var i = startIndex; i < row.length; ++i) {
-                let nextDigit = row[i];
-                var index = parseInt(prevDigit, 3) * 3 + parseInt(nextDigit, 3);
-                next.push(rule[index]);
-                prevDigit = nextDigit;
-            }
-
-            if (!isShort) {
-                next.push(rule[parseInt(prevDigit, 3) * 3])
-            }
-
-            return next;
-        }
-
-        function flatDerive(row, rule, index) {
-            let next = new Array(row.length);
-
-            for (let i = 1; i < row.length; i += 2) {
-                let cur = row[i];
-                let nxt = i < row.length ? row[i + 1] : '0';
-                let prev = i > 0 ? row[i - 1] : '0';
-                let index = parseInt(prev, 3) * 3 * 3 + parseInt(cur, 3) * 3 + parseInt(nxt, 3);
-                next[i] = rule[index];
-            }
-
-            for (let i = 0; i < row.length; i += 2) {
-                let cur = row[i];
-                let nxt = next[i + 1] || '0';
-                let prev = i > 0 ? next[i - 1] : '0';
-                let index = parseInt(prev, 3) * 3 * 3 + parseInt(cur, 3) * 3 + parseInt(nxt, 3);
-                next[i] = rule[index];
-            }
-
-            return next;
-        }
-
-        function randomInitial(w) {
-            var ri = [];
-            for (var i = 0; i < w; ++i)ri.push(rnd(3))
-            return ri.join('')
-        }
-
-        function coreInitial(core, w, numCores) {
-            var cl = core.length;
-            var pl = ((w - (numCores || 1) * cl) / ((numCores || 1) + 1)) | 0;
-
-            var pad = new Array(pl + 1).join('2');
-            var r = [pad];
-            for (var i = 0; i < numCores; ++i) {
-                r.push(core);
-                r.push(pad)
-            }
-
-            return r.join('');
-        }
-
-        const total = 251;
-        const initial = coreInitial('101', total, total < 150 ? 1 : (total / 150 | 0));
-        //initial = randomInitial(total);
-
-        var pointy = {
-            init: function () { return rnd(Math.pow(3, 9)).toString(3).zerofill(9).split('') },
-            draw: pointyDraw,
-            next: pointyDerive
-        };
-
-        var flat = {
-            init: function () { return pointy.init().concat(pointy.init().concat(pointy.init())) },
-            draw: flatDraw,
-            next: flatDerive
-        }
-
-        let algo = flat;
-
-        let rule = algo.init();
-        console.log(typeof (rule[0]))
-        console.log(rule.join(''));
-
-        //rule = '112112220'
-
-        var goodRules = ['010112021', '222210201', '220201001', '022010210', '220011012', '200010002'];
-
-        let n = total, short = false;
-        let row = initial;
-
-        const r = ctx.w / total;
-        const rk = 1.1;
-        let hue = rnd(360);
-        let deltahue = .3;
-        let colorscheme = newColorScheme();
-
-        function defColor(dh, ddh, dc, ddc, dy, ddy) {
-            return {
-                dh: rand(dh, ddh),
-                c: rand(dc, ddc),
-                y: rand(dy, ddy)
-            }
-        }
-
-        function rand(avg, plusminus) {
-            return avg - plusminus + Math.random() * 2 * plusminus;
-        }
-
-        function newColorScheme() {
-            return {
-                high: defColor(90, 40, .7, .3, .8, .15),
-                low: defColor(180, 40, .7, .3, .2, .15),
-                main: defColor(0, 40, .9, .1, .6, .15)
-            }
-        }
-
-        function newColors(cs) {
-            return [
-                wheel2rgb(hue + cs.main.dh, cs.main.c, cs.main.y, 1),
-                wheel2rgb(hue + cs.high.dh, cs.high.c, cs.high.y, 1),
-                wheel2rgb(hue + cs.low.dh, cs.low.c, cs.low.y, 1),
-            ];
-        }
-
-        ctx.lineWith = 0;
-
-        let ox = (ctx.w - row.length * r) / 2;
-        let oy = r;
-        let rowsheight = 0;
-        let page = 0;
-
-        tick(row, rule, 0, algo.draw, algo.next);
-
-        function tick(row, rule, index, draw, derive) {
-            let over = draw(row, index);
-
-            if (!over) {
-                let next = derive(row, rule, index)
-                //setTimeout(function () { tick(next, rule, ++index, draw, derive) }, 200)
-                requestAnimationFrame(function () { tick(next, rule, ++index, draw, derive) });
-            }
-        }
-
-        function pointyDraw(row, index) {
-            let y = oy + index * r * .87;
-            hue += deltahue;
-
-            while (y > ctx.h) {
-                if (page == 0)
-                    rowsheight = index * r * .87;
-                page++;
-
-                hue += 30 + rnd(30);
-                colorscheme = newColorScheme();
-
-                y -= rowsheight;
-            }
-
-            let color = newColors(colorscheme);
-
-            ctx.clearRect(ox, y - r / 2, ctx.w, r);
-
-            for (let i = 0; i < row.length; ++i) {
-
-                ctx.fillStyle = color[row[i]];
-                ctx.fillCircle(ox + (i + (index % 2) / 2) * r, y, rk * r / 2);
-            }
-
-            return y > ctx.h;
-        }
-
-        function flatDraw(row, index) {
-            let y = oy + index * r - page * rowsheight;
-            hue += deltahue;
-
-            while (y > ctx.h) {
-                if (page == 0)
-                    rowsheight = index * r;
-                page++;
-
-                hue += 30 + rnd(30);
-                colorscheme = newColorScheme();
-
-                y -= rowsheight;
-            }
-
-            let color = newColors(colorscheme);
-
-            ctx.clearRect(ox, y - r / 2, ctx.w, r/.87);
-
-            for (let i = 0; i < row.length; ++i) {
-                ctx.fillStyle = color[row[i]];
-                ctx.fillCircle(ox + i * r, y - r * (i % 2) / 2, rk * r / 2);
-            }
-
-            return false;
-            return y > ctx.h;
         }
     </script>
 </body>
