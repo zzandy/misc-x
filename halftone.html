@@ -91,8 +91,6 @@
         var hex = {};
         var rect = {};
 
-        var animate = false;
-
         var mode = hex;
         var numSamplesX = 100;
 
@@ -115,10 +113,7 @@
 
             document.body.appendChild(ctx.canvas);
 
-            if (animate)
-                animateHalftone(data.data, ctx, sourceView, targetView, numSamplesX, mode);
-            else
-                renderHalftone(data.data, ctx, sourceView, targetView, numSamplesX, mode);
+            renderHalftone(data.data, ctx, sourceView, targetView, numSamplesX, mode);
         }
 
         function calculateTargetView(sourceView, targetCanvas) {
@@ -136,14 +131,6 @@
                 let w = h * sar;
                 return new AABB((targetCanvas.width - w) / 2, (targetCanvas.height - h) / 2, w, h);
             }
-        }
-
-        function animateHalftone(source, targetCanvas, sourceView, targetView, numSamplesX, mode) {
-            renderHalftone(source, targetCanvas, sourceView, targetView, numSamplesX, mode);
-
-            window.requestAnimationFrame(function () {
-                animateHalftone(source, targetCanvas, sourceView, targetView, numSamplesX, mode);
-            });
         }
 
         function forEachKernel(source, sourceView, targetView, numSamplesX, mode, callback) {
@@ -219,9 +206,8 @@
             ctx.fillStyle = 'white';
 
             forEachKernel(source, sourceView, targetView, numSamplesX, mode, (tx, ty, val, tdx) => {
-                let adj = animate ? (.8 + Math.random() * .4) : 1;
                 val = scale(minmax, Math.sqrt(val))
-                fillCircle(ctx, targetView.x + tx, targetView.y + ty, adj * val * tdx / 2);
+                fillCircle(ctx, targetView.x + tx, targetView.y + ty, val * tdx / 2);
             });
         }
 
