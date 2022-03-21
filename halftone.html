@@ -31,14 +31,39 @@
             return [can, ctx];
         }
     </script>
-    <script type="text/javascript">
-        function fillCircle(ctx, x, y, r) {
-            ctx.beginPath();
-            ctx.arc(x, y, r, 0, 2 * Math.PI);
-            ctx.closePath();
-            ctx.fill();
-        }
 
+    <script name="loop" type="text/javascript">
+
+        function loop(targetFps, fixedUpdate, render) {
+            let fixedDelta = 1000 / targetFps;
+            let acc = fixedDelta;
+            let then = performance.now();
+
+            function tick(now) {
+                let delta = now - then;
+                acc += delta;
+                then = now;
+                let doRender = acc >= fixedDelta;
+                let reps = 0;
+
+                while (acc >= fixedDelta && ++reps < 20) {
+                    acc -= fixedDelta;
+                    fixedUpdate(fixedDelta);
+                }
+
+                if (reps == 20) acc = 0;
+
+                if (doRender)
+                    render(delta);
+
+                requestAnimationFrame(tick);
+            }
+
+            tick(then);
+        }
+    </script>
+
+    <script name="color" type="text/javascript">
         function color(d, i) {
             return 'rgb(' + d[i] + ',' + d[i + 1] + ',' + d[i + 2] + ')';
         }
@@ -62,15 +87,28 @@
                 ? y * 24389 / 27
                 : Math.pow(y, 1 / 3) * 116 - 16) / 100;
         }
+    </script>
 
+    <script name="aabb" type="text/javascript">
+        class AABB {
+            constructor(x, y, w, h) {
+                this.x = x;
+                this.y = y;
+                this.w = w;
+                this.h = h;
+            }
+        }
+    </script>
+
+    <script name="kernels" type="text/javascript">
         function makeKernel(kernelSize) {
-            var kernel = [];
+            let kernel = [];
 
-            for (var i = 0; i < kernelSize; ++i) {
-                for (var j = 0; j < kernelSize; ++j) {
-                    var dx = 2 * i - kernelSize + 1;
-                    var dy = 2 * j - kernelSize + 1;
-                    var w = ((dx * dx + dy * dy) <= kernelSize * kernelSize) | 0;
+            for (let i = 0; i < kernelSize; ++i) {
+                for (let j = 0; j < kernelSize; ++j) {
+                    let dx = 2 * i - kernelSize + 1;
+                    let dy = 2 * j - kernelSize + 1;
+                    let w = ((dx * dx + dy * dy) <= kernelSize * kernelSize) | 0;
 
                     kernel.push(w);
                 }
@@ -86,51 +124,6 @@
                 let idx = ((y + ky) * dataWidth + x + kx) * 4;
                 return avg + weight * lumstar(data, idx) / kernel.length;
             }, 0);
-        }
-
-        var hex = {};
-        var rect = {};
-
-        var mode = hex;
-        var numSamplesX = 100;
-
-        class AABB {
-            constructor(x, y, w, h) {
-                this.x = x;
-                this.y = y;
-                this.w = w;
-                this.h = h;
-            }
-        }
-
-        loadPixels(getDataUrl())
-            .then(start);
-
-        function start(data) {
-            let ctx = fullscreenCanvas();
-            let sourceView = new AABB(0, 0, data.width, data.height);
-            let targetView = calculateTargetView(sourceView, ctx.canvas);
-
-            document.body.appendChild(ctx.canvas);
-
-            renderHalftone(data.data, ctx, sourceView, targetView, numSamplesX, mode);
-        }
-
-        function calculateTargetView(sourceView, targetCanvas) {
-            const margin = .02;
-            const sar = sourceView.w / sourceView.h;
-            const tar = targetCanvas.width / targetCanvas.height;
-
-            if (sar > tar) {
-                let w = targetCanvas.width * (1 - margin);
-                let h = w / sar;
-                return new AABB((targetCanvas.width - w) / 2, (targetCanvas.height - h) / 2, w, h);
-            }
-            else {
-                let h = targetCanvas.height * (1 - margin);
-                let w = h * sar;
-                return new AABB((targetCanvas.width - w) / 2, (targetCanvas.height - h) / 2, w, h);
-            }
         }
 
         function forEachKernel(source, sourceView, targetView, numSamplesX, mode, callback) {
@@ -191,8 +184,136 @@
             }
         }
 
-        function renderHalftone(source, ctx, sourceView, targetView, numSamplesX, mode) {
+    </script>
 
+    <script type="text/javascript">
+        const hex = {};
+        const rect = {};
+        const img = {};
+        const cam = {};
+
+        let source = img;
+        let mode = hex;
+
+        let numSamplesX = 100;
+
+        let ready = false;
+        let renderRequired = true;
+
+        let videoRequested = false;
+        let videoReady = false;
+
+        let data = null;
+        let ctx = null;
+        let sourceView = null;
+        let targetView = null;
+
+        let videoSource = null;
+
+        let videoSourceView = null;
+        let videoTargetView = null;
+
+        let videoCtx = null;
+
+        function camdata() {
+            videoCtx.drawImage(videoSource, 0, 0);
+            return videoCtx.getImageData(videoSourceView.x, videoSourceView.y, videoSourceView.w, videoSourceView.h);
+        }
+
+        loadPixels(getDataUrl())
+            .then(start);
+
+        function initiateVideo() {
+            if (videoRequested) return;
+
+            videoRequested = true;
+
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(captureVideo)
+                .then(startVideo)
+                .catch(function (e) { console.error(e) });
+        }
+
+        function captureVideo(stream) {
+            let { width: w, height: h } = stream.getVideoTracks()[0].getSettings();
+            let [video, ctx] = prepareVideoCapture(w, h);
+
+            video.srcObject = stream;
+            video.play();
+
+            return [video, ctx];
+        }
+
+        function prepareVideoCapture(width, height) {
+            let video = document.createElement('video');
+            video.setAttribute('width', width);
+            video.setAttribute('height', height);
+            video.style.display = 'none';
+
+            let canvas = document.createElement('canvas');
+            canvas.setAttribute('width', width);
+            canvas.setAttribute('height', height);
+
+            return [video, canvas.getContext('2d')];
+        }
+
+        loop(60, update, render);
+
+        function update() {
+
+        }
+
+        function render() {
+            if (!ready || !renderRequired) return;
+            renderRequired = source == cam;
+
+            renderHalftone(source == cam ? camdata().data : data.data, ctx, source == cam ? videoSourceView : sourceView, source == cam ? videoTargetView : targetView, numSamplesX, mode);
+        }
+
+        function startVideo([video, vctx]) {
+            videoSource = video;
+            videoCtx = vctx;
+
+            videoSourceView = new AABB(0, 0, vctx.canvas.width, vctx.canvas.height);
+            videoTargetView = calculateTargetView(videoSourceView, ctx.canvas);
+
+            videoReady = true;
+            renderRequired = true;
+            source = cam;
+        }
+
+        function start(imgdata) {
+            data = imgdata
+
+            ctx = fullscreenCanvas();
+            sourceView = new AABB(0, 0, data.width, data.height);
+            targetView = calculateTargetView(sourceView, ctx.canvas);
+
+            addUi();
+
+            document.body.appendChild(ctx.canvas);
+
+            ready = true;
+        }
+
+        function calculateTargetView(sourceView, targetCanvas) {
+            const margin = .02;
+            const sar = sourceView.w / sourceView.h;
+            const tar = targetCanvas.width / targetCanvas.height;
+
+            if (sar > tar) {
+                let w = targetCanvas.width * (1 - margin);
+                let h = w / sar;
+                return new AABB((targetCanvas.width - w) / 2, (targetCanvas.height - h) / 2, w, h);
+            }
+            else {
+                let h = targetCanvas.height * (1 - margin);
+                let w = h * sar;
+                return new AABB((targetCanvas.width - w) / 2, (targetCanvas.height - h) / 2, w, h);
+            }
+        }
+
+        function renderHalftone(source, ctx, sourceView, targetView, numSamplesX, mode) {
             let minmax = [Infinity, -Infinity];
             forEachKernel(source, sourceView, targetView, numSamplesX, mode, (_, __, val, ___) => {
                 val = Math.sqrt(val);
@@ -235,6 +356,74 @@
 
                 img.src = src;
             });
+        }
+
+        function addUi() {
+
+            let container = document.createElement('div');
+            container.style.position = 'absolute';
+            container.style.color = 'silver';
+
+            container.appendChild(toggle(['Hex', switchToHex], ['Rect', switchToRect]));
+            container.appendChild(toggle(['Image', switchToImg], ['Cam', switchToCam]));
+
+            document.body.appendChild(container)
+        }
+
+        function toggle(...states) {
+
+            let container = document.createElement('div');
+
+            let name = 'radio-' + (1000 + (Math.random() * 1000) | 0)
+            let n = 0;
+            for (let [title, click] of states) {
+                let l = document.createElement('label')
+                l.for = name + '-' + (++n);
+
+                let r = document.createElement('input')
+                r.type = 'radio';
+                r.name = name;
+                r.checked = n == 1
+                r.id = l.for;
+                r.addEventListener('change', e => { if (e.currentTarget.checked) click() });
+
+                l.appendChild(r)
+                l.appendChild(document.createTextNode(title))
+
+                container.appendChild(l)
+            }
+
+            return container;
+        }
+
+        function switchToHex() {
+            mode = hex;
+            renderRequired = true;
+        }
+
+        function switchToRect() {
+            mode = rect;
+            renderRequired = true;
+        }
+
+        function switchToImg() {
+            source = img;
+            renderRequired = true;
+        }
+
+        function switchToCam() {
+            if (!videoRequested) initiateVideo();
+            if (!videoReady) return;
+
+            source = cam;
+            renderRequired = true;
+        }
+
+        function fillCircle(ctx, x, y, r) {
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, 2 * Math.PI);
+            ctx.closePath();
+            ctx.fill();
         }
 
         function getDataUrl() {
