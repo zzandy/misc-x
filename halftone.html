@@ -101,6 +101,8 @@
     </script>
 
     <script name="kernels" type="text/javascript">
+        const sq32 = Math.sqrt(3) / 2;
+
         function makeKernel(kernelSize) {
             let kernel = [];
 
@@ -122,64 +124,51 @@
                 let kx = i % kernelWidth;
                 let ky = (i / kernelWidth) | 0;
                 let idx = ((y + ky) * dataWidth + x + kx) * 4;
+
                 return avg + weight * lumstar(data, idx) / kernel.length;
             }, 0);
         }
 
-        function forEachKernel(source, sourceView, targetView, numSamplesX, mode, callback) {
-            const kernelSize = sourceView.w / numSamplesX | 0;
+        function forEachKernel(source, sourceView, targetView, maxSamples, mode, callback) {
+            const kernelSize = Math.min(sourceView.w / (mode == hex ? sq32 : 1), sourceView.h) / maxSamples | 0;
 
             if (kernelSize < 1)
                 throw 'Kernel is to small.';
 
             const kernel = makeKernel(kernelSize);
+            let tdx = kernelSize * targetView.w / sourceView.w;
 
-            var sdx = kernelSize, sdy = kernelSize, tdx = kernelSize * targetView.w / sourceView.w, tdy, sidx = 0, tidx = 0;
-            var sq = Math.sqrt(3) / 2;
+            let tx0 = targetView.x + tdx / 2;
+            let ty0 = targetView.y + tdx / 2;
 
-            if (mode === hex) {
-                sdx = kernelSize;
-                sdy = sq * sdx;
+            if (mode == rect) {
+                let maxX = (sourceView.w / kernelSize) | 0;
+                let maxY = (sourceView.h / kernelSize) | 0;
 
-                tdy = sq * tdx;
+                for (let y = 0; y < maxY; ++y) {
+                    let ty = ty0 + y * tdx;
 
-                sidx = sdx / 2;
-                tidx = tdx / 2;
-            } else if (mode === rect) {
-                tdy = tdx;
-                sdy = sdx;
-            }
-
-            var sx = 0;
-            var sy = 0;
-            var tx = 0;
-            var ty = 0;
-
-            var flip = true;
-
-            var minmax = [Infinity, -Infinity];
-
-            // adjust
-            while (sy < sourceView.h - sdy) {
-
-                //kernel, data, x, y, kernelWidth, dataWidth
-                callback(tx, ty, applyKernel(kernel, source, sx | 0, sy | 0, kernelSize, sourceView.w), tdx);
-
-                sx += sdx;
-                tx += tdx;
-
-                if (sx > sourceView.w - sdx) {
-                    sy += sdy;
-                    ty += tdy;
-
-                    if (flip) {
-                        sx = sidx;
-                        tx = tidx;
-                    } else {
-                        sx = tx = 0;
+                    for (let x = 0; x < maxX; ++x) {
+                        let sample = applyKernel(kernel, source, (sourceView.x + kernelSize * x) | 0, (sourceView.y + kernelSize * y) | 0, kernelSize, sourceView.w);
+                        callback(tx0 + x * tdx, ty, sample, tdx)
                     }
+                }
+            }
+            else if (mode == hex) {
+                let maxX = (sourceView.w / sq32 / kernelSize) | 0;
+                let maxY = (sourceView.h / kernelSize) | 0;
 
-                    flip = !flip;
+                for (let y = 0; y < maxY; ++y) {
+                    let ty = ty0 + y * tdx;
+
+                    for (let x = 0; x < maxX; ++x) {
+                        let ya = (1 - x % 2) / 2;
+                        if (y == maxY - 1 && ya > 0) continue;
+
+                        let sample = applyKernel(kernel, source, (sourceView.x + kernelSize * x * sq32) | 0, (sourceView.y + kernelSize * (y + ya)) | 0, kernelSize, sourceView.w);
+
+                        callback(tx0 + x * tdx * sq32, ty + ya * tdx, sample, tdx)
+                    }
                 }
             }
         }
@@ -316,6 +305,8 @@
         function renderHalftone(source, ctx, sourceView, targetView, numSamplesX, mode) {
             let minmax = [Infinity, -Infinity];
             forEachKernel(source, sourceView, targetView, numSamplesX, mode, (_, __, val, ___) => {
+                if (isNaN(val)) return;
+
                 val = Math.sqrt(val);
                 minmax = [
                     Math.min(minmax[0], val),
@@ -327,8 +318,10 @@
             ctx.fillStyle = 'white';
 
             forEachKernel(source, sourceView, targetView, numSamplesX, mode, (tx, ty, val, tdx) => {
+                if (isNaN(val)) { ctx.fillStyle = 'red'; val = 1; }
+                else ctx.fillStyle = 'white';
                 val = scale(minmax, Math.sqrt(val))
-                fillCircle(ctx, targetView.x + tx, targetView.y + ty, val * tdx / 2);
+                fillCircle(ctx, tx, ty, val * tdx / 2);
             });
         }
 
