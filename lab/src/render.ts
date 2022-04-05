@@ -130,12 +130,11 @@ function makePaths(d: number): { [key in Cell]: Path2D } {
         'L': bp(path => { }),
         '7': bp(path => {
             path.moveTo(p0, -l);
-            path.lineTo(l, -l);
-            path.lineTo(l, p1);
+
+            path.quadraticCurveTo(l, -l, l, p1);
 
             path.moveTo(p0, l);
-            path.lineTo(-l, l);
-            path.lineTo(-l, p1);
+            path.quadraticCurveTo(-l, l, - l, p1);
         }),
         'j': bp(path => { }),
         ' ': bp(path => { })
