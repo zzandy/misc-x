@@ -178,6 +178,7 @@
     <script type="text/javascript">
         const hex = {};
         const rect = {};
+        const dither = {};
         const img = {};
         const cam = {};
 
@@ -256,7 +257,9 @@
             if (!ready || !renderRequired) return;
             renderRequired = source == cam;
 
-            renderHalftone(source == cam ? camdata().data : data.data, ctx, source == cam ? videoSourceView : sourceView, source == cam ? videoTargetView : targetView, numSamplesX, mode);
+            let imgdata = source == cam ? camdata() : data
+
+            renderHalftone(imgdata, ctx, source == cam ? videoSourceView : sourceView, source == cam ? videoTargetView : targetView, numSamplesX, mode);
         }
 
         function startVideo([video, vctx]) {
@@ -302,7 +305,58 @@
             }
         }
 
-        function renderHalftone(source, ctx, sourceView, targetView, numSamplesX, mode) {
+        function renderDither(source, ctx, sourceView, targetView) {
+            let [can, rctx] = makeCanvas(sourceView.w, sourceView.h);
+            rctx.putImageData(source, -sourceView.x, -sourceView.y);
+            ctx.drawImage(can, 0, 0, sourceView.w, sourceView.h, targetView.x, targetView.y, targetView.w, targetView.h)
+
+            let resized = ctx.getImageData(targetView.x, targetView.y, targetView.w, targetView.h);
+
+            let debt;
+            let next = new Float32Array(targetView.w);
+
+            for (let i = 0; i < targetView.h; ++i) {
+                let prev = 0;
+
+                debt = next;
+                next = new Float32Array(targetView.w);
+
+                for (var j = 0; j < (targetView.w | 0); ++j) {
+                    let idx = ((targetView.w | 0) * i + j) * 4;
+                    let oldValue = prev + debt[j] + getValue(resized.data[idx], resized.data[idx + 1], resized.data[idx + 2]);
+
+                    let newValue = oldValue < 128 ? 0 : 255;
+                    resized.data[idx] = resized.data[idx + 1] = resized.data[idx + 2] = newValue;
+
+                    let error = (oldValue - newValue) / 16;
+                    prev = error * 7;
+
+                    if (j > 0)
+                        next[j - 1] += error * 3;
+
+                    next[j] += error * 5;
+
+                    if (j < targetView.w - 1)
+                        next[j + 1] += error * 1;
+                }
+            }
+
+            ctx.putImageData(resized, targetView.x, targetView.y);
+        }
+
+        function getValue(r, g, b) {
+            return 0.299 * r + 0.587 * g + 0.114 * b;
+        }
+
+        function renderHalftone(sourceData, ctx, sourceView, targetView, numSamplesX, mode) {
+
+            if (mode == dither) {
+                renderDither(sourceData, ctx, sourceView, targetView);
+                return;
+            }
+
+            let source = sourceData.data
+
             let minmax = [Infinity, -Infinity];
             forEachKernel(source, sourceView, targetView, numSamplesX, mode, (_, __, val, ___) => {
                 if (isNaN(val)) return;
@@ -357,7 +411,7 @@
             container.style.position = 'absolute';
             container.style.color = 'silver';
 
-            container.appendChild(toggle(['Hex', switchToHex], ['Rect', switchToRect]));
+            container.appendChild(toggle(['Hex', switchToHex], ['Rect', switchToRect], ['Dither', switchToDither]));
             container.appendChild(toggle(['Image', switchToImg], ['Cam', switchToCam]));
 
             document.body.appendChild(container)
@@ -396,6 +450,11 @@
 
         function switchToRect() {
             mode = rect;
+            renderRequired = true;
+        }
+
+        function switchToDither() {
+            mode = dither;
             renderRequired = true;
         }
 
