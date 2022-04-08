@@ -179,8 +179,11 @@
         const hex = {};
         const rect = {};
         const dither = {};
+        const ascii = {};
         const img = {};
         const cam = {};
+
+        let first = true;
 
         let source = img;
         let mode = hex;
@@ -212,6 +215,9 @@
 
         loadPixels(getDataUrl())
             .then(start);
+
+        loadPixels(getCodePageData())
+            .then(data => asciidata = data)
 
         function initiateVideo() {
             if (videoRequested) return;
@@ -341,6 +347,82 @@
             }
         }
 
+        function renderAscii(source, ctx, sourceView, targetView) {
+            let offset = [8, 8];
+            let dim = [9, 16];
+            let size = [8, 32];
+
+            let [can, rctx] = makeCanvas(sourceView.w, sourceView.h);
+            rctx.putImageData(source, -sourceView.x, -sourceView.y);
+            ctx.drawImage(can, 0, 0, sourceView.w, sourceView.h, targetView.x, targetView.y, targetView.w, targetView.h)
+
+            let resized = ctx.getImageData(targetView.x, targetView.y, targetView.w, targetView.h);
+
+            for (let i = 0; i < resized.width * resized.height; ++i) {
+                let idx = i * 4;
+                resized.data[idx] = resized.data[idx + 1] = resized.data[idx + 2] = getValue(resized.data[idx], resized.data[idx + 1], resized.data[idx + 2])
+            }
+
+            for (let i = 0; i < resized.height - dim[1]; i += dim[1]) {
+                for (let j = 0; j < resized.width - dim[0]; j += dim[0]) {
+                    let symbol = pickAsciiMath(resized, i, j);
+
+                    ctx.putImageData(asciidata, targetView.x + j, targetView.y + i, offset[0] + dim[0] * symbol[1], offset[1] + dim[1] * symbol[0], dim[0], dim[1]);
+
+                    if (first) {
+                        first = false;
+                        console.log(targetView.x + j, targetView.y + i, offset[0] + dim[0] * symbol[1], offset[1] + dim[1] * symbol[0], dim[0], dim[1])
+                        ctx.strokeStyle = 'red'
+                        ctx.strokeRect(targetView.x + j, targetView.y + i, dim[0], dim[1])
+                    }
+                }
+
+                return
+            }
+        }
+
+        function pickAsciiMath(data, si, sj) {
+            let offset = [8, 8];
+            let dim = [9, 16];
+            let size = [8, 32];
+
+            let symbol = [0, 0];
+            let bestDiff = Infinity;
+
+            for (let ai = 0; ai < size[1]; ++ai)
+                for (let aj = 0; aj < size[0]; ++aj) {
+                    let diff = calculateDiff(data, si, sj, offset[1] + ai * dim[1], offset[0] + aj * dim[0]);
+
+                    if (diff < bestDiff) {
+                        bestDiff = diff;
+                        symbol = [ai, aj]
+                    }
+                }
+
+            if (bestDiff == Infinity) console.log(si, sj)
+            return symbol;
+        }
+
+        function calculateDiff(img, si, sj, ai, aj) {
+            let offset = [8, 8];
+            let dim = [9, 16];
+
+            let diff = 0;
+
+            for (let i = 0; i < dim[1]; ++i)
+                for (let j = 0; j < dim[0]; ++j) {
+
+                    let idx = ((si + i) * img.width + sj + j) * 4;
+                    let aidx = ((ai + i) * asciidata.width + aj + j) * 4;
+
+                    let dv = Math.abs(img.data[idx] - asciidata.data[aidx]);
+
+                    diff += dv;
+                }
+
+            return diff;
+        }
+
         function renderDither(source, ctx, sourceView, targetView) {
             let [can, rctx] = makeCanvas(sourceView.w, sourceView.h);
             rctx.putImageData(source, -sourceView.x, -sourceView.y);
@@ -357,8 +439,8 @@
                 debt = next;
                 next = new Float32Array(targetView.w);
 
-                for (var j = 0; j < (targetView.w | 0); ++j) {
-                    let idx = ((targetView.w | 0) * i + j) * 4;
+                for (var j = 0; j < resized.width; ++j) {
+                    let idx = (resized.width * i + j) * 4;
                     let oldValue = prev + debt[j] + getValue(resized.data[idx], resized.data[idx + 1], resized.data[idx + 2]);
 
                     let newValue = oldValue < 128 ? 0 : 255;
@@ -388,6 +470,11 @@
 
             if (mode == dither) {
                 renderDither(sourceData, ctx, sourceView, targetView);
+                return;
+            }
+
+            if (mode == ascii) {
+                renderAscii(sourceData, ctx, sourceView, targetView);
                 return;
             }
 
@@ -448,7 +535,7 @@
             container.style.position = 'absolute';
             container.style.color = 'silver';
 
-            container.appendChild(toggle(['Hex', switchToHex], ['Rect', switchToRect], ['Dither', switchToDither]));
+            container.appendChild(toggle(['Hex', switchToHex], ['Rect', switchToRect], ['Dither', switchToDither], ['ASCII', switchToAscii]));
             container.appendChild(toggle(['Image', switchToImg], ['Cam', switchToCam]));
 
             document.body.appendChild(container)
@@ -495,6 +582,11 @@
             renderRequired = true;
         }
 
+        function switchToAscii() {
+            mode = ascii;
+            renderRequired = true;
+        }
+
         function switchToImg() {
             source = img;
             renderRequired = true;
@@ -513,6 +605,10 @@
             ctx.arc(x, y, r, 0, 2 * Math.PI);
             ctx.closePath();
             ctx.fill();
+        }
+
+        function getCodePageData() {
+            return ['data', ':image', '/png;base', '64,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'].join('');
         }
 
         function getDataUrl() {
