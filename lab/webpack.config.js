@@ -1,17 +1,14 @@
 const path = require("path");
 const html = require("html-webpack-plugin");
-const { CleanWebpackPlugin } = require("clean-webpack-plugin");
 
 module.exports = {
     mode: 'development',
-    entry: ".\\src\\main.ts",
+    entry: './src/main.ts',
     output: {
         path: path.resolve(__dirname, "dist"),
         filename: "bundle.js",
-        //      publicPath: "/"
     },
-    devServer:{
-        contentBase: './dist',
+    devServer: {
     },
     resolve: {
         extensions: [".js", ".ts"]
@@ -26,8 +23,6 @@ module.exports = {
     },
     plugins:
         [
-            //new CleanWebpackPlugin({ cleanOnceBeforeBuildPatterns: ["dist/*"] }),
-            //new CleanWebpackPlugin(),
-            new html({title: 'Labirinth'})//{ template: "./src/index.html" })
+            new html({ title: 'Labirinth' })
         ]
 };
