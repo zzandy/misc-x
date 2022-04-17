@@ -4,6 +4,8 @@ import * as fs from 'fs';
 async function main() {
     let terms = await readTerms();
 
+    console.log('looking for ' + terms.join(', '));
+
     let data: string[][] = [];
     let nodata: string[] = [];
 
