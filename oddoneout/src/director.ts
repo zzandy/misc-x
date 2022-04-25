@@ -35,7 +35,8 @@ const presets: { [key in Orientation]: ShapeType[][] } = {
         ['diamonds', 'heart', 'clubs'],
         ['heart', 'clubs'],
         ['circle', 'diamonds'],
-        ['s2', 'diamonds']
+        ['s2', 'diamonds'],
+        ['tripl', 'clubs']
     ],
 
     'rows': [
@@ -56,7 +57,7 @@ const presets: { [key in Orientation]: ShapeType[][] } = {
         ['tripl', 'clubs'],
         ['tripl', 'y'],
         ['y', 'heart'],
-        ['s2', 'asterisk']
+        ['s2', 'asterisk', 'triangle']
     ]
 }
 

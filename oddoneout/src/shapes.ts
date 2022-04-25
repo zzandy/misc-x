@@ -286,7 +286,6 @@ export class Shape implements IDrawable {
 
                 break;
             case 'diamonds':
-
                 ctx.moveTo(0, r2);
                 ctx.quadraticCurveTo(r1 / 2, r1 / 2, r2, 0);
                 ctx.quadraticCurveTo(r1 / 2, -r1 / 2, 0, -r2);
@@ -297,9 +296,13 @@ export class Shape implements IDrawable {
             case 'asterisk':
                 let t = .15;
                 ctx.save();
-                ctx.moveTo(-t, rh);
+
                 for (let i = 0; i < 6; ++i) {
-                    ctx.lineTo(-t, rh);
+                    if (i == 0)
+                        ctx.moveTo(-t, rh);
+                    else
+                        ctx.lineTo(-t, rh);
+
                     ctx.lineTo(t, rh);
                     ctx.lineTo(t, 3 * t / sq32 / 2);
                     ctx.rotate(-tau / 6);
@@ -310,9 +313,13 @@ export class Shape implements IDrawable {
                 let n = .27;
                 ctx.save();
                 ctx.rotate(tau / 6);
-                ctx.moveTo(-n, rh);
+
                 for (let i = 0; i < 3; ++i) {
-                    ctx.lineTo(-n, rh);
+                    if (i == 0)
+                        ctx.moveTo(-n, rh);
+                    else
+                        ctx.lineTo(-n, rh);
+
                     ctx.lineTo(n, rh);
                     ctx.lineTo(n, n / sq32 / 2);
                     ctx.rotate(-tau / 3);
@@ -322,11 +329,16 @@ export class Shape implements IDrawable {
             case 'y':
                 let e = .25;
                 ctx.save();
-                ctx.moveTo(-e, rh);
+
                 for (let i = 0; i < 3; ++i) {
-                    ctx.lineTo(-e, rh);
+                    if (i == 0)
+                        ctx.moveTo(-e, rh);
+                    else
+                        ctx.lineTo(-e, rh);
+
                     ctx.lineTo(e, rh);
                     ctx.lineTo(e, e / sq32 / 2);
+
                     ctx.rotate(-tau / 3);
                 }
                 ctx.restore();
