@@ -53,6 +53,9 @@
             ctx.canvas.style.position = 'absolute';
             ctx.canvas.style.top = 0;
             ctx.canvas.style.left = 0;
+            document.body.style.overflow = "hidden";
+            document.body.style.margin = "0";
+            document.body.style.padding = "0";
 
             document.body.appendChild(c);
         })();
@@ -79,14 +82,15 @@
     <script type="text/javascript">
 
         const palette = {
-            plate: { border: 'silver', background: 'transparent' },
-            extraSpace: { border: 'transparent', background: 'silver' },
-            circle: { border: 'silver', background: 'transparent' },
-            circleGained: { border: 'lime', background: 'transparent' },
+            background: { border: 'transparent', background: "#ab8f67" },
+            plate: { border: 'silver',background: '#d6bc9d' },
+            extraSpace: { border: 'transparent', background: '#73855c' },
+            circle: { border: '#203e33', background: '#315c45' },
+            circleGained: { border: '#34513b', background: '#3c935c    ' },
             circleLost: { border: 'red', background: 'transparent' },
         }
 
-        main();
+        main(); 
 
         function main() {
             ['w', 'h'].map(id => document.getElementById(id)).forEach(e => {
@@ -105,7 +109,8 @@
 
             let [s, ox1, oy1, ox2, oy2] = layout(ctx.canvas.width, ctx.canvas.height, w, h);
 
-            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+            ctx.fillStyle = palette.background.background;
+            ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
             ctx.save();
             ctx.translate(ox1, oy1);
