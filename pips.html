@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Pips</title>
+</head>
+
+<body>
+    <script name="canvas" type="text/javascript">
+        function fullscreenCanvas() {
+            let [can, ctx] = makeCanvas(window.innerWidth, window.innerHeight, false)
+
+            document.body.appendChild(can);
+            document.body.style.overflow = "hidden";
+            document.body.style.margin = "0";
+            document.body.style.padding = "0";
+
+            return ctx;
+        }
+
+        function makeCanvas(width, height, alpha) {
+            let can = document.createElement('canvas');
+            let ctx = can.getContext('2d', { alpha });
+
+            ctx.canvas.width = width;
+            ctx.canvas.height = height;
+            ctx.canvas.style.display = 'block';
+
+            return [can, ctx];
+        }
+    </script>
+
+    <script type="text/javascript">
+        let ctx = fullscreenCanvas();
+
+        let size = 140;
+
+        let grad = ctx.createLinearGradient(0, 0, 0, ctx.canvas.height);
+
+        grad.addColorStop(0, '#004010')
+        grad.addColorStop(1, '#003008')
+
+        ctx.fillStyle = grad
+        ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height)
+        for (let i = 1; i <= 6; ++i)drawDice(ctx, i * size * 1.2, ctx.canvas.height / 2 - size*3/4, i, size);
+
+        function drawDice(ctx, x, y, value, dieSize) {
+            ctx.save();
+            ctx.translate(x, y);
+
+            roundedRect(ctx, 0, 0, dieSize, dieSize, dieSize / 10);
+            ctx.fillStyle = "#ece5c9";
+            ctx.fill()
+
+            roundedRect(ctx, dieSize / 40, +dieSize / 40, dieSize - dieSize / 20, dieSize - dieSize / 20, dieSize / 4);
+            ctx.fillStyle = "rgba(255, 255, 255, .5)";
+            ctx.fill()
+
+            roundedRect(ctx, 0, 0, dieSize, dieSize, dieSize / 10);
+            ctx.lineWidth = dieSize / 80;
+            ctx.strokeStyle = 'black';
+            ctx.stroke();
+
+            ellipse(ctx, dieSize / 9.9, dieSize / 9.9, dieSize / 15, dieSize / 90, Math.PI * 3 / 4);
+
+            ctx.fillStyle = "rgb(255, 255, 255, .9)";
+            ctx.fill()
+
+            const k = 4;
+            let r = dieSize / 8.5;
+
+            r *= Math.sqrt(6 / value);
+
+            if (value % 2 == 1) {
+                // middle
+                dot(ctx, dieSize / 2, dieSize / 2, r)
+            }
+
+            if (value > 1) {
+                // corners 1 and 3
+                dot(ctx, dieSize / k, dieSize / k, r)
+                dot(ctx, dieSize - dieSize / k, dieSize - dieSize / k, r)
+            }
+
+            if (value > 3) {
+                // corners 2 and 4
+                dot(ctx, dieSize - dieSize / k, dieSize / k, r)
+                dot(ctx, dieSize / k, dieSize - dieSize / k, r)
+            }
+
+            if (value == 6) {
+                // mid-sides
+                dot(ctx, dieSize / k, dieSize / 2, r)
+                dot(ctx, dieSize - dieSize / k, dieSize / 2, r)
+            }
+
+            ctx.restore();
+        }
+
+        function dot(ctx, x, y, r) {
+            circle(ctx, x, y, r);
+            ctx.fillStyle = 'black';
+            ctx.fill();
+
+            ellipse(ctx, x + r / 2, y + r / 2, r / 6, r / 17, Math.PI * 3 / 4);
+            ctx.fillStyle = 'white';
+            ctx.fill();
+        }
+
+        function ellipse(ctx, x, y, r1, r2, a) {
+            ctx.beginPath()
+            ctx.ellipse(x, y, r1, r2, a, 0, 2 * Math.PI);
+            ctx.closePath();
+        }
+
+        function circle(ctx, x, y, r) {
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, Math.PI * 2);
+            ctx.closePath();
+        }
+
+        function roundedRect(ctx, x, y, width, height, radius) {
+            ctx.beginPath();
+            ctx.moveTo(x, y + radius);
+            ctx.lineTo(x, y + height - radius);
+            ctx.arcTo(x, y + height, x + radius, y + height, radius);
+            ctx.lineTo(x + width - radius, y + height);
+            ctx.arcTo(x + width, y + height, x + width, y + height - radius, radius);
+            ctx.lineTo(x + width, y + radius);
+            ctx.arcTo(x + width, y, x + width - radius, y, radius);
+            ctx.lineTo(x + radius, y);
+            ctx.arcTo(x, y, x, y + radius, radius);
+            ctx.closePath();
+        }
+    </script>
+</body>
+
+</html>
