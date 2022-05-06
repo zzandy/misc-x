@@ -291,6 +291,10 @@
         const muteNode = ctx.createGain();
         const gainNode = ctx.createGain();
         const envelope = ctx.createGain();
+
+        const lfo1Gain = ctx.createGain();
+        const lfo2Gain = ctx.createGain();
+
         const delay = ctx.createDelay();
         const delayGain = ctx.createGain();
 
@@ -301,6 +305,8 @@
         lfo2.start();
 
         const compressor = ctx.createDynamicsCompressor();
+
+        const quant = 0.01
 
         class Voice {
             constructor() {
@@ -352,40 +358,44 @@
 
             set vco2mul(v) {
                 this._vco2mul = v;
-                this.vco2.frequency.setValueAtTime(this._freq * this._vco2mul, ctx.currentTime + 0.001);
+                this.vco2.frequency.linearRampToValueAtTime(this._freq * this._vco2mul, ctx.currentTime + quant);
             }
 
             set vco3mul(v) {
                 this._vco3mul = v;
-                this.vco3.frequency.setValueAtTime(this._freq * this._vco3mul, ctx.currentTime + 0.001);
+                this.vco3.frequency.linearRampToValueAtTime(this._freq * this._vco3mul, ctx.currentTime + quant);
             }
 
             set vco4mul(v) {
                 this._vco4mul = v;
-                this.vco4.frequency.setValueAtTime(this._freq * this._vco4mul, ctx.currentTime + 0.001);
+                this.vco4.frequency.linearRampToValueAtTime(this._freq * this._vco4mul, ctx.currentTime + quant);
             }
 
             set vco2level(v) {
-                this.vco2mute.gain.setValueAtTime(v, ctx.currentTime + 0.001);
+                this.vco2mute.gain.linearRampToValueAtTime(v, ctx.currentTime + quant);
             }
 
             set vco3level(v) {
-                this.vco3mute.gain.setValueAtTime(v, ctx.currentTime + 0.001);
+                this.vco3mute.gain.linearRampToValueAtTime(v, ctx.currentTime + quant);
             }
 
             set vco4level(v) {
-                this.vco4mute.gain.setValueAtTime(v, ctx.currentTime + 0.001);
+                this.vco4mute.gain.linearRampToValueAtTime(v, ctx.currentTime + quant);
             }
 
             updateFreq() {
-                this.vco1.frequency.setValueAtTime(this._freq, ctx.currentTime + 0.001);
-                this.vco2.frequency.setValueAtTime(this._freq * this._vco2mul, ctx.currentTime + 0.001);
-                this.vco3.frequency.setValueAtTime(this._freq * this._vco3mul, ctx.currentTime + 0.001);
-                this.vco4.frequency.setValueAtTime(this._freq * this._vco4mul, ctx.currentTime + 0.001);
+                this.vco1.frequency.linearRampToValueAtTime(this._freq, ctx.currentTime + quant);
+                this.vco2.frequency.linearRampToValueAtTime(this._freq * this._vco2mul, ctx.currentTime + quant);
+                this.vco3.frequency.linearRampToValueAtTime(this._freq * this._vco3mul, ctx.currentTime + quant);
+                this.vco4.frequency.linearRampToValueAtTime(this._freq * this._vco4mul, ctx.currentTime + quant);
             }
 
             updateFilter() {
-                this.filter.frequency.setValueAtTime(this._freq * this._filterFrequencyMul, ctx.currentTime + 0.001);
+                this.filter.frequency.linearRampToValueAtTime(this._freq * this._filterFrequencyMul, ctx.currentTime + quant);
+            }
+
+            connectFilter(node) {
+                connect(node, this.filter.detune);
             }
         }
 
@@ -449,8 +459,12 @@
 
         let lfo1currentTarget = [targets[0]];
         let lfo2currentTarget = [targets[0]];
+
+        lfo1.respectiveGain = lfo1Gain;
+        lfo2.respectiveGain = lfo2Gain;
+
         const lfo1target = value(targets[0], v => rewire(lfo1, v, lfo1currentTarget));
-        const lfo2target = value(targets[0], v => rewire(lfo1, v, lfo2currentTarget));
+        const lfo2target = value(targets[0], v => rewire(lfo2, v, lfo2currentTarget));
 
         function rewire(lfo, target, currentTarget) {
             if (target == currentTarget[0]) return;
@@ -459,7 +473,11 @@
 
             switch (target) {
                 case 'gain':
-                    connect(lfo, gainNode.gain);
+                    connect(lfo, lfo.respectiveGain.gain);
+                    break;
+
+                case 'filter':
+                    voices.forEach(voice => voice.connectFilter(lfo));
                     break;
             }
 
@@ -472,10 +490,10 @@
         const lfo1freq = value(1000, f => lfo1.frequency.value = f / 100);
         const lfo2freq = value(1000, f => lfo2.frequency.value = f / 100);
 
-        const vco1type = value(Object.keys(shapes)[1], v => { voices.forEach(voice => voice.vco1.type = shapes[v]) });
-        const vco2type = value(Object.keys(shapes)[0], v => { voices.forEach(voice => voice.vco2.type = shapes[v]) });
-        const vco3type = value(Object.keys(shapes)[1], v => { voices.forEach(voice => voice.vco3.type = shapes[v]) });
-        const vco4type = value(Object.keys(shapes)[0], v => { voices.forEach(voice => voice.vco4.type = shapes[v]) });
+        const vco1type = value(Object.keys(shapes)[1], v => voices.forEach(voice => voice.vco1.type = shapes[v]));
+        const vco2type = value(Object.keys(shapes)[0], v => voices.forEach(voice => voice.vco2.type = shapes[v]));
+        const vco3type = value(Object.keys(shapes)[1], v => voices.forEach(voice => voice.vco3.type = shapes[v]));
+        const vco4type = value(Object.keys(shapes)[0], v => voices.forEach(voice => voice.vco4.type = shapes[v]));
 
         const vco2mul = value(500, v => voices.forEach(voice => voice.vco2mul = v / 1000))
         const vco3mul = value(1250, v => voices.forEach(voice => voice.vco3mul = v / 1000))
@@ -576,7 +594,7 @@
         horiz(div(
 
             makePanel('Filter',
-                div(makeSelector('Type', ['off', 'Low Pass', 'High Pass', 'Band Pass', 'Low Shelf', 'High Shelf', 'Peaking', 'Notch'], filterType)),
+                div(makeSelector('Type', ['allpass', 'lowpass', 'highpass', 'bandpass', 'lowshelf', 'highshelf', 'peaking', 'notch'], filterType)),
                 div(makeRange('Freq', 1, 5000, filterFreqMul)),
                 div(makeRange('Detune', -1200, 1200, filterDetune)),
                 div(makeRange('Q', 1, 5000, filterQ)),
@@ -601,7 +619,7 @@
 
         voices.forEach(voice => voice.out.connect(gainNode));
 
-        connect(gainNode, analyzer, muteNode, ctx.destination);
+        connect(gainNode, lfo1Gain, lfo2Gain, analyzer, muteNode, ctx.destination);
         connect(gainNode, delay, delayGain);
 
         function freq(mill) {
@@ -712,8 +730,6 @@
 
             const data = new Uint8Array(analyzer.frequencyBinCount);
             const color = viridis_data();
-
-            console.log(analyzer.context.sampleRate / 2 / analyzer.frequencyBinCount, analyzer.frequencyBinCount)
 
             ctx.fillStyle = color[0];
             ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
