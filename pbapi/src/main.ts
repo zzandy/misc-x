@@ -1,5 +1,6 @@
 import fetch from 'node-fetch'
 import * as fs from 'fs';
+import { json } from 'stream/consumers';
 
 async function main() {
     let terms = await readTerms();
@@ -9,20 +10,20 @@ async function main() {
     let data: string[][] = [];
     let nodata: string[] = [];
 
-    for (let term of terms) {
-        let matches = (await query(term))
-            .filter(isPromisingName)
-            .filter(isRecentEnough)
-            .filter(isSeeded)
-            .filter(isLargeEnough);
+    let results: record[] = [];
+    let tasks = terms.map(term => query(term).then(matches => results.push(...matches)))
+    await Promise.all(tasks)
 
-        matches = await filterAsync(matches, isDescriptionClean);
+    let matches = results
+        .filter(isPromisingName)
+        .filter(isRecentEnough)
+        .filter(isSeeded)
+        .filter(isLargeEnough);
 
-        if (matches.length > 0)
-            data.push(...matches.map(m => [m.id, m.seeders, humanSize(m.size), m.name, humanDate(m.added)]));
-        else
-            nodata.push(term);
-    }
+    matches = await filterAsync(matches, isDescriptionClean);
+
+    if (matches.length > 0)
+        data.push(...matches.map(m => [m.id, m.seeders, humanSize(m.size), m.name, humanDate(m.added)]));
 
     let widths = data.reduce((w, row) => {
         return w.map((x, i) => i == 0 ? x : Math.max(x, row[i].length))
@@ -35,7 +36,6 @@ async function main() {
         bold('name'.padEnd(widths[3])),
         bold('age')].join('  ')
     );
-
 
     for (let row of data) {
         console.log([
@@ -66,7 +66,13 @@ async function readTerms() {
 async function query(term: string): Promise<record[]> {
     let url = `https://apibay.org/q.php?q=${encodeURIComponent(term)}&cat=200`
     let res = await fetch(url);
-    return <record[]>await res.json();
+    let text = await res.text();
+    try {
+        return <record[]>JSON.parse(text);
+    } catch (ex) {
+        console.log(text);
+        return [];
+    }
 }
 
 async function details(id: number): Promise<detail> {

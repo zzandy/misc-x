@@ -667,36 +667,43 @@
 
                 buts.push(btn);
 
-                kbd[key.charCodeAt(0)] = semitoneDif;
+                kbd[getCode(key)] = semitoneDif;
             }
 
             rows.push(makeDiv(buts))
         }
+
         for (let row of rows)
             kbdDiv.appendChild(row);
 
         let isDown = [];
 
         addEventListener('keydown', e => {
-            if (isDown.includes(e.keyCode)) return;
-            isDown.push(e.keyCode);
+            console.log(e.code)
+            if (isDown.includes(e.code)) {
+                e.preventDefault();
+                return;
+            }
 
-            if (e.keyCode in kbd) {
-                let semitoneDif = kbd[e.keyCode];
+            isDown.push(e.code);
+
+            if (e.code in kbd) {
+                let semitoneDif = kbd[e.code];
 
                 if (semitoneDif !== undefined) {
+                    e.preventDefault();
                     keyPress(semitoneDif);
                 }
             }
         });
 
         addEventListener("keyup", (e) => {
-            let idx = isDown.findIndex(k => k == e.keyCode)
+            let idx = isDown.findIndex(k => k == e.code)
             if (idx != -1)
                 isDown.splice(idx, 1);
 
-            if (e.keyCode in kbd) {
-                let semitoneDif = kbd[e.keyCode];
+            if (e.code in kbd) {
+                let semitoneDif = kbd[e.code];
 
                 if (semitoneDif !== undefined) {
                     keyRelease(semitoneDif);
@@ -900,7 +907,7 @@
         }
 
         function getKey(di, dj) {
-            const kb = '1234567890 qwertyuiop asdfghjkl; zxcvbnm'.toUpperCase().split(' ').map(row => row.split(''));
+            const kb = '1234567890- qwertyuiop[] asdfghjkl;\' zxcvbnm,./'.toUpperCase().split(' ').map(row => row.split(''));
             const o = 4;
             const empty = '\uFEFF';
 
@@ -908,6 +915,27 @@
             let j = o + -(di - ((dj / 2) | 0) - (dj < 0 ? (dj % 2) : 0));
 
             return (kb[i] || [])[j] || empty;
+        }
+
+        function getCode(key) {
+            const map = {
+                '-': 'Minus',
+                '=': 'Equal',
+                '[': 'BracketLeft',
+                ']': 'BracketRight',
+                ';': 'Semicolon',
+                '\'': 'Quote',
+                ',': 'Comma',
+                '.': 'Period',
+                '/': 'Slash'
+            };
+
+            if (key in map) return map[key]
+
+            if (key.match(/[a-z]/i)) return 'Key' + key.toUpperCase();
+            if (key.match(/\d/)) return 'Digit' + key;
+
+            return key;
         }
 
         function viridis_data() {
