@@ -228,13 +228,15 @@ System.register("misc/src/huff", [], function (exports_4, context_4) {
     exports_4("main", main);
     function makeUI() {
         var input = document.createElement('textarea');
-        input.setAttribute('cols', '80');
-        input.setAttribute('rows', '25');
+        input.setAttribute('cols', '45');
+        input.setAttribute('rows', '15');
         var output = document.createElement('div');
         input.addEventListener('keyup', function () { return render(calc(input.value), output); });
         var form = document.createElement('div');
         form.appendChild(input);
         form.appendChild(output);
+        input.value = 'disjfh alksdhfjlaskjdchfn alseukifycpqwnoeiur[cpoif;sdlkgfdkgjdksfjg;dlfkjgcvmp[oeirutcpmoigudfs;lkgjmdfs;glkjsmcd;fgisdfg;lkmsjcdf;lkgj]]';
+        render(calc(input.value), output);
         document.body.appendChild(form);
     }
     function calc(text) {
@@ -259,14 +261,15 @@ System.register("misc/src/huff", [], function (exports_4, context_4) {
         return res;
     }
     function render(huff, output) {
-        output.innerHTML = renderNode(huff.tree, '');
+        output.innerHTML = renderNode(huff.tree, '')[1];
     }
     function renderNode(node, prefix) {
         if (typeof (node) == 'string')
-            return "".concat(node == ' ' ? '_' : node, " ").concat(prefix);
+            return [1, "<div class=\"leaf\">".concat(prefix, " ").concat(node == ' ' ? '_' : node, "</div>")];
         var left = renderNode(node.left, prefix + '0');
         var right = renderNode(node.right, prefix + '1');
-        return "<div>".concat(left, "</div><div>").concat(right, "</div>");
+        var total = left[0] + right[0];
+        return [total, "\n        <div class=\"node\">\n            <div class=\"bracing\">\n            <div><span class=\"prefix\">".concat(prefix, "</span></div>\n                <div class=\"brace\" style=\"min-height: 50%; min-width: .5em\"></div>\n            </div>\n            <div class=\"split\">\n                ").concat(left[1]).concat(right[1], "\n            </div>\n        </div>\n        ")];
     }
     return {
         setters: [],

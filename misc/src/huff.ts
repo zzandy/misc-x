@@ -7,8 +7,8 @@ type node = string | { left: node, right: node };
 
 function makeUI() {
     let input = document.createElement('textarea');
-    input.setAttribute('cols', '80');
-    input.setAttribute('rows', '25');
+    input.setAttribute('cols', '45');
+    input.setAttribute('rows', '15');
 
     let output = document.createElement('div');
 
@@ -18,6 +18,8 @@ function makeUI() {
     form.appendChild(input);
     form.appendChild(output);
 
+    input.value = 'disjfh alksdhfjlaskjdchfn alseukifycpqwnoeiur[cpoif;sdlkgfdkgjdksfjg;dlfkjgcvmp[oeirutcpmoigudfs;lkgjmdfs;glkjsmcd;fgisdfg;lkmsjcdf;lkgj]]'
+    render(calc(input.value), output)
     document.body.appendChild(form);
 }
 
@@ -44,15 +46,27 @@ function calc(text: string): codes {
 }
 
 function render(huff: codes, output: HTMLDivElement) {
-    output.innerHTML = renderNode(huff.tree, '');
+    output.innerHTML = renderNode(huff.tree, '')[1];
 }
 
-function renderNode(node: node, prefix: string): string {
+function renderNode(node: node, prefix: string): [number, string] {
     if (typeof (node) == 'string')
-        return `${node == ' ' ? '_' : node} ${prefix}`;
+        return [1, `<div class="leaf">${prefix} ${node == ' ' ? '_' : node}</div>`];
 
     let left = renderNode(node.left, prefix + '0');
     let right = renderNode(node.right, prefix + '1');
 
-    return `<div>${left}</div><div>${right}</div>`;
+    let total = left[0] + right[0];
+
+    return [total, `
+        <div class="node">
+            <div class="bracing">
+            <div><span class="prefix">${prefix}</span></div>
+                <div class="brace" style="min-height: 50%; min-width: .5em"></div>
+            </div>
+            <div class="split">
+                ${left[1]}${right[1]}
+            </div>
+        </div>
+        `];
 }
