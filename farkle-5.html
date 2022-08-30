@@ -1,175 +1,183 @@
-<!DOCTBPE html>
-    <html lang="en" ×mlns="http://www.w3.org/1999/×html">
+<!DOCTYPE html>
+<html lang="en" ×mlns="http://www.w3.org/1999/×html">
 
-    <head>
-        <meta charset="utf-8" />
-        <title>Farkle 5</title>
-        <style>
-            .rules {
-                display: grid;
-                gap: .2em 1em;
-                grid-template-columns: 1fr 1fr;
-                align-items: center;
-                font-family: Georgia, 'Times New Roman', Times, serif;
-            }
+<head>
+    <meta charset="utf-8" />
+    <title>Farkle 5</title>
+    <style>
+        html,
+        body {
+            background-color: #003c0e;
+            color: white;
+        }
 
-            .rules>div:nth-child(odd) {
-                text-align: right;
-            }
+        .rules {
+            display: grid;
+            gap: .2em 1em;
+            grid-template-columns: 1fr 1fr;
+            align-items: center;
+            font-family: Georgia, 'Times New Roman', Times, serif;
+        }
 
-            :root {
-                --size: 24px;
-                --dice-radius: calc(var(--size)/10);
-                --pip-radius: calc(var(--size)/9);
-                --start: calc(2*var(--pip-radius));
-                --middle: calc(var(--size)/2);
-                --end: calc(var(--size) - 2*var(--pip-radius));
-                --line-width: calc(var(--size)/50)
-            }
+        .rules>div:nth-child(odd) {
+            text-align: right;
+        }
 
-            svg,
-            .wild {
-                border: var(--line-width) solid black;
-                border-radius: var(--dice-radius);
-                background-color: #eae6c3;
-            }
+        :root {
+            --size: 48px;
+            --dice-radius: calc(var(--size)/10);
+            --pip-radius: calc(var(--size)/9);
+            --start: calc(2*var(--pip-radius));
+            --middle: calc(var(--size)/2);
+            --end: calc(var(--size) - 2*var(--pip-radius));
+            --line-width: calc(var(--size)/50)
+        }
 
-            .wild {
-                display: inline-block;
-                width: var(--size) !important;
-                height: var(--size) !important;
-                line-height: var(--size) !important;
-                font-size: calc(var(--size)*.7);
-                text-align: center;
-            }
-        </style>
-    </head>
+        svg,
+        .wild {
+            border: var(--line-width) solid black;
+            border-radius: var(--dice-radius);
+            background-color: #ece5c9;
 
-    <body> <svg style=display:none width="var(--size)" height="var(--size)">
-            <symbol id=one>
-                <circle cx="var(--middle)" cy="var(--middle)" r="var(--pip-radius)" />
-            </symbol>
-        </svg> <svg style=display:none width="var(--size)" height="var(--size)">
-            <symbol id=two>
-                <circle cx="var(--start)" cy="var(--end)" r="var(--pip-radius)" />
-                <circle cx="var(--end)" cy="var(--start)" r="var(--pip-radius)" />
-            </symbol>
-        </svg> <svg style=display:none width="var(--size)" height="var(--size)">
-            <symbol id=four>
-                <use href="#two" />
-                <circle cx="var(--end)" cy="var(--end)" r="var(--pip-radius)" />
-                <circle cx="var(--start)" cy="var(--start)" r="var(--pip-radius)" />
-            </symbol>
-        </svg> <svg style=display:none width="var(--size)" height="var(--size)">
-            <symbol id=mid-two>
-                <circle cx="var(--start)" cy="var(--middle)" r="var(--pip-radius)" />
-                <circle cx="var(--end)" cy="var(--middle)" r="var(--pip-radius)" />
-            </symbol>
-        </svg> <svg style=display:none width="var(--size)" height="var(--size)">
-            <symbol id=three>
+        }
+
+        .wild {
+            display: inline-block;
+            width: var(--size) !important;
+            height: var(--size) !important;
+            line-height: var(--size) !important;
+            font-size: calc(var(--size)*.7);
+            text-align: center;
+            color: black;
+        }
+    </style>
+</head>
+
+<body> <svg style=display:none width="var(--size)" height="var(--size)">
+        <symbol id=one>
+            <circle cx="var(--middle)" cy="var(--middle)" r="var(--pip-radius)" />
+        </symbol>
+    </svg> <svg style=display:none width="var(--size)" height="var(--size)">
+        <symbol id=two>
+            <circle cx="var(--start)" cy="var(--end)" r="var(--pip-radius)" />
+            <circle cx="var(--end)" cy="var(--start)" r="var(--pip-radius)" />
+        </symbol>
+    </svg> <svg style=display:none width="var(--size)" height="var(--size)">
+        <symbol id=four>
+            <use href="#two" />
+            <circle cx="var(--end)" cy="var(--end)" r="var(--pip-radius)" />
+            <circle cx="var(--start)" cy="var(--start)" r="var(--pip-radius)" />
+        </symbol>
+    </svg> <svg style=display:none width="var(--size)" height="var(--size)">
+        <symbol id=mid-two>
+            <circle cx="var(--start)" cy="var(--middle)" r="var(--pip-radius)" />
+            <circle cx="var(--end)" cy="var(--middle)" r="var(--pip-radius)" />
+        </symbol>
+    </svg> <svg style=display:none width="var(--size)" height="var(--size)">
+        <symbol id=three>
+            <use href="#one" />
+            <use href="#two" transform-origin="50% 50%" transform="scale(-1,1)" />
+        </symbol>
+    </svg> <svg style=display:none width="var(--size)" height="var(--size)">
+        <symbol id="five">
+            <use href="#one" />
+            <use href="#four" />
+        </symbol>
+    </svg> <svg style=display:none width="var(--size)" height="var(--size)">
+        <symbol id="six">
+            <use href="#mid-two" />
+            <use href="#four" />
+        </symbol>
+    </svg>
+    <div class="rules">
+        <div><svg width="var(--size)" height="var(--size)">
                 <use href="#one" />
-                <use href="#two" transform-origin="50% 50%" transform="scale(-1,1)" />
-            </symbol>
-        </svg> <svg style=display:none width="var(--size)" height="var(--size)">
-            <symbol id="five">
+            </svg></div>
+        <div>100</div>
+        <div><svg width="var(--size)" height="var(--size)">
+                <use href="#five" />
+            </svg></div>
+        <div>50</div>
+        <div><svg width="var(--size)" height="var(--size)">
                 <use href="#one" />
-                <use href="#four" />
-            </symbol>
-        </svg> <svg style=display:none width="var(--size)" height="var(--size)">
-            <symbol id="six">
-                <use href="#mid-two" />
-                <use href="#four" />
-            </symbol>
-        </svg>
-        <div class="rules">
-            <div><svg width="var(--size)" height="var(--size)">
-                    <use href="#one" />
-                </svg></div>
-            <div>100</div>
-            <div><svg width="var(--size)" height="var(--size)">
-                    <use href="#five" />
-                </svg></div>
-            <div>50</div>
-            <div><svg width="var(--size)" height="var(--size)">
-                    <use href="#one" />
-                </svg> <svg width="var(--size)" height="var(--size)">
-                    <use href="#one" />
-                </svg> <svg width="var(--size)" height="var(--size)">
-                    <use href="#one" />
-                </svg></div>
-            <div>1000</div>
-            <div>
-                <div class="wild">A</div>
-                <div class="wild">A</div>
-                <div class="wild">A</div>
-            </div>
-            <div>A×100</div>
-
-            <div>
-                <div class="wild">A</div>
-                <div class="wild">A</div>
-                <div class="wild">B</div>
-                <div class="wild">B</div>
-            </div>
-            <div>(A+B)×100</div>
-            <div>
-                <div class="wild">A</div>
-                <div class="wild">A</div>
-                <div class="wild">A</div>
-                <div class="wild">B</div>
-                <div class="wild">B</div>
-            </div>
-            <div>(A+B)×300</div>
-            <div><svg width="var(--size)" height="var(--size)">
-                    <use href="#one" />
-                </svg> <svg width="var(--size)" height="var(--size)">
-                    <use href="#two" />
-                </svg> <svg width="var(--size)" height="var(--size)">
-                    <use href="#three" />
-                </svg> <svg width="var(--size)" height="var(--size)">
-                    <use href="#four" />
-                </svg> <svg width="var(--size)" height="var(--size)">
-                    <use href="#five" />
-                </svg> </div>
-            <div>2500</div>
-            <div><svg width="var(--size)" height="var(--size)">
-                    <use href="#two" />
-                </svg> <svg width="var(--size)" height="var(--size)">
-                    <use href="#three" />
-                </svg> <svg width="var(--size)" height="var(--size)">
-                    <use href="#four" />
-                </svg> <svg width="var(--size)" height="var(--size)">
-                    <use href="#five" />
-                </svg> <svg width="var(--size)" height="var(--size)">
-                    <use href="#six" />
-                </svg> </div>
-            <div>3000</div>
-            <div><svg width="var(--size)" height="var(--size)">
-                    <use href="#one" />
-                </svg> <svg width="var(--size)" height="var(--size)">
-                    <use href="#one" />
-                </svg> <svg width="var(--size)" height="var(--size)">
-                    <use href="#one" />
-                </svg> <svg width="var(--size)" height="var(--size)">
-                    <use href="#one" />
-                </svg> </div>
-            <div>5000</div>
-            <div>
-                <div class="wild">A</div>
-                <div class="wild">A</div>
-                <div class="wild">A</div>
-                <div class="wild">A</div>
-            </div>
-            <div>A×1000</div>
-            <div>
-                <div class="wild">A</div>
-                <div class="wild">A</div>
-                <div class="wild">A</div>
-                <div class="wild">A</div>
-                <div class="wild">A</div>
-            </div>
-            <div>⭐</div>
+            </svg> <svg width="var(--size)" height="var(--size)">
+                <use href="#one" />
+            </svg> <svg width="var(--size)" height="var(--size)">
+                <use href="#one" />
+            </svg></div>
+        <div>1000</div>
+        <div>
+            <div class="wild">A</div>
+            <div class="wild">A</div>
+            <div class="wild">A</div>
         </div>
-    </body>
+        <div>A×100</div>
 
-    </html>
+        <div>
+            <div class="wild">A</div>
+            <div class="wild">A</div>
+            <div class="wild">B</div>
+            <div class="wild">B</div>
+        </div>
+        <div>(A+B)×100</div>
+        <div>
+            <div class="wild">A</div>
+            <div class="wild">A</div>
+            <div class="wild">A</div>
+            <div class="wild">B</div>
+            <div class="wild">B</div>
+        </div>
+        <div>(A+B)×300</div>
+        <div><svg width="var(--size)" height="var(--size)">
+                <use href="#one" />
+            </svg> <svg width="var(--size)" height="var(--size)">
+                <use href="#two" />
+            </svg> <svg width="var(--size)" height="var(--size)">
+                <use href="#three" />
+            </svg> <svg width="var(--size)" height="var(--size)">
+                <use href="#four" />
+            </svg> <svg width="var(--size)" height="var(--size)">
+                <use href="#five" />
+            </svg> </div>
+        <div>2500</div>
+        <div><svg width="var(--size)" height="var(--size)">
+                <use href="#two" />
+            </svg> <svg width="var(--size)" height="var(--size)">
+                <use href="#three" />
+            </svg> <svg width="var(--size)" height="var(--size)">
+                <use href="#four" />
+            </svg> <svg width="var(--size)" height="var(--size)">
+                <use href="#five" />
+            </svg> <svg width="var(--size)" height="var(--size)">
+                <use href="#six" />
+            </svg> </div>
+        <div>3000</div>
+        <div><svg width="var(--size)" height="var(--size)">
+                <use href="#one" />
+            </svg> <svg width="var(--size)" height="var(--size)">
+                <use href="#one" />
+            </svg> <svg width="var(--size)" height="var(--size)">
+                <use href="#one" />
+            </svg> <svg width="var(--size)" height="var(--size)">
+                <use href="#one" />
+            </svg> </div>
+        <div>5000</div>
+        <div>
+            <div class="wild">A</div>
+            <div class="wild">A</div>
+            <div class="wild">A</div>
+            <div class="wild">A</div>
+        </div>
+        <div>A×1000</div>
+        <div>
+            <div class="wild">A</div>
+            <div class="wild">A</div>
+            <div class="wild">A</div>
+            <div class="wild">A</div>
+            <div class="wild">A</div>
+        </div>
+        <div>⭐</div>
+    </div>
+</body>
+
+</html>
