@@ -4,7 +4,7 @@ import { Rocket, Explosion } from './rocket';
 import { tau } from './util';
 
 export class Renderer {
-    private readonly ctx = fullscreenCanvas();
+    private readonly ctx = fullscreenCanvas(true);
 
     public draw(goals: Vector[], obstacles: AABB[], rockets: Rocket[], explosions: Explosion[], area: AABB) {
         const { ctx, width, height } = this;
