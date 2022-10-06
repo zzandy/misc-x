@@ -79,7 +79,7 @@ export class Command {
 
 export class Explosion {
     age: number = 0;
-    lifespan: number = rnd(100, 600);
+    lifespan: number = rnd(100, 300);
 
     constructor(public readonly pos: Vector) {
 
