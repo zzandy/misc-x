@@ -305,7 +305,7 @@
 
         const compressor = ctx.createDynamicsCompressor();
 
-        const quant = 0.01
+        const quant = 0.02
 
         class Voice {
             constructor() {
@@ -357,44 +357,44 @@
 
             set vco2mul(v) {
                 this._vco2mul = v;
-                this.vco2.frequency.linearRampToValueAtTime(this._freq * this._vco2mul, ctx.currentTime + quant);
+                this.vco2.frequency.setTargetAtTime(this._freq * this._vco2mul, ctx.currentTime, 0);
             }
 
             set vco3mul(v) {
                 this._vco3mul = v;
-                this.vco3.frequency.linearRampToValueAtTime(this._freq * this._vco3mul, ctx.currentTime + quant);
+                this.vco3.frequency.setTargetAtTime(this._freq * this._vco3mul, ctx.currentTime, 0);
             }
 
             set vco4mul(v) {
                 this._vco4mul = v;
-                this.vco4.frequency.linearRampToValueAtTime(this._freq * this._vco4mul, ctx.currentTime + quant);
+                this.vco4.frequency.setTargetAtTime(this._freq * this._vco4mul, ctx.currentTime, 0);
             }
 
             set vco2level(v) {
-                this.vco2mute.gain.linearRampToValueAtTime(v, ctx.currentTime + quant);
+                this.vco2mute.gain.setTargetAtTime(v, ctx.currentTime, quant);
             }
 
             set vco3level(v) {
-                this.vco3mute.gain.linearRampToValueAtTime(v, ctx.currentTime + quant);
+                this.vco3mute.gain.setTargetAtTime(v, ctx.currentTime, quant);
             }
 
             set vco4level(v) {
-                this.vco4mute.gain.linearRampToValueAtTime(v, ctx.currentTime + quant);
+                this.vco4mute.gain.setTargetAtTime(v, ctx.currentTime, quant);
             }
 
             updateFreq() {
-                this.vco1.frequency.linearRampToValueAtTime(this._freq, ctx.currentTime + quant);
-                this.vco2.frequency.linearRampToValueAtTime(this._freq * this._vco2mul, ctx.currentTime + quant);
-                this.vco3.frequency.linearRampToValueAtTime(this._freq * this._vco3mul, ctx.currentTime + quant);
-                this.vco4.frequency.linearRampToValueAtTime(this._freq * this._vco4mul, ctx.currentTime + quant);
+                this.vco1.frequency.setTargetAtTime(this._freq, ctx.currentTime, 0);
+                this.vco2.frequency.setTargetAtTime(this._freq * this._vco2mul, ctx.currentTime, 0);
+                this.vco3.frequency.setTargetAtTime(this._freq * this._vco3mul, ctx.currentTime, 0);
+                this.vco4.frequency.setTargetAtTime(this._freq * this._vco4mul, ctx.currentTime, 0);
             }
 
             updateFilter() {
-                this.filter.frequency.linearRampToValueAtTime(this._freq * this._filterFrequencyMul, ctx.currentTime + quant);
+                this.filter.frequency.setTargetAtTime(this._freq * this._filterFrequencyMul, ctx.currentTime, quant);
             }
 
             connectFilter(node) {
-                connect(node, this.filter.detune);
+                connect(node, this.filter);
             }
         }
 
@@ -862,16 +862,12 @@
             return numSemitones > 0 ? numSemitones % 12 : (12 + numSemitones % 12) % 12;
         }
 
-        const grace = 0.01;
-
         function envelopeOpen(gainNode) {
             const t = ctx.currentTime;
-            const value = gainNode.value;
 
             gainNode.cancelScheduledValues(t);
-            gainNode.setTargetAtTime(value, t, grace)
-            gainNode.setTargetAtTime(1, t + grace, attack)
-            gainNode.setTargetAtTime(sustain, t + attack + grace, decay)
+            gainNode.setTargetAtTime(1, t, attack)
+            gainNode.setTargetAtTime(sustain, t + attack, decay)
         }
 
         function envelopeClose(gainNode) {
@@ -879,8 +875,8 @@
             const value = gainNode.value;
 
             gainNode.cancelScheduledValues(t);
-            gainNode.setTargetAtTime(Math.min(value, sustain), t, grace)
-            gainNode.setTargetAtTime(0, t + grace, release)
+            gainNode.setTargetAtTime(Math.min(value, sustain), t, quant)
+            gainNode.setTargetAtTime(0, t + quant, release)
         }
 
         function connect() {
