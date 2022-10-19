@@ -862,14 +862,16 @@
             return numSemitones > 0 ? numSemitones % 12 : (12 + numSemitones % 12) % 12;
         }
 
+        const grace = 0.01;
+
         function envelopeOpen(gainNode) {
             const t = ctx.currentTime;
             const value = gainNode.value;
 
             gainNode.cancelScheduledValues(t);
-            gainNode.setValueAtTime(value, t)
-            gainNode.linearRampToValueAtTime(1, t + attack)
-            gainNode.linearRampToValueAtTime(sustain, t + attack + decay)
+            gainNode.setTargetAtTime(value, t, grace)
+            gainNode.setTargetAtTime(1, t + grace, attack)
+            gainNode.setTargetAtTime(sustain, t + attack + grace, decay)
         }
 
         function envelopeClose(gainNode) {
@@ -877,8 +879,8 @@
             const value = gainNode.value;
 
             gainNode.cancelScheduledValues(t);
-            gainNode.setValueAtTime(Math.min(value, sustain), t + .001)
-            gainNode.linearRampToValueAtTime(0, t + release)
+            gainNode.setTargetAtTime(Math.min(value, sustain), t, grace)
+            gainNode.setTargetAtTime(0, t + grace, release)
         }
 
         function connect() {
