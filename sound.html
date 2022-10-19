@@ -314,6 +314,10 @@
                 this.vco3 = ctx.createOscillator();
                 this.vco4 = ctx.createOscillator();
 
+                this.vco2gain = ctx.createGain();
+                this.vco3gain = ctx.createGain();
+                this.vco4gain = ctx.createGain();
+
                 this.vco2mute = ctx.createGain();
                 this.vco3mute = ctx.createGain();
                 this.vco4mute = ctx.createGain();
@@ -329,6 +333,7 @@
                 this.vco3.start();
                 this.vco4.start();
 
+                this._level = 0;
                 this._freq = 440;
                 this._vco2mul = .5;
                 this._vco3mul = 5 / 4;
@@ -338,9 +343,9 @@
                 this.updateFreq();
 
                 connect(this.vco1, this.envelope);
-                connect(this.vco2, this.vco2mute, this.envelope);
-                connect(this.vco3, this.vco3mute, this.envelope);
-                connect(this.vco4, this.vco4mute, this.envelope);
+                connect(this.vco2, this.vco2gain, this.vco2mute, this.envelope);
+                connect(this.vco3, this.vco3gain, this.vco3mute, this.envelope);
+                connect(this.vco4, this.vco4gain, this.vco4mute, this.envelope);
                 connect(this.envelope, this.filter, this.out);
             }
 
@@ -370,16 +375,28 @@
                 this.vco4.frequency.setTargetAtTime(this._freq * this._vco4mul, ctx.currentTime, 0);
             }
 
-            set vco2level(v) {
+            set vco2on(v) {
                 this.vco2mute.gain.setTargetAtTime(v, ctx.currentTime, quant);
             }
 
-            set vco3level(v) {
+            set vco3on(v) {
                 this.vco3mute.gain.setTargetAtTime(v, ctx.currentTime, quant);
             }
 
-            set vco4level(v) {
+            set vco4on(v) {
                 this.vco4mute.gain.setTargetAtTime(v, ctx.currentTime, quant);
+            }
+
+            set vco2level(v) {
+                this.vco2gain.gain.setTargetAtTime(v, ctx.currentTime, quant);
+            }
+
+            set vco3level(v) {
+                this.vco3gain.gain.setTargetAtTime(v, ctx.currentTime, quant);
+            }
+
+            set vco4level(v) {
+                this.vco4gain.gain.setTargetAtTime(v, ctx.currentTime, quant);
             }
 
             updateFreq() {
@@ -498,9 +515,13 @@
         const vco3mul = value(1250, v => voices.forEach(voice => voice.vco3mul = v / 1000))
         const vco4mul = value(2000, v => voices.forEach(voice => voice.vco4mul = v / 1000))
 
-        const vco2on = value(true, v => voices.forEach(voice => voice.vco2level = +v))
-        const vco3on = value(true, v => voices.forEach(voice => voice.vco3level = +v))
-        const vco4on = value(true, v => voices.forEach(voice => voice.vco4level = +v))
+        const vco2on = value(true, v => voices.forEach(voice => voice.vco2on = +v))
+        const vco3on = value(true, v => voices.forEach(voice => voice.vco3on = +v))
+        const vco4on = value(true, v => voices.forEach(voice => voice.vco4on = +v))
+
+        const vco2lvl = value(800, v => voices.forEach(voice => voice.vco2level = +v/1000))
+        const vco3lvl = value(500, v => voices.forEach(voice => voice.vco3level = +v/1000))
+        const vco4lvl = value(100, v => voices.forEach(voice => voice.vco4level = +v/1000))
 
         const vco2ratio = value('1⁄2', v => vco2mul.value = 1000 * getRatio(v))
         const vco3ratio = value('3⁄2', v => vco3mul.value = 1000 * getRatio(v))
@@ -566,12 +587,11 @@
             ),
 
             makePanel('VCOs',
-                div(makeCheck("VCO2", vco2on),
-                    makeSelector('', Object.keys(shapes), vco2type)),
+                div(makeCheck("VCO2", vco2on), makeSelector('', Object.keys(shapes), vco2type), makeRange(" Vol ", 1, 1000, vco2lvl)),
                 div(makeRange("Freq", 1, 5000, vco2mul), makeSelector('', ratios, vco2ratio)),
-                div(makeCheck("VCO2", vco3on), makeSelector('', Object.keys(shapes), vco3type)),
+                div(makeCheck("VCO2", vco3on), makeSelector('', Object.keys(shapes), vco3type), makeRange(" Vol ", 1, 1000, vco3lvl)),
                 div(makeRange("Freq", 1, 5000, vco3mul), makeSelector('', ratios, vco3ratio)),
-                div(makeCheck("VCO4", vco4on), makeSelector('', Object.keys(shapes), vco4type)),
+                div(makeCheck("VCO4", vco4on), makeSelector('', Object.keys(shapes), vco4type), makeRange(" Vol ", 1, 1000, vco4lvl)),
                 div(makeRange("Freq", 1, 5000, vco4mul), makeSelector('', ratios, vco4ratio)),
             ));
 
@@ -791,7 +811,6 @@
 
         function keyPress(semitoneDif) {
             if (isStarted == false) {
-                console.log('he')
                 lfo1.start();
                 lfo2.start();
                 isStarted = true;
