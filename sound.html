@@ -301,8 +301,7 @@
         const lfo1 = ctx.createOscillator()
         const lfo2 = ctx.createOscillator()
 
-        lfo1.start();
-        lfo2.start();
+        let isStarted = false;
 
         const compressor = ctx.createDynamicsCompressor();
 
@@ -679,7 +678,6 @@
         let isDown = [];
 
         addEventListener('keydown', e => {
-            console.log(e.code)
             if (isDown.includes(e.code)) {
                 e.preventDefault();
                 return;
@@ -792,6 +790,13 @@
         }
 
         function keyPress(semitoneDif) {
+            if (isStarted == false) {
+                console.log('he')
+                lfo1.start();
+                lfo2.start();
+                isStarted = true;
+            }
+
             let oldest = Infinity;
             let oldestId = -1;
             let matching = -1;
