@@ -302,6 +302,9 @@
         const lfo2 = ctx.createOscillator()
 
         const filter = ctx.createBiquadFilter();
+        const filterLfoGain = ctx.createGain();
+
+        filterLfoGain.gain.value = 1000;
 
         let isStarted = false;
 
@@ -481,7 +484,7 @@
                     break;
 
                 case 'filter':
-                    connect(lfo, filter.frequency);
+                    connect(lfo, filterLfoGain);
                     break;
             }
 
@@ -497,7 +500,7 @@
         const vco1type = value(Object.keys(shapes)[1], v => voices.forEach(voice => voice.vco1.type = shapes[v]));
         const vco2type = value(Object.keys(shapes)[0], v => voices.forEach(voice => voice.vco2.type = shapes[v]));
         const vco3type = value(Object.keys(shapes)[1], v => voices.forEach(voice => voice.vco3.type = shapes[v]));
-        const vco4type = value(Object.keys(shapes)[0], v => voices.forEach(voice => voice.vco4.type = shapes[v]));
+        const vco4type = value(Object.keys(shapes)[2], v => voices.forEach(voice => voice.vco4.type = shapes[v]));
 
         const vco2mul = value(500, v => voices.forEach(voice => voice.vco2mul = v / 1000))
         const vco3mul = value(1250, v => voices.forEach(voice => voice.vco3mul = v / 1000))
@@ -536,11 +539,13 @@
             return r;
         }
 
-        const filterFreq = new value(500, v => filter.frequency.value = v);
+        const filterFreq = new value(1500, v => filter.frequency.value = v);
         const filterDetune = new value(0, v => filter.detune.value = v);
         const filterQ = new value(0, v => filter.Q.value = v / 1000);
         const filterGain = new value(0, v => filter.gain.value = v);
         const filterType = new value('allpass', v => filter.type = v);
+
+        filterFreq.addEventListener(v => { console.log(v); filterLfoGain.gain.value = v * .99 })
 
         const delayOn = value(true, v => {
             if (v) delayGain.connect(gainNode);
@@ -624,10 +629,17 @@
 
         const analyzer = ctx.createAnalyser();
 
+
+        /////////////////////////////////////////////////////////////////////////////////////
+        // Connecting everything
+        /////////////////////////////////////////////////////////////////////////////////////
+
         voices.forEach(voice => voice.out.connect(gainNode));
 
         connect(gainNode, lfo1Gain, lfo2Gain, filter, analyzer, muteNode, ctx.destination);
         connect(gainNode, delay, delayGain);
+
+        connect(filterLfoGain, filter.frequency);
 
         function freq(mill) {
             const min = 20;
@@ -739,7 +751,7 @@
             const ctx = makeCanvas();
 
             analyzer.fftSize = 2 ** 13;
-            analyzer.smoothingTimeConstant = .3;
+            analyzer.smoothingTimeConstant = .1;
 
             const data = new Uint8Array(analyzer.frequencyBinCount);
             const color = viridis_data();
@@ -751,15 +763,17 @@
             let borderFloor = 2;
             let highlight = 2;
             let borderHigh = 2;
+            const k = (color.length - 1) / (floor + highlight + borderHigh + 12);
             for (let i = 0; i < 12; ++i) {
-                let bg = color[((i + floor) * (color.length - 1) / (floor + highlight + borderHigh + 12)) | 0];
-                let b2 = color[((i + floor + highlight) * (color.length - 1) / (floor + highlight + borderHigh + 12)) | 0];
-                let border = color[((i + borderFloor) * (color.length - 1) / (floor + highlight + borderHigh + 12)) | 0];
-                let border2 = color[((i + floor + highlight + borderHigh) * (color.length - 1) / (floor + highlight + borderHigh + 12)) | 0];
+                let bg = color[((i + floor) * k) | 0];
+                let b2 = color[((i + floor + highlight) * k) | 0];
+                let border = color[((i + borderFloor) * k) | 0];
+                let border2 = color[((i + floor + highlight + borderHigh) * k) | 0];
 
                 document.styleSheets[0].insertRule(`.tone-${i} {background-color: ${bg}; border-color: ${border}}`);
                 document.styleSheets[0].insertRule(`.keyboard.activetone-${i} .tone-${i} {background-color: ${b2}; border-color: ${border2}}`);
             }
+
             return { ctx, analyzer, data, color }
         }
 
