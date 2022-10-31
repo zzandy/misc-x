@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Keys</title>
+    <style>
+        html,
+        body {
+            background-color: #232930;
+        }
+
+        canvas {
+            display: inline-block;
+            margin: 1em;
+        }
+    </style>
+</head>
+
+<body>
+    <script name="canvas" type="text/javascript">
+        function makeCanvas(width, height) {
+
+            let can = document.createElement('canvas');
+            let ctx = can.getContext('2d');
+
+            ctx.canvas.width = width;
+            ctx.canvas.height = height;
+
+            document.body.appendChild(can);
+
+            return ctx;
+        }
+    </script>
+
+    <script type="text/javascript">
+
+        const s = 5;
+        const n = 5;
+        const m = 5;
+        const max = ((1 << (n * m)) - 1);
+
+        let i = 2004671;
+        let num=0;
+
+        tick();
+        function tick() {
+            while (i <= max && !isValid(i)) {
+                ++i;
+            }
+
+            if (i <= max) {
+                document.title = ++num + ' Keys';
+                renderKey(i++, true);
+                requestAnimationFrame(tick)
+            }
+        }
+
+        function isSet(i, j, conf) {
+            return !!(conf & (1 << (i * m + j)))
+        }
+
+        function isValid(conf) {
+            let col = 1;
+            for (let i = 1; i < n; ++i) {
+                col |= (col << m);
+            }
+
+            if ((col & conf) == 0) return false;
+
+            col = 1;
+            col <<= (m - 1);
+            for (let i = 1; i < n; ++i) {
+                col |= (col << m);
+            }
+
+            if ((col & conf) == 0) return false;
+
+            let block = 3;
+            block |= (block << m);
+
+            for (let i = 0; i < n - 1; ++i) {
+                for (let j = 0; j < m - 1; ++j) {
+                    let b = block << (i * m + j);
+                    if ((conf & b) == 0 || (~conf & b) == 0) return false;
+                }
+            }
+
+            let row = 1;
+            for (let j = 1; j < m; ++j) {
+                row |= row << 1;
+            }
+
+            for (let i = 0; i < n; ++i) {
+                if (((row << (i * m)) & conf) == 0) return false;
+            }
+
+            let graph = newArray(n, m, () => { });
+
+            for (let i = 0; i < n; ++i) {
+                for (let j = 0; j < m; ++j) {
+                    let isOn = isSet(i, j, conf);
+                    let isConnected = isOn ? (i == n - 1) : (i == 0 | j == 0 || j == m - 1);
+
+                    if (i > 0) {
+                        if (graph[i - 1][j][0] == isOn) {
+                            graph[i][j] = graph[i - 1][j];
+                            graph[i][j][1] ||= isConnected;
+                        }
+                    }
+
+                    if (graph[i][j] === undefined && j > 0) {
+                        if (graph[i][j - 1][0] == isOn) {
+                            graph[i][j] = graph[i][j - 1];
+                            graph[i][j][1] ||= isConnected;
+                        }
+                    }
+
+                    if (graph[i][j] === undefined) {
+                        graph[i][j] = [isOn, isConnected];
+                    }
+                }
+            }
+
+            for (let i = 0; i < n; ++i) {
+                for (let j = 0; j < m; ++j) {
+                    if (!graph[i][j][1]) return false;
+                }
+            }
+
+            return true;
+        }
+
+        function newArray(n, m, init) {
+            let a = [];
+            for (let i = 0; i < n; ++i) {
+                let r = [];
+                for (let j = 0; j < m; ++j) {
+                    r.push(init(i, j));
+                }
+                a.push(r)
+            }
+
+            return a;
+        }
+
+        function renderKey(conf, isValid) {
+
+            let stem = 3 * m;
+            let head = 2 * m
+
+            let ctx = makeCanvas(s * (stem + head + m + 1), s * (head + 1));
+            ctx.scale(s, s);
+
+            ctx.fillStyle = '#232930';
+            //ctx.fillRect(0, 0, s * m, s * n);
+            ctx.strokeStyle = ctx.fillStyle = isValid ? 'silver' : 'red';
+
+            ctx.fillRect(head, n, stem + m + 1, 1)
+
+            for (let i = 0; i < n; ++i) {
+                for (let j = 0; j < m; ++j) {
+                    if (isSet(i, j, conf)) {
+                        ctx.fillRect(stem + head + j, i, 1, 1);
+                    }
+                }
+            }
+
+            ctx.translate(head / 2 + .5, head / 2 + .5);
+
+            let numHeads = 2;
+            let headNum = (Math.random() * numHeads) | 0;
+
+            switch (headNum) {
+
+                case 0:
+                    ctx.rotate(Math.PI / 4);
+
+                    ctx.fillRect(-head / 2 + 1.5, -head / 2 + 1.5, head - 3, head - 3);
+                    ctx.clearRect(-head / 2 + 2.5, -head / 2 + 2.5, head - 5, head - 5);
+                    break;
+
+                case 1:
+
+                ctx.arc(0,0,head/2-1, 0, Math.PI*2);
+                ctx.stroke();
+
+                    break;
+
+                default: throw new Error("not supported")
+            }
+
+        }
+    </script>
+</body>
+
+</html>
