@@ -301,12 +301,16 @@
         const lfo1 = ctx.createOscillator()
         const lfo2 = ctx.createOscillator()
 
-        lfo1.start();
-        lfo2.start();
+        const filter = ctx.createBiquadFilter();
+        const filterLfoGain = ctx.createGain();
+
+        filterLfoGain.gain.value = 1000;
+
+        let isStarted = false;
 
         const compressor = ctx.createDynamicsCompressor();
 
-        const quant = 0.01
+        const quant = 0.02
 
         class Voice {
             constructor() {
@@ -314,6 +318,10 @@
                 this.vco2 = ctx.createOscillator();
                 this.vco3 = ctx.createOscillator();
                 this.vco4 = ctx.createOscillator();
+
+                this.vco2gain = ctx.createGain();
+                this.vco3gain = ctx.createGain();
+                this.vco4gain = ctx.createGain();
 
                 this.vco2mute = ctx.createGain();
                 this.vco3mute = ctx.createGain();
@@ -323,83 +331,82 @@
                 this.envelope.gain.value = 0;
                 this.out = ctx.createGain();
 
-                this.filter = ctx.createBiquadFilter();
-
                 this.vco1.start();
                 this.vco2.start();
                 this.vco3.start();
                 this.vco4.start();
 
+                this._level = 0;
                 this._freq = 440;
                 this._vco2mul = .5;
                 this._vco3mul = 5 / 4;
                 this._vco4mul = 4;
-                this._filterFrequencyMul = 1;
 
                 this.updateFreq();
 
                 connect(this.vco1, this.envelope);
-                connect(this.vco2, this.vco2mute, this.envelope);
-                connect(this.vco3, this.vco3mute, this.envelope);
-                connect(this.vco4, this.vco4mute, this.envelope);
-                connect(this.envelope, this.filter, this.out);
+                connect(this.vco2, this.vco2gain, this.vco2mute, this.envelope);
+                connect(this.vco3, this.vco3gain, this.vco3mute, this.envelope);
+                connect(this.vco4, this.vco4gain, this.vco4mute, this.envelope);
+                connect(this.envelope, this.out);
             }
 
-            set filterFrequencyMul(v) {
-                this._filterFrequencyMul = v;
+            set filterFrequency(v) {
+                this._filterFrequency = v;
                 this.updateFilter();
             }
 
             set freq(v) {
                 this._freq = v;
                 this.updateFreq();
-                this.updateFilter();
             }
 
             set vco2mul(v) {
                 this._vco2mul = v;
-                this.vco2.frequency.linearRampToValueAtTime(this._freq * this._vco2mul, ctx.currentTime + quant);
+                this.vco2.frequency.setTargetAtTime(this._freq * this._vco2mul, ctx.currentTime, 0);
             }
 
             set vco3mul(v) {
                 this._vco3mul = v;
-                this.vco3.frequency.linearRampToValueAtTime(this._freq * this._vco3mul, ctx.currentTime + quant);
+                this.vco3.frequency.setTargetAtTime(this._freq * this._vco3mul, ctx.currentTime, 0);
             }
 
             set vco4mul(v) {
                 this._vco4mul = v;
-                this.vco4.frequency.linearRampToValueAtTime(this._freq * this._vco4mul, ctx.currentTime + quant);
+                this.vco4.frequency.setTargetAtTime(this._freq * this._vco4mul, ctx.currentTime, 0);
+            }
+
+            set vco2on(v) {
+                this.vco2mute.gain.setTargetAtTime(v, ctx.currentTime, quant);
+            }
+
+            set vco3on(v) {
+                this.vco3mute.gain.setTargetAtTime(v, ctx.currentTime, quant);
+            }
+
+            set vco4on(v) {
+                this.vco4mute.gain.setTargetAtTime(v, ctx.currentTime, quant);
             }
 
             set vco2level(v) {
-                this.vco2mute.gain.linearRampToValueAtTime(v, ctx.currentTime + quant);
+                this.vco2gain.gain.setTargetAtTime(v, ctx.currentTime, quant);
             }
 
             set vco3level(v) {
-                this.vco3mute.gain.linearRampToValueAtTime(v, ctx.currentTime + quant);
+                this.vco3gain.gain.setTargetAtTime(v, ctx.currentTime, quant);
             }
 
             set vco4level(v) {
-                this.vco4mute.gain.linearRampToValueAtTime(v, ctx.currentTime + quant);
+                this.vco4gain.gain.setTargetAtTime(v, ctx.currentTime, quant);
             }
 
             updateFreq() {
-                this.vco1.frequency.linearRampToValueAtTime(this._freq, ctx.currentTime + quant);
-                this.vco2.frequency.linearRampToValueAtTime(this._freq * this._vco2mul, ctx.currentTime + quant);
-                this.vco3.frequency.linearRampToValueAtTime(this._freq * this._vco3mul, ctx.currentTime + quant);
-                this.vco4.frequency.linearRampToValueAtTime(this._freq * this._vco4mul, ctx.currentTime + quant);
-            }
-
-            updateFilter() {
-                this.filter.frequency.linearRampToValueAtTime(this._freq * this._filterFrequencyMul, ctx.currentTime + quant);
-            }
-
-            connectFilter(node) {
-                connect(node, this.filter.detune);
+                this.vco1.frequency.setTargetAtTime(this._freq, ctx.currentTime, 0);
+                this.vco2.frequency.setTargetAtTime(this._freq * this._vco2mul, ctx.currentTime, 0);
+                this.vco3.frequency.setTargetAtTime(this._freq * this._vco3mul, ctx.currentTime, 0);
+                this.vco4.frequency.setTargetAtTime(this._freq * this._vco4mul, ctx.currentTime, 0);
             }
         }
-
-        envelope.gain.value = 0;
 
         let attack = 40;
         let decay = 50;
@@ -477,7 +484,7 @@
                     break;
 
                 case 'filter':
-                    voices.forEach(voice => voice.connectFilter(lfo));
+                    connect(lfo, filterLfoGain);
                     break;
             }
 
@@ -487,21 +494,25 @@
         const lfo1type = value(Object.keys(shapes)[0], v => lfo1.type = shapes[v])
         const lfo2type = value(Object.keys(shapes)[0], v => lfo2.type = shapes[v])
 
-        const lfo1freq = value(1000, f => lfo1.frequency.value = f / 100);
-        const lfo2freq = value(1000, f => lfo2.frequency.value = f / 100);
+        const lfo1freq = value(10, f => lfo1.frequency.value = f);
+        const lfo2freq = value(20, f => lfo2.frequency.value = f);
 
         const vco1type = value(Object.keys(shapes)[1], v => voices.forEach(voice => voice.vco1.type = shapes[v]));
         const vco2type = value(Object.keys(shapes)[0], v => voices.forEach(voice => voice.vco2.type = shapes[v]));
         const vco3type = value(Object.keys(shapes)[1], v => voices.forEach(voice => voice.vco3.type = shapes[v]));
-        const vco4type = value(Object.keys(shapes)[0], v => voices.forEach(voice => voice.vco4.type = shapes[v]));
+        const vco4type = value(Object.keys(shapes)[2], v => voices.forEach(voice => voice.vco4.type = shapes[v]));
 
         const vco2mul = value(500, v => voices.forEach(voice => voice.vco2mul = v / 1000))
         const vco3mul = value(1250, v => voices.forEach(voice => voice.vco3mul = v / 1000))
         const vco4mul = value(2000, v => voices.forEach(voice => voice.vco4mul = v / 1000))
 
-        const vco2on = value(true, v => voices.forEach(voice => voice.vco2level = +v))
-        const vco3on = value(true, v => voices.forEach(voice => voice.vco3level = +v))
-        const vco4on = value(true, v => voices.forEach(voice => voice.vco4level = +v))
+        const vco2on = value(true, v => voices.forEach(voice => voice.vco2on = +v))
+        const vco3on = value(true, v => voices.forEach(voice => voice.vco3on = +v))
+        const vco4on = value(true, v => voices.forEach(voice => voice.vco4on = +v))
+
+        const vco2lvl = value(800, v => voices.forEach(voice => voice.vco2level = +v / 1000))
+        const vco3lvl = value(500, v => voices.forEach(voice => voice.vco3level = +v / 1000))
+        const vco4lvl = value(100, v => voices.forEach(voice => voice.vco4level = +v / 1000))
 
         const vco2ratio = value('1⁄2', v => vco2mul.value = 1000 * getRatio(v))
         const vco3ratio = value('3⁄2', v => vco3mul.value = 1000 * getRatio(v))
@@ -528,11 +539,13 @@
             return r;
         }
 
-        const filterFreqMul = new value(1000, v => voices.forEach(voice => voice.filterFrequencyMul = v / 1000));
-        const filterDetune = new value(0, v => voices.forEach(voice => voice.filter.detune.q = v));
-        const filterQ = new value(0, v => voices.forEach(voice => voice.filter.Q.value = v / 1000));
-        const filterGain = new value(0, v => voices.forEach(voice => voice.filter.gain.value = v));
-        const filterType = new value('allpass', v => voices.forEach(voice => voice.filter.type = v));
+        const filterFreq = new value(1500, v => filter.frequency.value = v);
+        const filterDetune = new value(0, v => filter.detune.value = v);
+        const filterQ = new value(0, v => filter.Q.value = v / 1000);
+        const filterGain = new value(0, v => filter.gain.value = v);
+        const filterType = new value('allpass', v => filter.type = v);
+
+        filterFreq.addEventListener(v => { console.log(v); filterLfoGain.gain.value = v * .99 })
 
         const delayOn = value(true, v => {
             if (v) delayGain.connect(gainNode);
@@ -567,12 +580,11 @@
             ),
 
             makePanel('VCOs',
-                div(makeCheck("VCO2", vco2on),
-                    makeSelector('', Object.keys(shapes), vco2type)),
+                div(makeCheck("VCO2", vco2on), makeSelector('', Object.keys(shapes), vco2type), makeRange(" Vol ", 1, 1000, vco2lvl)),
                 div(makeRange("Freq", 1, 5000, vco2mul), makeSelector('', ratios, vco2ratio)),
-                div(makeCheck("VCO2", vco3on), makeSelector('', Object.keys(shapes), vco3type)),
+                div(makeCheck("VCO2", vco3on), makeSelector('', Object.keys(shapes), vco3type), makeRange(" Vol ", 1, 1000, vco3lvl)),
                 div(makeRange("Freq", 1, 5000, vco3mul), makeSelector('', ratios, vco3ratio)),
-                div(makeCheck("VCO4", vco4on), makeSelector('', Object.keys(shapes), vco4type)),
+                div(makeCheck("VCO4", vco4on), makeSelector('', Object.keys(shapes), vco4type), makeRange(" Vol ", 1, 1000, vco4lvl)),
                 div(makeRange("Freq", 1, 5000, vco4mul), makeSelector('', ratios, vco4ratio)),
             ));
 
@@ -580,12 +592,12 @@
         horiz(makePanel("LFO1",
             div(makeSelector('Target', targets, lfo1target)),
             div(makeSelector('', Object.keys(shapes), lfo1type)),
-            div(makeRange('Freq', 1, 5000, lfo1freq))),
+            div(makeRange('Freq', 1, 200, lfo1freq))),
 
             makePanel("LFO2",
                 div(makeSelector('Target', targets, lfo2target)),
                 div(makeSelector('', Object.keys(shapes), lfo2type)),
-                div(makeRange('Freq', 1, 5000, lfo2freq)))
+                div(makeRange('Freq', 1, 200, lfo2freq)))
         )
 
         let kbdDiv = makeDiv([]);
@@ -595,7 +607,7 @@
 
             makePanel('Filter',
                 div(makeSelector('Type', ['allpass', 'lowpass', 'highpass', 'bandpass', 'lowshelf', 'highshelf', 'peaking', 'notch'], filterType)),
-                div(makeRange('Freq', 1, 5000, filterFreqMul)),
+                div(makeRange('Freq', 20, 8000, filterFreq)),
                 div(makeRange('Detune', -1200, 1200, filterDetune)),
                 div(makeRange('Q', 1, 5000, filterQ)),
                 div(makeRange('Gain', -50, 50, filterGain))
@@ -617,10 +629,17 @@
 
         const analyzer = ctx.createAnalyser();
 
+
+        /////////////////////////////////////////////////////////////////////////////////////
+        // Connecting everything
+        /////////////////////////////////////////////////////////////////////////////////////
+
         voices.forEach(voice => voice.out.connect(gainNode));
 
-        connect(gainNode, lfo1Gain, lfo2Gain, analyzer, muteNode, ctx.destination);
+        connect(gainNode, lfo1Gain, lfo2Gain, filter, analyzer, muteNode, ctx.destination);
         connect(gainNode, delay, delayGain);
+
+        connect(filterLfoGain, filter.frequency);
 
         function freq(mill) {
             const min = 20;
@@ -679,7 +698,6 @@
         let isDown = [];
 
         addEventListener('keydown', e => {
-            console.log(e.code)
             if (isDown.includes(e.code)) {
                 e.preventDefault();
                 return;
@@ -733,7 +751,7 @@
             const ctx = makeCanvas();
 
             analyzer.fftSize = 2 ** 13;
-            analyzer.smoothingTimeConstant = .3;
+            analyzer.smoothingTimeConstant = .1;
 
             const data = new Uint8Array(analyzer.frequencyBinCount);
             const color = viridis_data();
@@ -745,15 +763,17 @@
             let borderFloor = 2;
             let highlight = 2;
             let borderHigh = 2;
+            const k = (color.length - 1) / (floor + highlight + borderHigh + 12);
             for (let i = 0; i < 12; ++i) {
-                let bg = color[((i + floor) * (color.length - 1) / (floor + highlight + borderHigh + 12)) | 0];
-                let b2 = color[((i + floor + highlight) * (color.length - 1) / (floor + highlight + borderHigh + 12)) | 0];
-                let border = color[((i + borderFloor) * (color.length - 1) / (floor + highlight + borderHigh + 12)) | 0];
-                let border2 = color[((i + floor + highlight + borderHigh) * (color.length - 1) / (floor + highlight + borderHigh + 12)) | 0];
+                let bg = color[((i + floor) * k) | 0];
+                let b2 = color[((i + floor + highlight) * k) | 0];
+                let border = color[((i + borderFloor) * k) | 0];
+                let border2 = color[((i + floor + highlight + borderHigh) * k) | 0];
 
                 document.styleSheets[0].insertRule(`.tone-${i} {background-color: ${bg}; border-color: ${border}}`);
                 document.styleSheets[0].insertRule(`.keyboard.activetone-${i} .tone-${i} {background-color: ${b2}; border-color: ${border2}}`);
             }
+
             return { ctx, analyzer, data, color }
         }
 
@@ -792,6 +812,12 @@
         }
 
         function keyPress(semitoneDif) {
+            if (isStarted == false) {
+                lfo1.start();
+                lfo2.start();
+                isStarted = true;
+            }
+
             let oldest = Infinity;
             let oldestId = -1;
             let matching = -1;
@@ -859,12 +885,10 @@
 
         function envelopeOpen(gainNode) {
             const t = ctx.currentTime;
-            const value = gainNode.value;
 
             gainNode.cancelScheduledValues(t);
-            gainNode.setValueAtTime(value, t)
-            gainNode.linearRampToValueAtTime(1, t + attack)
-            gainNode.linearRampToValueAtTime(sustain, t + attack + decay)
+            gainNode.setTargetAtTime(1, t, attack)
+            gainNode.setTargetAtTime(sustain, t + attack, decay)
         }
 
         function envelopeClose(gainNode) {
@@ -872,8 +896,8 @@
             const value = gainNode.value;
 
             gainNode.cancelScheduledValues(t);
-            gainNode.setValueAtTime(Math.min(value, sustain), t + .001)
-            gainNode.linearRampToValueAtTime(0, t + release)
+            gainNode.setTargetAtTime(Math.min(value, sustain), t, quant)
+            gainNode.setTargetAtTime(0, t + quant, release)
         }
 
         function connect() {

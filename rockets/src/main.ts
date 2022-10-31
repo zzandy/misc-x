@@ -17,7 +17,12 @@ type State = {
     first: number,
     bestCommands: number,
     avgCommands: number,
-    avgCommandsCount: number
+    avgCommandsCount: number,
+    globalBest: number,
+    rate: number,
+    lastGlobalImp: number,
+    frame: number,
+    gen: number
 };
 
 const maxOut = 400;
@@ -62,7 +67,12 @@ function init() {
         best: 0,
         bestCommands: 0,
         avgCommands: 0,
-        avgCommandsCount: 0
+        avgCommandsCount: 0,
+        globalBest: 0,
+        lastGlobalImp: 0,
+        rate: 0,
+        frame: 0,
+        gen: 0
     };
 }
 
@@ -71,6 +81,8 @@ function update(delta: number, state: State) {
         expl.advance(delta);
         return expl.isAlive;
     });
+
+    ++state.frame;
 
     let numAlive = 0;
     let numCommands = 0;
@@ -92,6 +104,18 @@ function update(delta: number, state: State) {
         }
 
         state.best = Math.max(state.best, rocket.bestScore);
+
+        if (state.globalBest < rocket.bestScore) {
+
+            if (state.globalBest > 0) {
+
+                state.rate = (rocket.bestScore - state.globalBest) / (performance.now() - state.globalBest);
+            }
+            state.lastGlobalImp = performance.now()
+            state.globalBest = rocket.bestScore;
+        }
+
+
         if (state.best == rocket.bestScore)
             state.bestCommands = rocket.commands.length;
 
@@ -116,8 +140,7 @@ function update(delta: number, state: State) {
 
     if ((interval += delta) > maxInterval * 1000 || numAlive == 0) {
         interval = 0;
-
-        //console.log(state.best.toFixed(3), state.wins, state.first.toFixed(2), state.bestCommands, (state.avgCommands / state.avgCommandsCount).toFixed(1));
+        ++state.gen;
         state.best = state.wins = state.first = state.bestCommands = 0;
 
         const prev = state.rockets;
@@ -140,7 +163,7 @@ function update(delta: number, state: State) {
 }
 
 function render(delta: number, state: State) {
-    state.renderer.draw(state.goals, state.obstacles, state.rockets, state.explosions, state.area);
+    state.renderer.draw(state.goals, state.obstacles, state.rockets, state.explosions, state.area, state);
 }
 
 function splice(a: Command[], b: Command[]) {
@@ -170,6 +193,21 @@ function splice(a: Command[], b: Command[]) {
                 break;
             case "spawn":
                 res.splice(at, 0, randomCommand());
+                break;
+            case 'burn':
+                res[at] = new Command(res[at].leadTime, res[at].burnTime * rnd(.9, 1.1), res[at].vector, res[at].outTime);
+                break;
+            case 'aim':
+                let m = res[at].vector.mag * rnd(.05, .2);
+                let v = newVector(rnd(360), m);
+                res[at] = new Command(res[at].leadTime, res[at].burnTime, new Vector(res[at].vector.x + v.x, res[at].vector.y + v.y), res[at].outTime);
+                break;
+            case 'force':
+                let k = rnd(.9, 1.1);
+                res[at] = new Command(res[at].leadTime, res[at].burnTime, new Vector(res[at].vector.x * k, res[at].vector.y * k), res[at].outTime);
+                break;
+            case 'out':
+                res[at] = new Command(res[at].leadTime, res[at].burnTime, res[at].vector, res[at].outTime * rnd(.9, 1.1));
                 break;
         }
     }

@@ -3,14 +3,17 @@ const html = require("html-webpack-plugin");
 
 module.exports = {
     mode: 'development',
-    entry: ".\\src\\main.ts",
+    entry: "./src/main.ts",
     output: {
         path: path.resolve(__dirname, "dist"),
         filename: "bundle.js",
     },
-    devServer:{
-        contentBase: './dist',
-    },
+    devServer: {
+        static: {
+          directory: path.join(__dirname, 'public'),
+        },
+        compress: true,
+      },
     resolve: {
         extensions: [".js", ".ts"]
     },
