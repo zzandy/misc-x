@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Coins</title>
+</head>
+
+<body>
+    <script type="text/javascript">
+        let best = [];
+        let bestScore = Infinity;
+        let cases = [];
+        let n = 0;
+        console.log('start')
+
+
+        function* gen() {
+            for (let t = 100; t > 5; --t)
+                for (let i = t - 1; i > 4; --i)
+                    for (let j = i - 1; j > 3; --j) {
+                        for (let k = j - 1; k > 2; --k)
+                            for (let l = k - 1; l > 1; --l)
+                                yield [t, i, j, k, l, 1]
+                    }
+        }
+
+        console.log(n, cases.length);
+
+        let seq = gen();
+
+        tick();
+
+        function tick() {
+            let next = seq.next();
+
+            if (next) {
+                processCase(next.value)
+                setTimeout(tick, 0);
+            }
+        }
+
+        function processCase(coins) {
+            let score
+            try {
+                score = calculate(coins, 200);
+
+                //console.log(coins, score)
+
+                if (bestScore > score) {
+                    bestScore = score;
+                    best = coins;
+
+                    console.log('new best', bestScore.toFixed(2), best)
+                }
+            } catch (e) {
+                //console.log('error in ' + coins)
+            }
+        }
+
+        function calculate(coins, max) {
+            let avg = 0;
+            for (let i = 1; i < max; ++i) {
+                let count = countChange({}, i, ...coins);
+                if (count === undefined) {
+                    console.log('cant get ' + i + ' using ' + coins.join(', '))
+                    return Infinity;
+                }
+                avg += count.length / max;
+            }
+
+            return avg;
+        }
+
+        function countChange(cache, sum, coin, ...coins) {
+            if (coin === undefined) throw new Error('Coin undefined');
+
+            let options = [];
+
+            if (sum === coin) return [coin];
+
+            if (sum > coin && cache[sum] === undefined || cache[sum] > (sum - coin) / coin) {
+                let option = countChange(cache, sum - coin, coin, ...coins);
+                if (option)
+                    options.push([coin, ...option])
+            }
+
+            if (sum > coin && coins.length > 0 && cache[sum] === undefined || cache[sum] > (sum - coin) / coins[0]) {
+                let option = countChange(cache, sum - coin, ...coins);
+                if (option)
+                    options.push([coin, ...option])
+            }
+
+            if (coins.length > 0 && cache[sum] === undefined || cache[sum] > (sum) / coins[0]) {
+                let option = countChange(cache, sum, ...coins)
+                options.push(option);
+            }
+
+            let res = options.filter(current => current).reduce((best, current) => best === undefined || best.length > current.length ? current : best, undefined);
+
+            if (res === undefined) {
+                return undefined;
+            }
+
+            cache[sum] = cache[sum] === undefined ? res.length : Math.min(cache[sum], res.length);
+            //console.log(`${sum}, using ${[coin, ...coins].join(' ')}, equals ${res.join('+')}`, res, cache)
+
+            return res;
+        }
+    </script>
+</body>
+
+</html>
