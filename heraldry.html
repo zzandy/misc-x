@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Heraldry</title>
+</head>
+
+<body>
+    <script name="canvas" type="text/javascript">
+
+        // canvas w/ hex
+        function fullscreenCanvas() {
+            let [can, ctx] = makeCanvas(window.innerWidth, window.innerHeight, false)
+
+            document.body.appendChild(can);
+            document.body.style.overflow = "hidden";
+            document.body.style.margin = "0";
+            document.body.style.padding = "0";
+
+            return ctx;
+        }
+
+        function makeCanvas(width, height, alpha) {
+
+            let can = document.createElement('canvas');
+            let ctx = can.getContext('2d', { alpha });
+
+            ctx.canvas.width = width;
+            ctx.canvas.height = height;
+            ctx.canvas.style.display = 'block';
+
+            return [can, ctx];
+        }
+    </script>
+
+    <script type="text/javascript">
+
+        let ctx = fullscreenCanvas();
+
+        let metals = ['#ffffff' // Argent
+            , '#f7d900'// Or
+        ]
+
+        let tinctures = [
+            '#cc0004'// Gules
+            , '#000000'// Sable
+            , '#1c40ac'// Azure
+            , '#288a00'// Vert
+            , '#84129c'// Purpure
+            , '#8b004b'// Murrey
+            , '#b22222'// Sanguine
+            , '#c67000'// Tenné
+        ];
+
+        let shapes = [shield1, shield2, shield3];
+        let patterns = [pattern1, pattern2, pattern3, pattern4, pattern5, pattern6]
+
+        render();
+
+        function render() {
+
+            let scale = 100;
+
+            let n = 7, m = 5;
+            for (let i = 0; i < n; ++i)
+                for (let j = 0; j < m; ++j) {
+
+                    ctx.save();
+                    ctx.scale(scale, scale)
+
+                    ctx.translate(.5 + 1.5 * j, .5 + 1.5 * i);
+
+                    pick(1, shapes)[0](ctx);
+
+                    ctx.strokeStyle = 'gray';
+                    ctx.lineWidth = 3 / scale
+                    ctx.stroke()
+                    ctx.clip();
+
+                    let clrs = Math.random() < .5
+                        ? [pick(1, metals)[0], pick(1, tinctures)[0]]
+                        : [pick(1, tinctures)[0], pick(1, metals)[0]];
+
+                    ctx.fillStyle = clrs[0]
+                    ctx.fillRect(-1, -1, 3, 3);
+                    ctx.fillStyle = clrs[1]
+
+                    pick(1, patterns)[0](ctx);
+
+                    ctx.restore();
+                }
+        }
+
+        function shield1(ctx) {
+            ctx.beginPath();
+
+            ctx.moveTo(0, 0)
+            ctx.lineTo(1, 0)
+            ctx.lineTo(1, .9)
+
+            ctx.quadraticCurveTo(1, 1.1, .5, 1.1)
+            ctx.quadraticCurveTo(0, 1.1, 0, .9)
+
+            ctx.lineTo(0, 0);
+
+            ctx.closePath();
+        }
+
+        function shield2(ctx) {
+            ctx.beginPath();
+
+            ctx.moveTo(0, 0)
+            ctx.lineTo(1, 0)
+            ctx.lineTo(1, .9)
+
+            ctx.bezierCurveTo(1, 1.1, .5, 1, .5, 1.1)
+            ctx.bezierCurveTo(.5, 1, 0, 1.1, 0, .9)
+
+            ctx.lineTo(0, 0);
+
+            ctx.closePath();
+        }
+
+        function shield3(ctx) {
+            ctx.beginPath();
+
+            let up = 0;
+            let top = .1;
+            let narrow = .3;
+            let wide = .8
+
+            ctx.moveTo(.2, up);
+            ctx.quadraticCurveTo(.5, .1, .8, up);
+            ctx.lineTo(1, top);
+
+            ctx.bezierCurveTo(.9, narrow, 1, .7, 1, wide)
+
+            ctx.bezierCurveTo(1, 1.1, .5, 1, .5, 1.1)
+            ctx.bezierCurveTo(.5, 1, 0, 1.1, 0, wide)
+
+            ctx.bezierCurveTo(0, .7, .1, narrow, 0, top)
+
+            ctx.closePath();
+
+        }
+
+        function pattern1(ctx, colors) {
+            ctx.fillRect(-.5, -1, 1, 3);
+        }
+
+        function pattern2(ctx, colors) {
+            ctx.fillRect(-.5, -.48, 1, 1);
+            ctx.fillRect(.5, .52, 1, 1);
+        }
+
+        function pattern3(ctx, colors) {
+            ctx.translate(.5, .48);
+            ctx.rotate(Math.PI / 4);
+
+            ctx.fillRect(-1, -.1, 3, .2);
+        }
+
+        function pattern4(ctx, colors) {
+            ctx.translate(.5, .48);
+            ctx.rotate(Math.PI / 4);
+            ctx.fillRect(-1, -.1, 3, .2);
+
+            ctx.rotate(Math.PI / 2);
+            ctx.fillRect(-1, -.1, 3, .2);
+        }
+
+        function pattern5(ctx, colors) {
+            ctx.translate(.5, .48);
+            ctx.rotate(Math.PI / 4);
+
+            ctx.fillRect(-1, 0, 3, 3);
+        }
+
+        function pattern6(ctx, colors) {
+            ctx.translate(.5, .48);
+            ctx.fillRect(-1, -.1, 3, .2);
+
+            ctx.rotate(Math.PI / 2);
+            ctx.fillRect(-1, -.1, 3, .2);
+        }
+
+        function pick(n, values) {
+            if (n > values.length) throw new Error("Can't pick that many");
+
+            let indexes = [];
+            while (indexes.length < n) {
+                let idx = (Math.random() * values.length) | 0;
+                if (!indexes.includes(idx)) indexes.push(idx)
+            }
+
+            return indexes.map(i => values[i]);
+        }
+
+    </script>
+</body>
+
+</html>
