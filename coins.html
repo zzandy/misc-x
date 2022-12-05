@@ -4,57 +4,101 @@
 <head>
     <meta charset="utf-8" />
     <title>Coins</title>
+    <style>
+        html,
+        body {
+            background-color: #0c0c0c;
+            color: #cccccc;
+            font: 14pt/1.5 monospace
+        }
+
+        b {
+            font-weight: normal;
+            color: #0c0c0c;
+            background-color: #cccccc;
+        }
+    </style>
 </head>
 
 <body>
     <script type="text/javascript">
         let best = [];
         let bestScore = Infinity;
-        let cases = [];
-        let n = 0;
+
+        let reportBest = out();
+        let reportCurrent = out();
+        let reportProgress = out();
+        let cap = 20;
+        let max = 100;
+        //3876
+
         console.log('start')
 
-
         function* gen() {
-            for (let t = 50; t > 5; --t)
+            for (let t = cap; t > 5; --t)
                 for (let i = t - 1; i > 4; --i)
-                    for (let j = i - 1; j > 3; --j) {
+                    for (let j = i - 1; j > 3; --j)
                         for (let k = j - 1; k > 2; --k)
                             for (let l = k - 1; l > 1; --l)
                                 yield [t, i, j, k, l, 1]
-                    }
         }
 
-        console.log(n, cases.length);
+        console.log(calculate([10, 5, 2, 1], max))
 
         let seq = gen();
+        let n = 0;
+        let total = 0;
 
+        let next = seq.next();
+        while (!next.done) {
+            ++total;
+            next = seq.next();
+        }
+
+        console.log(total)
+        seq = gen();
+
+        start = performance.now();
         tick();
 
         function tick() {
             let next = seq.next();
 
-            if (next) {
-                processCase(next.value)
+            if (!next.done) {
+                let coins = next.value
+
+                let score = processCase(coins)
+
+                if ((++n) % 10 == 0) {
+                    let progress = n / total;
+                    let elapsed = performance.now() - start
+                    let estimated = elapsed * total / n;
+
+                    reportCurrent(coins.join(' ') + ', average ' + score.toFixed(2) + ', e.t.a. ' + timeOut(estimated - elapsed));
+                    reportProgress(progressOut(progress));
+                }
                 setTimeout(tick, 0);
+            }
+            else {
+                reportCurrent('out of ' + n + ' checked')
+                reportProgress('');
             }
         }
 
         function processCase(coins) {
             let score
             try {
-                score = calculate(coins, 200);
-
-                //console.log(coins, score)
+                score = calculate(coins, max);
 
                 if (bestScore > score) {
                     bestScore = score;
                     best = coins;
-
+                    reportBest('Best: ' + coins.join(' ') + ', average ' + score.toFixed(2))
                     console.log('new best', bestScore.toFixed(2), best)
                 }
+
+                return score;
             } catch (e) {
-                //console.log('error in ' + coins)
             }
         }
 
@@ -106,6 +150,51 @@
             //console.log(`${sum}, using ${[coin, ...coins].join(' ')}, equals ${res.join('+')}`, res, cache)
 
             return res;
+        }
+
+        function out() {
+            let div = document.createElement('div');
+            document.body.appendChild(div);
+
+            return function (text) {
+                div.innerHTML = text;
+            }
+        }
+
+        function progressOut(progress) {
+            let w = 60
+            let repr = ((progress * 100).toFixed(2) + '%');
+            let str = '[' + repr.padEnd((w - 2 + repr.length) / 2, '-').padStart(w - 2, '-') + ']'
+
+            let a = str.substring(0, str.length * progress | 0);
+            let b = str.substring(str.length * progress | 0);
+
+            return '<b>' + a + '</b>' + b;
+        }
+
+        function timeOut(time) {
+            let intervals = [
+                ['year', 365 * 24 * 60 * 60 * 1000],
+                ['month', 28 * 24 * 60 * 60 * 1000],
+                ['week', 7 * 24 * 60 * 60 * 1000],
+                ['day', 24 * 60 * 60 * 1000],
+                ['hour', 60 * 60 * 1000],
+                ['minute', 60 * 1000],
+                ['second', 1000]
+            ];
+
+            let parts = []
+
+            for (let [name, interval] of intervals) {
+                if (time / interval > 1) {
+                    let amount = (time / interval) | 0;
+                    if (parts.push(amount + ' ' + (amount == 1 ? name : (name + 's'))) > 1) break;
+
+                    time -= amount * interval;
+                }
+            }
+
+            return parts.join(', ');
         }
     </script>
 </body>
