@@ -37,9 +37,12 @@
     <script type="text/javascript">
 
         let ctx = fullscreenCanvas();
+        ctx.fillStyle = '#e3ce9f';
+        ctx.fillRect(0,0,ctx.canvas.width, ctx.canvas.height)
 
         let metals = ['#ffffff' // Argent
             , '#f7d900'// Or
+            , '#ffffff', '#ffffff'
         ]
 
         let tinctures = [
@@ -53,8 +56,8 @@
             , '#c67000'// Tenné
         ];
 
-        let shapes = [shield1, shield2, shield3];
-        let patterns = [pattern1, pattern2, pattern3, pattern4, pattern5, pattern6]
+        let shapes = [rounded, pointy, scroll];
+        let patterns = [left, quads, diagonal, xcross, corner, cross, doublediagonal, bottom, mountains, vertical, doublevertical, horizontal, doublehorizontal, chevron, doublechevron, triangle, trinangedown]
 
         render();
 
@@ -62,29 +65,31 @@
 
             let scale = 100;
 
-            let n = 7, m = 5;
+            let n = 7, m = 10;
             for (let i = 0; i < n; ++i)
                 for (let j = 0; j < m; ++j) {
-
                     ctx.save();
-                    ctx.scale(scale, scale)
+                    ctx.scale(scale, scale);
 
                     ctx.translate(.5 + 1.5 * j, .5 + 1.5 * i);
 
                     pick(1, shapes)[0](ctx);
 
-                    ctx.strokeStyle = 'gray';
-                    ctx.lineWidth = 3 / scale
-                    ctx.stroke()
+                    ctx.strokeStyle = 'black';
+                    ctx.lineWidth = 2 / scale;
+                    ctx.stroke();
                     ctx.clip();
 
-                    let clrs = Math.random() < .5
-                        ? [pick(1, metals)[0], pick(1, tinctures)[0]]
-                        : [pick(1, tinctures)[0], pick(1, metals)[0]];
+                    let clrs = Math.random() < .1
+                        ? (Math.random() < .5 ? metals : [metals[1], metals[0]])
+                        : Math.random() < .2 ? pick(2, tinctures)
+                            : Math.random() < .5
+                                ? [pick(1, metals)[0], pick(1, tinctures)[0]]
+                                : [pick(1, tinctures)[0], pick(1, metals)[0]];
 
-                    ctx.fillStyle = clrs[0]
+                    ctx.fillStyle = clrs[0];
                     ctx.fillRect(-1, -1, 3, 3);
-                    ctx.fillStyle = clrs[1]
+                    ctx.fillStyle = clrs[1];
 
                     pick(1, patterns)[0](ctx);
 
@@ -92,37 +97,37 @@
                 }
         }
 
-        function shield1(ctx) {
+        function rounded(ctx) {
             ctx.beginPath();
 
             ctx.moveTo(0, 0)
             ctx.lineTo(1, 0)
-            ctx.lineTo(1, .9)
+            ctx.lineTo(1, .8)
 
             ctx.quadraticCurveTo(1, 1.1, .5, 1.1)
-            ctx.quadraticCurveTo(0, 1.1, 0, .9)
+            ctx.quadraticCurveTo(0, 1.1, 0, .8)
 
             ctx.lineTo(0, 0);
 
             ctx.closePath();
         }
 
-        function shield2(ctx) {
+        function pointy(ctx) {
             ctx.beginPath();
 
             ctx.moveTo(0, 0)
             ctx.lineTo(1, 0)
-            ctx.lineTo(1, .9)
+            ctx.lineTo(1, .8)
 
-            ctx.bezierCurveTo(1, 1.1, .5, 1, .5, 1.1)
-            ctx.bezierCurveTo(.5, 1, 0, 1.1, 0, .9)
+            ctx.bezierCurveTo(1, 1.1, .6, .95, .5, 1.1)
+            ctx.bezierCurveTo(.4, .95, 0, 1.1, 0, .8)
 
             ctx.lineTo(0, 0);
 
             ctx.closePath();
         }
 
-        function shield3(ctx) {
+        function scroll(ctx) {
             ctx.beginPath();
 
             let up = 0;
@@ -136,32 +141,63 @@
 
             ctx.bezierCurveTo(.9, narrow, 1, .7, 1, wide)
 
-            ctx.bezierCurveTo(1, 1.1, .5, 1, .5, 1.1)
-            ctx.bezierCurveTo(.5, 1, 0, 1.1, 0, wide)
+            ctx.bezierCurveTo(1, 1.1, .6, .95, .5, 1.1)
+            ctx.bezierCurveTo(.4, .95, 0, 1.1, 0, wide)
 
             ctx.bezierCurveTo(0, .7, .1, narrow, 0, top)
 
             ctx.closePath();
-
         }
 
-        function pattern1(ctx, colors) {
+        function left(ctx) {
             ctx.fillRect(-.5, -1, 1, 3);
         }
 
-        function pattern2(ctx, colors) {
+        function bottom(ctx) {
+            ctx.fillRect(-1, -.48, 3, 1);
+        }
+
+        function mountains(ctx) {
+            let a = 1 / 6;
+            let top = .35;
+            let bottom = .65;
+
+            ctx.beginPath()
+            ctx.moveTo(0, bottom)
+            ctx.lineTo(a, top)
+            ctx.lineTo(2 * a, bottom)
+            ctx.lineTo(.5, top)
+            ctx.lineTo(.5 + a, bottom)
+            ctx.lineTo(.5 + 2 * a, top)
+            ctx.lineTo(1, bottom)
+
+            ctx.lineTo(1, 2)
+            ctx.lineTo(0, 2);
+
+            ctx.fill();
+        }
+
+        function quads(ctx) {
             ctx.fillRect(-.5, -.48, 1, 1);
             ctx.fillRect(.5, .52, 1, 1);
         }
 
-        function pattern3(ctx, colors) {
+        function diagonal(ctx) {
             ctx.translate(.5, .48);
             ctx.rotate(Math.PI / 4);
 
             ctx.fillRect(-1, -.1, 3, .2);
         }
 
-        function pattern4(ctx, colors) {
+        function doublediagonal(ctx) {
+            ctx.translate(.5, .48);
+            ctx.rotate(Math.PI / 4);
+
+            ctx.fillRect(-1, -.3, 3, .2);
+            ctx.fillRect(-1, .1, 3, .2);
+        }
+
+        function xcross(ctx) {
             ctx.translate(.5, .48);
             ctx.rotate(Math.PI / 4);
             ctx.fillRect(-1, -.1, 3, .2);
@@ -170,19 +206,79 @@
             ctx.fillRect(-1, -.1, 3, .2);
         }
 
-        function pattern5(ctx, colors) {
+        function corner(ctx) {
             ctx.translate(.5, .48);
             ctx.rotate(Math.PI / 4);
 
             ctx.fillRect(-1, 0, 3, 3);
         }
 
-        function pattern6(ctx, colors) {
+        function cross(ctx) {
             ctx.translate(.5, .48);
             ctx.fillRect(-1, -.1, 3, .2);
 
             ctx.rotate(Math.PI / 2);
             ctx.fillRect(-1, -.1, 3, .2);
+        }
+
+        function vertical(ctx) {
+            ctx.fillRect(.4, -1, .2, 3)
+        }
+
+        function doublevertical(ctx) {
+            ctx.fillRect(.2, -1, .2, 3)
+            ctx.fillRect(.6, -1, .2, 3)
+        }
+
+        function horizontal(ctx) {
+            ctx.fillRect(-1, .4, 3, .2)
+        }
+
+        function doublehorizontal(ctx) {
+            ctx.fillRect(-1, .2, 3, .2)
+            ctx.fillRect(-1, .6, 3, .2)
+        }
+
+        function chevron(ctx) {
+            let a = .5;
+            ctx.translate(.5, .28);
+
+            ctx.rotate(a)
+            ctx.fillRect(0, 0, 2, .2)
+            ctx.rotate(-2 * a)
+            ctx.fillRect(0, 0, -2, .2)
+        }
+
+        function doublechevron(ctx) {
+            let a = .5;
+
+            ctx.save();
+            ctx.translate(0, -.2)
+            chevron(ctx)
+            ctx.restore();
+            ctx.save();
+            ctx.translate(0, .2)
+            chevron(ctx)
+            ctx.restore();
+        }
+
+        function triangle(ctx) {
+
+            ctx.beginPath()
+            ctx.moveTo(0, 1.1)
+            ctx.lineTo(1, 1.1)
+            ctx.lineTo(.5, 0)
+
+            ctx.fill()
+        }
+
+        function trinangedown(ctx) {
+            ctx.beginPath()
+            ctx.moveTo(0, 0)
+            ctx.lineTo(1, 0)
+            ctx.lineTo(.5, 1.1)
+
+            ctx.fill()
         }
 
         function pick(n, values) {
