@@ -38,7 +38,7 @@
 
         let ctx = fullscreenCanvas();
         ctx.fillStyle = '#e3ce9f';
-        ctx.fillRect(0,0,ctx.canvas.width, ctx.canvas.height)
+        ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height)
 
         let metals = ['#ffffff' // Argent
             , '#f7d900'// Or
@@ -57,15 +57,14 @@
         ];
 
         let shapes = [rounded, pointy, scroll];
-        let patterns = [left, quads, diagonal, xcross, corner, cross, doublediagonal, bottom, mountains, vertical, doublevertical, horizontal, doublehorizontal, chevron, doublechevron, triangle, trinangedown]
+        let patterns = [left, quads, diagonal, xcross, corner, cross, doublediagonal, bottom, mountains, vertical, doublevertical, horizontal, doublehorizontal, chevron, doublechevron, triangle, trinangedown, checkerboard, diamonds]
 
         render();
 
         function render() {
-
             let scale = 100;
 
-            let n = 7, m = 10;
+            let n = 6, m = 11;
             for (let i = 0; i < n; ++i)
                 for (let j = 0; j < m; ++j) {
                     ctx.save();
@@ -279,6 +278,45 @@
             ctx.lineTo(.5, 1.1)
 
             ctx.fill()
+        }
+
+        function checkerboard(ctx) {
+            let [patcan, patctx] = makeCanvas(34, 33, true);
+
+            patctx.scale(34, 33)
+            patctx.fillStyle = ctx.fillStyle;
+            patctx.fillRect(0, 0, .50, .50)
+            patctx.fillRect(.50, .50, .50, .50)
+
+            let pat = ctx.createPattern(patcan, 'repeat');
+
+            ctx.scale(1 / 100, 1 / 100)
+            ctx.fillStyle = pat;
+            ctx.fillRect(0, 0, 300, 300)
+        }
+
+        function diamonds(ctx) {
+            let w = 33;
+            let h = 15;
+            let [patcan, patctx] = makeCanvas(w, h, true);
+
+            patctx.scale(w, h)
+
+            patctx.beginPath();
+            patctx.moveTo(1 / 2, 0)
+            patctx.lineTo(1, 1 / 2)
+            patctx.lineTo(1 / 2, 1)
+            patctx.lineTo(0, 1 / 2)
+            patctx.closePath()
+
+            patctx.fillStyle = ctx.fillStyle;
+            patctx.fill();
+
+            let pat = ctx.createPattern(patcan, 'repeat');
+
+            ctx.scale(1 / 100, 1 / 100)
+            ctx.fillStyle = pat;
+            ctx.fillRect(0, 0, 300, 300)
         }
 
         function pick(n, values) {
