@@ -34,7 +34,7 @@ const n = 500;
 const minCommands = 10;
 const maxCommands = 30;
 let interval = 0;
-const maxInterval = 7;
+const maxInterval = 10;
 const g = .015;
 const d = 50;
 const loop = new Loop(1000 / 60, init, update, render);
@@ -47,12 +47,13 @@ function init() {
 
     const area = new AABB(-w / 2, 0, w, h);
 
-    const rockets = array(n, k => new Rocket(0, 100, new Vector(0, -g), array(rnd(minCommands, maxCommands), randomCommand), k / n));
+    const rockets = array(n, _ => new Rocket(0, 100, new Vector(0, -g), array(rnd(minCommands, maxCommands), randomCommand)));
 
     const obstacles = [
-        new AABB(-w / 4, h * .4, w / 2, h / 20),
-        new AABB(-w / 2, h * .7, w / 3, h / 20),
-        new AABB(w / 6, h * .7, w / 3, h / 20),
+        new AABB(-w / 4, h * .4, w / 5, h / 20),
+        new AABB(w / 20, h * .4, w / 5, h / 20),
+        new AABB(-w / 2, h * .7, w / 4, h / 20),
+        new AABB(w / 4, h * .7, w / 4, h / 20),
     ];
 
     return {
@@ -146,7 +147,6 @@ function update(delta: number, state: State) {
         const prev = state.rockets;
         prev.sort((a, b) => b.bestScore - a.bestScore);
         state.rockets = [];
-        let k = 0;
         while (state.rockets.length < n) {
             let a = prev[(rnd() * rnd() * n) | 0];
             let b = prev[(rnd() * rnd() * n) | 0];
@@ -155,7 +155,7 @@ function update(delta: number, state: State) {
             const cmds = splice(a.commands, b.commands);
 
             if (cmds.length >= minCommands && cmds.length < maxCommands)
-                state.rockets.push(new Rocket(0, 100, new Vector(0, -g), cmds, ++k / n));
+                state.rockets.push(new Rocket(0, 100, new Vector(0, -g), cmds));
         }
     }
 

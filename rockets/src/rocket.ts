@@ -11,7 +11,7 @@ export class Rocket {
     bestScore = 0;
     isDead = false;
 
-    constructor(x: number, y: number, private readonly gravity: Vector, public readonly commands: Command[], public a: number) {
+    constructor(x: number, y: number, private readonly gravity: Vector, public readonly commands: Command[]) {
         this.pos = new Vector(x, y);
     }
 

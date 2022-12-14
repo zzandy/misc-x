@@ -4,7 +4,8 @@ import { Rocket, Explosion } from './rocket';
 import { Stats, tau } from './util';
 
 export class Renderer {
-    private readonly ctx = fullscreenCanvas(true, true);
+    private readonly ctx = fullscreenCanvas(false, true);
+
 
     public draw(goals: Vector[], obstacles: AABB[], rockets: Rocket[], explosions: Explosion[], area: AABB, stats: Stats) {
         const { ctx, width, height } = this;
@@ -23,11 +24,42 @@ export class Renderer {
         ctx.rect(area.x, area.y, area.w, area.h);
         ctx.clip();
 
-        ctx.fillStyle = 'gold';
-        for (let goal of goals) {
-            ctx.fillCircle(goal.x, goal.y, 10);
-            ctx.strokeCircle(goal.x, goal.y, 50);
+        // render grid
+
+        ctx.strokeStyle = '#630';
+        let dx = (area.w / 24) | 0;
+        let dy = (area.h / 24) | 0;
+
+        for (let i = 0; i < 12; ++i) {
+            ctx.strokeRect(area.x + dx * i * 2, area.y, dx, area.h)
+            ctx.strokeRect(area.x, area.y + dy * i * 2, area.w, dy)
+
         }
+
+        ctx.fillStyle = 'gold';
+        ctx.strokeStyle = 'gold';
+
+        const r = 10;
+        let n = 0;
+        for (let goal of goals) {
+            ctx.fillCircle(goal.x, goal.y, r * (1 + .2 * Math.sin((1 + n / 10) * stats.frame / 10)));
+            ctx.strokeCircle(goal.x, goal.y, 5 * r * (1 + .2 * Math.sin((1 + n / 10) * stats.frame / 9)));
+        }
+
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 8;
+
+        // render exausts
+        for (let rocket of rockets) {
+            if (rocket.isDead) continue;
+            ctx.beginPath();
+            ctx.moveTo(rocket.pos.x, rocket.pos.y)
+            ctx.lineTo(rocket.pos.x - 70 * rocket.burnVector.x, rocket.pos.y - 70 * rocket.burnVector.y);
+
+            ctx.stroke();
+        }
+
+        ctx.fillStyle = '#E23636';
 
         // render rockets
         for (let rocket of rockets) {
@@ -35,40 +67,22 @@ export class Renderer {
 
             ctx.save();
             ctx.translate(rocket.pos.x, rocket.pos.y);
-
-            ctx.strokeStyle = 'grey';
-            ctx.lineWidth = 1;
-            ctx.strokeCircle(0, 0, 10);
+            ctx.rotate(Math.atan2(rocket.vector.y, rocket.vector.x) - Math.PI / 2)
+            ctx.scale(2, 2)
             ctx.beginPath();
-            ctx.moveTo(0, 0);
-            ctx.lineTo(20 * Math.cos(tau * rocket.a), 20 * Math.sin(tau * rocket.a))
-            ctx.stroke();
 
-            ctx.restore();
-        }
+            ctx.moveTo(0, r);
+            ctx.lineTo(r / 3, 0);
+            ctx.lineTo(-r / 3, 0);
 
-        // render exausts
-        for (let rocket of rockets) {
-            if (rocket.isDead) continue;
-
-            ctx.save();
-            ctx.translate(rocket.pos.x, rocket.pos.y);
-
-            ctx.scale(10, 10)
-            ctx.beginPath();
-            ctx.moveTo(0, 0)
-            ctx.lineTo(-8 * rocket.burnVector.x, -8 * rocket.burnVector.y);
-
-            ctx.lineWidth = 1;
-            ctx.strokeStyle = 'white';
-            ctx.stroke();
-
+            ctx.closePath();
+            ctx.fill();
             ctx.restore();
         }
 
         ctx.fillStyle = 'white';
         for (let expl of explosions) {
-            ctx.fillCircle(expl.pos.x, expl.pos.y, easeOutQuint(expl.age / expl.lifespan) * 150);
+            ctx.fillCircle(expl.pos.x, expl.pos.y, easeOutQuint(expl.age / expl.lifespan) * 50);
         }
 
         ctx.lineWidth = 2;
@@ -88,16 +102,18 @@ export class Renderer {
         let line = 3;
         let s = 80;
 
+        // render genome
 
         for (let i = 0; i < 12; ++i) {
-            let rocket = rockets[(i + (stats.frame/10|0)) % rockets.length];
+            let rocket = rockets[(i + (stats.frame / 10 | 0)) % rockets.length];
 
             let x = 0;
             for (let command of rocket.commands) {
 
                 x += command.leadTime;
 
-                ctx.fillStyle = 'white';
+                let a = Math.atan2(command.vector.y, command.vector.x);
+                ctx.fillStyle = `hsl(${a * 180 / Math.PI}, 100%, 80%)`;
                 ctx.fillRect(x / s, y * line, command.burnTime / s, line - 1);
 
                 x += command.burnTime;
