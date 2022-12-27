@@ -207,6 +207,8 @@
         let videoTargetView = null;
 
         let videoCtx = null;
+        let asciidata = null;
+        let asciiMappings = null;
 
         function camdata() {
             videoCtx.drawImage(videoSource, 0, 0);
@@ -216,8 +218,9 @@
         loadPixels(getDataUrl())
             .then(start);
 
-        loadPixels(getCodePageData())
+        loadPixels(getCodePageData(), [8, 8, 8, 8])
             .then(data => asciidata = data)
+            .then(calculateAsciiMappings)
 
         function initiateVideo() {
             if (videoRequested) return;
@@ -318,7 +321,6 @@
         }
 
         function readFile(file) {
-
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
 
@@ -348,79 +350,88 @@
         }
 
         function renderAscii(source, ctx, sourceView, targetView) {
-            let offset = [8, 8];
-            let dim = [9, 16];
-            let size = [8, 32];
-
+            let [width, height] = [9, 16];
             let [can, rctx] = makeCanvas(sourceView.w, sourceView.h);
+
             rctx.putImageData(source, -sourceView.x, -sourceView.y);
-            ctx.drawImage(can, 0, 0, sourceView.w, sourceView.h, targetView.x, targetView.y, targetView.w, targetView.h)
 
-            let resized = ctx.getImageData(targetView.x, targetView.y, targetView.w, targetView.h);
+            ctx.save()
+            ctx.translate(targetView.x, targetView.y)
+            ctx.drawImage(can, 0, 0, sourceView.w, sourceView.h, 0, 0, targetView.w, targetView.h)
 
-            for (let i = 0; i < resized.width * resized.height; ++i) {
-                let idx = i * 4;
-                resized.data[idx] = resized.data[idx + 1] = resized.data[idx + 2] = getValue(resized.data[idx], resized.data[idx + 1], resized.data[idx + 2])
+            let resized = ctx.getImageData(0, 0, targetView.w, targetView.h);
+
+            let n = (resized.height / height) | 0;
+            let m = (resized.width / width) | 0;
+
+            for (let i = 0; i < n; ++i) {
+                for (let j = 0; j < m; ++j) {
+
+
+                    let idx = (i * height * resized.width + j * width) * 4;
+                    let values = getValues(resized, idx, width, height);
+
+                    let bestMatch = asciiMappings.reduce((best, current) => score(best, values) < score(current, values) ? current : best);
+
+                    //console.log('rowcol', bestMatch.rowcol)
+                    ctx.putImageData(asciidata, j * m, i * n, bestMatch.rowcol[1] * width, bestMatch.rowcol[0] * height, width, height);
+                }
             }
 
-            for (let i = 0; i < resized.height - dim[1]; i += dim[1]) {
-                for (let j = 0; j < resized.width - dim[0]; j += dim[0]) {
-                    let symbol = pickAsciiMath(resized, i, j);
+            ctx.restore();
+        }
 
-                    ctx.putImageData(asciidata, targetView.x + j, targetView.y + i, offset[0] + dim[0] * symbol[1], offset[1] + dim[1] * symbol[0], dim[0], dim[1]);
+        function score(mappings, values) {
 
-                    if (first) {
-                        first = false;
-                        console.log(targetView.x + j, targetView.y + i, offset[0] + dim[0] * symbol[1], offset[1] + dim[1] * symbol[0], dim[0], dim[1])
-                        ctx.strokeStyle = 'red'
-                        ctx.strokeRect(targetView.x + j, targetView.y + i, dim[0], dim[1])
-                    }
-                }
+            let sum = 0;
 
-                return
+            for (let i = 0; i < mappings.values.length; ++i) {
+                let diff = mappings.values[i] - values[i];
+                sum += diff * diff;
             }
+
+            return sum;
         }
 
-        function pickAsciiMath(data, si, sj) {
-            let offset = [8, 8];
-            let dim = [9, 16];
-            let size = [8, 32];
+        function calculateAsciiMappings(data) {
+            let [width, height] = [9, 16];
+            let [rows, cols] = [8, 32];
 
-            let symbol = [0, 0];
-            let bestDiff = Infinity;
+            asciiMappings = [];
 
-            for (let ai = 0; ai < size[1]; ++ai)
-                for (let aj = 0; aj < size[0]; ++aj) {
-                    let diff = calculateDiff(data, si, sj, offset[1] + ai * dim[1], offset[0] + aj * dim[0]);
-
-                    if (diff < bestDiff) {
-                        bestDiff = diff;
-                        symbol = [ai, aj]
-                    }
+            // go over all ascii glyphs
+            for (let i = 0; i < rows; ++i)
+                for (let j = 0; j < cols; ++j) {
+                    let idx = (i * height * data.width + j * width) * 4;
+                    asciiMappings.push({ rowcol: [i, j], values: getValues(data, idx, width, height) });
                 }
-
-            if (bestDiff == Infinity) console.log(si, sj)
-            return symbol;
         }
 
-        function calculateDiff(img, si, sj, ai, aj) {
-            let offset = [8, 8];
-            let dim = [9, 16];
 
-            let diff = 0;
 
-            for (let i = 0; i < dim[1]; ++i)
-                for (let j = 0; j < dim[0]; ++j) {
+        function getValues(data, startIdx, width, height) {
+            let [nsubx, nsuby] = [3, 4];
+            let [subw, subh] = [width / nsubx, height / nsuby];
 
-                    let idx = ((si + i) * img.width + sj + j) * 4;
-                    let aidx = ((ai + i) * asciidata.width + aj + j) * 4;
+            let values = [];
 
-                    let dv = Math.abs(img.data[idx] - asciidata.data[aidx]);
+            // within glyph, go over all subdivsions
+            for (let si = 0; si < nsuby; ++si)
+                for (let sj = 0; sj < nsubx; ++sj) {
 
-                    diff += dv;
+                    let sum = 0;
+                    // within subdivision, iterate over pixels to calculate value
+                    for (let pi = 0; pi < subh; ++pi)
+                        for (let pj = 0; pj < subw; ++pj) {
+
+                            let idx = startIdx + ((si * subh + pi) * data.width + sj * subw + pj) * 4
+                            sum += getPixelValue(data.data, idx);
+                        }
+
+                    values.push(sum);
                 }
 
-            return diff;
+            return values;
         }
 
         function renderDither(source, ctx, sourceView, targetView) {
@@ -460,6 +471,10 @@
             }
 
             ctx.putImageData(resized, targetView.x, targetView.y);
+        }
+
+        function getPixelValue(data, idx) {
+            return getValue(data[idx] / 255, data[idx + 1] / 255, data[idx + 2] / 255)
         }
 
         function getValue(r, g, b) {
@@ -506,14 +521,15 @@
             return (v - min) / (max - min);
         }
 
-        async function loadPixels(src) {
+        async function loadPixels(src, trim) {
             const img = await loadImage(src);
+            trim = trim || [0, 0, 0, 0];
 
-            const [can, ctx] = makeCanvas(img.width, img.height);
+            const [can, ctx] = makeCanvas(img.width - trim[0] - trim[2], img.height - trim[1] - trim[2]);
 
-            ctx.drawImage(img, 0, 0, img.width, img.height);
+            ctx.drawImage(img, -trim[0], -trim[1], img.width, img.height);
 
-            return ctx.getImageData(0, 0, img.width, img.height);
+            return ctx.getImageData(0, 0, can.width, can.height);
         }
 
         async function loadImage(src) {
