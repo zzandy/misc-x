@@ -1,0 +1,15 @@
+D:\git\misc\bitflood\bin\Debug\net6.0\bitflood.exe
+D:\git\misc\bitflood\bin\Debug\net6.0\bitflood.deps.json
+D:\git\misc\bitflood\bin\Debug\net6.0\bitflood.runtimeconfig.json
+D:\git\misc\bitflood\bin\Debug\net6.0\bitflood.dll
+D:\git\misc\bitflood\bin\Debug\net6.0\ref\bitflood.dll
+D:\git\misc\bitflood\bin\Debug\net6.0\bitflood.pdb
+D:\git\misc\bitflood\obj\Debug\net6.0\bitflood.csproj.AssemblyReference.cache
+D:\git\misc\bitflood\obj\Debug\net6.0\bitflood.GeneratedMSBuildEditorConfig.editorconfig
+D:\git\misc\bitflood\obj\Debug\net6.0\bitflood.AssemblyInfoInputs.cache
+D:\git\misc\bitflood\obj\Debug\net6.0\bitflood.AssemblyInfo.cs
+D:\git\misc\bitflood\obj\Debug\net6.0\bitflood.csproj.CoreCompileInputs.cache
+D:\git\misc\bitflood\obj\Debug\net6.0\bitflood.dll
+D:\git\misc\bitflood\obj\Debug\net6.0\ref\bitflood.dll
+D:\git\misc\bitflood\obj\Debug\net6.0\bitflood.pdb
+D:\git\misc\bitflood\obj\Debug\net6.0\bitflood.genruntimeconfig.cache

@@ -22,7 +22,8 @@
         }
     </script>
     <script type="text/javascript">
-        const frame = [4444 * 1.9 | 0, 4300 * 1.9 | 0];
+        const scale = 1.9;
+        const frame = [4444 * scale | 0, 4300 * scale | 0];
         const cardAspect = 0.62;
 
         const w = 5;
@@ -30,24 +31,21 @@
         const lineWidth = .01;
 
         const palette = [
-            ['hsl(125, 100%, 40%)', 'hsl(105, 90%, 70%)', 'hsl(125, 50%, 80%)', 'hsl(125, 100%, 10%)', 'hsl(105, 70%, 60%)'],
+
+            ['hsl(95, 100%, 40%)', 'hsl(95, 90%, 70%)', 'hsl(95, 50%, 80%)', 'hsl(95, 100%, 10%)', 'hsl(95, 70%, 60%)'],
             ['hsl(350, 100%, 35%)', 'hsl(10, 100%, 70%)', 'hsl(350, 50%, 90%)', 'hsl(350, 100%, 20%)', 'hsl(10, 100%, 60%)'],
-            ['hsl(35, 100%, 50%)', 'hsl(45, 100%, 70%)', 'hsl(35, 50%, 90%)', 'hsl(35, 100%, 20%)', 'hsl(45, 100%, 60%)'],
+            ['hsl(191, 100%, 45%)', 'hsl(191, 90%, 70%)', 'hsl(191, 50%, 80%)', 'hsl(191, 100%, 15%)', 'hsl(191, 70%, 60%)'],
+            //['hsl(35, 100%, 50%)', 'hsl(45, 100%, 70%)', 'hsl(35, 50%, 90%)', 'hsl(35, 100%, 20%)', 'hsl(45, 100%, 60%)'],
             ['hsl(290, 100%, 35%)', 'hsl(270, 100%, 65%)', 'hsl(290, 50%, 85%)', 'hsl(290, 100%, 15%)', 'hsl(270, 100%, 55%)'],
             ['hsl(190, 30%, 65%)', 'hsl(190, 30%, 65%)', 'hsl(190, 50%, 85%)', 'hsl(190, 80%, 15%)', 'hsl(190, 100%, 45%)'],
         ];
 
-        // const rows = 5; // rows as in for portrait then 2 landscape
-        // const sides = 2;
-        // const cols = 4;
+        const rows = 5; // rows as in for portrait then 2 landscape
+        const sides = 2;
+        const cols = 4;
 
         let deck = [
-            [1, 2, 3, 4, 5, 6],
-            [1, 1, 1, 1, 1, 1],
-            [3, 6, 3, 6, 3, 6],
-            [5, 5, 5, 5, 5, 5],
-            [2, 2, 3, 3, 5, 5],
-
+            // 15
             [1, 1],
             [2, 2],
             [3, 3],
@@ -60,27 +58,58 @@
             [4, 6],
             [3, 5],
 
+            [5, 6],
+            [1, 2],
+            [1, 5],
+            [2, 6],
+            [3, 4],
+
+            // 9
             [1, 2, 3],
             [4, 5, 6],
             [1, 2, 4],
-            [2, 3, 6],
+
+            [2, 3, 5],
             [3, 5, 6],
-
             [1, 4, 5],
-            [2, 4, 6],
-            [3, 4, 6],
-            [1, 6, 6],
-            [2, 4, 5, 5],
 
+            [2, 4, 6],
+            [3, 4, 5],
+            [1, 6, 6],
+
+            // 7
+            [2, 3, 5, 5],
             [4, 4, 4, 4],
             [2, 2, 6, 6],
-            [1, 3, 4, 4],
-            [1, 1, 2, 2],
+            [3, 1, 1, 3],
+            [1, 1, 6, 6],
             [2, 3, 2, 3],
+            [5, 6, 5, 6],
+
+            // 5
+            [1, 2, 3, 4, 5, 6],
+            [1, 1, 1, 1, 1, 1],
+            [2, 2, 5, 5, 6, 6],
+            [3, 3, 4, 4, 5, 5],
+            [2, 2, 3, 3, 4, 4],
         ];
 
-        deck.sort(() => Math.random() - .5)
 
+        let stat = { 'general': {} };
+
+        for (let card of deck) {
+
+            if (!(card.length in stat)) stat[card.length] = {};
+
+            for (let dice of card) {
+                stat['general'][dice] = (stat['general'][dice] || 0) + 1;
+                stat[card.length][dice] = (stat[card.length][dice] || 0) + 1;
+            }
+        }
+
+        console.log(JSON.stringify(stat, null, 4));
+
+        //        deck.sort(() => Math.random() - .5);
 
         deck = [0, 0, 0, 0, 0, 0, ...deck];
 
@@ -216,10 +245,9 @@
             const pad = (outer[0] - inner[0]) / 2;
             const priceRad = ((outer[1] - inner[1]) * 1.1) | 0;
 
-
             // card
             ctx.save();
-            ctx.strokeStyle = colors[3];
+            ctx.strokeStyle = 'black';
             ctx.lineWidth = outer[0] * lineWidth;//dieSize / 50;
             ctx.translate(pos[0], pos[1])
 
@@ -240,9 +268,8 @@
 
             ctx.stroke();
 
-
-
             if (dice != 0) {
+                ctx.strokeStyle = colors[3];
                 roundedRect(ctx, pad, pad, inner[0], inner[1], radius[1]);
                 ctx.fillStyle = colors[1];
                 ctx.fill();
@@ -262,8 +289,6 @@
                 let dieVPad = (inner[1] - numRows * dieSize) / (numRows + 1) * (numRows == 2 ? .8 : 1);
 
                 if (dice == 0) {
-
-
                     let n = 0;
                     for (let die of dice) {
                         drawDiceShadow(ctx, -dieSize * offst + dieSize * offs2 * n + pad + diePad + n % rowLen * (dieSize + diePad), pad + dieVPad + ((n / rowLen) | 0) * (dieSize + dieVPad), die, dieSize);
@@ -334,7 +359,7 @@
             ctx.strokeStyle = 'black';
             ctx.stroke();
 
-            ellipse(ctx, dieSize / 9.9, dieSize / 9.9, dieSize / 15, dieSize / 90, Math.PI * 3 / 4);
+            ellipse(ctx, dieSize / 9.65, dieSize / 9.65, dieSize / 15, dieSize / 90, Math.PI * 3 / 4);
 
             ctx.fillStyle = "rgb(255, 255, 255, .9)";
             ctx.fill()
@@ -404,7 +429,7 @@
             const s = 256;
             const ctx = addCanvas(s, s, true);
 
-            ctx.scale(4, 4);
+            ctx.scale(8, 8);
 
             ctx.lineWidth = 4;
             ctx.fillStyle = ctx.strokeStyle = 'white';
