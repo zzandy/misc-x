@@ -6,37 +6,113 @@
     <title>Best</title>
 
     <style type="text/css">
-        #input>* {
+        html {
+            font-size: 62.5%;
+        }
+
+        * {
+            font-size: 1.6rem;
+        }
+
+        html,
+        body,
+        input,
+        textarea,
+        button {
+            background-color: #121212;
+            color: #fbfbfb;
+            border: none;
+            border-radius: .5rem;
+            line-height: 3rem;
+        }
+
+        body {
+            padding-top: 1rem;
+        }
+
+        button {
+            padding: 0 1rem;
+            background-color: #3f3f3f;
+            box-shadow: .3rem .3rem .3rem #121212;
+            border-radius: .5rem;
+            font-weight: bold;
+        }
+
+        textarea {
+            padding: 0 1rem;
+        }
+
+        body {
+            max-width: 90rem;
+            margin: 0 auto
+        }
+
+        .pane {
+            background-color: #1d1d1d;
+            border-radius: .5rem;
+            box-shadow: .3rem .3rem .3rem #0d0d0d;
+            padding: 1rem;
+        }
+
+        .pane>div {
+            margin-bottom: 3rem
+        }
+
+        #input * {
             display: block;
         }
 
-        #contest>button {
-            min-width: 10em;
+        #contest button {
+            min-width: 15rem;
+        }
+
+        li>span {
+            color: #777;
         }
     </style>
 
 </head>
 
 <body>
-    <div id="input">
-        <label for="input-text">One option per line:</label>
-        <textarea id="input-text" cols="80" rows="10"></textarea>
-        <button onclick="startContest()">Start Contest</button>
+    <div id="input" class="pane">
+        <div>
+            <label for="input-question">Question:</label>
+            <input id="input-question" type="text" size="80" />
+        </div>
+        <div>
+            <label for="input-text">One option per line:</label>
+            <textarea id="input-text" cols="80" rows="10"></textarea>
+        </div>
+        <div>
+            <button onclick="startContest()">Start Contest</button>
+        </div>
     </div>
 
-    <div id="contest" style="display: none;">
-        <button id="left"></button>
-        <button id="none">Neither</button>
-        <button id="right"></button>
+    <div id="contest" style="display: none;" class="pane">
+        <div id="question"></div>
+        <div>
+            <button id="left"></button>
+            <button id="neither">Neither</button>
+            <button id="right"></button>
+        </div>
+        <div>
+            <button onclick="done()">Done</button>
+        </div>
     </div>
 
-    <div id="results" style="display: none;">
-        <ol id="listing"></ol>
+    <div id="results" style="display: none;" class="pane">
+        <div>
+            <ol id="listing"></ol>
+        </div>
+        <div>
+            <button onclick="restart()">Restart</button>
+        </div>
     </div>
 
     <script type="text/javascript">
         const x10diff = 400;
         const kFactor = 32;
+        const defaultRating = 800;
 
         function updateElo(rating1, rating2, score1, score2) {
             // Expected
@@ -66,27 +142,49 @@
 
     <script type="text/javascript">
 
+        // panes
         const input = document.getElementById('input');
         const contest = document.getElementById('contest');
         const results = document.getElementById('results');
 
         const left = document.getElementById('left');
         const right = document.getElementById('right');
-        const none = document.getElementById('none');
+        const neither = document.getElementById('neither');
 
         const listing = document.getElementById('listing');
 
-        function startContest() {
-            const options = document.getElementById('input-text').value.split('\n').map(text => ({ text, rating: 800 }));
+        let options = null;
 
-            input.style.display = 'none';
-
-            runContest(options);
+        function show(el) {
+            el.style.display = '';
         }
 
-        function runContest(options) {
+        function hide(el) {
+            el.style.display = 'none';
+        }
 
-            contest.style.display = '';
+        function startContest() {
+            options = document.getElementById('input-text').value
+                .split('\n').map(text => text.trim())
+                .filter(text => text != '')
+                .filter((text, i, values) => i == values.indexOf(text))
+                .map(text => ({ text, rating: defaultRating }));
+
+            runContest();
+        }
+
+        function restart() {
+            show(input);
+            hide(results);
+            hide(contest);
+        }
+
+        function runContest() {
+            hide(input);
+            hide(results);
+            show(contest);
+
+            document.getElementById('question').textContent = document.getElementById('input-question').value;
 
             let pairs = [];
 
@@ -109,10 +207,9 @@
             runPairs(0, pairs, options);
         }
 
-        function runPairs(index, pairs, options) {
+        function runPairs(index, pairs) {
             if (index >= pairs.length) {
-                contest.style.display = 'none';
-                showResults(options);
+                showResults();
                 return;
             }
 
@@ -127,7 +224,7 @@
                 p[1].rating = res[1];
 
                 unbind();
-                runPairs(++index, pairs, options);
+                runPairs(++index, pairs);
             };
 
             const clickRight = () => {
@@ -136,7 +233,7 @@
                 p[1].rating = res[1];
 
                 unbind();
-                runPairs(++index, pairs, options);
+                runPairs(++index, pairs);
             };
 
             const clickNone = () => {
@@ -145,32 +242,50 @@
                 p[1].rating = res[1];
 
                 unbind();
-                runPairs(++index, pairs, options);
+                runPairs(++index, pairs);
             };
 
             const unbind = () => {
                 left.removeEventListener('click', clickLeft)
                 right.removeEventListener('click', clickRight)
-                none.removeEventListener('click', clickNone)
+                neither.removeEventListener('click', clickNone)
+            }
+
+            done = () => {
+                unbind();
+                showResults();
             }
 
             left.addEventListener('click', clickLeft)
             right.addEventListener('click', clickRight)
-            none.addEventListener('click', clickNone)
+            neither.addEventListener('click', clickNone)
         }
 
-        function showResults(options) {
-            results.style.display = '';
+        function done() {
+            showResults();
+        }
+
+        function showResults() {
+            hide(input);
+            show(results);
+            hide(contest);
 
             options.sort((a, b) => {
                 return b.rating - a.rating;
             });
 
-            options.forEach(opt => {
-                const entry = document.createElement('li');
-                entry.innerText = opt.text + ' ' + opt.rating.toFixed(0);
-                listing.appendChild(entry);
-            });
+            listing.replaceChildren(
+                ...options.map(opt => {
+                    const entry = document.createElement('li');
+                    entry.innerHTML = `${opt.text} <span>${opt.rating.toFixed(0)}</span>`;
+                    return entry;
+                }));
+
+            options = null;
+        }
+
+        function get(id) {
+            return document.getElementById(id);
         }
     </script>
 </body>
