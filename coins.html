@@ -28,22 +28,22 @@
         let reportBest = out();
         let reportCurrent = out();
         let reportProgress = out();
-        let cap = 20;
+        let cap = 50;
         let max = 100;
         //3876
 
-        console.log('start')
+        function x(n) {
+            return Math.min(n - 1, Math.ceil(2 * n / 3));
+        }
 
         function* gen() {
             for (let t = cap; t > 5; --t)
-                for (let i = t - 1; i > 4; --i)
-                    for (let j = i - 1; j > 3; --j)
-                        for (let k = j - 1; k > 2; --k)
-                            for (let l = k - 1; l > 1; --l)
+                for (let i = x(t); i > 4; --i)
+                    for (let j = x(i); j > 3; --j)
+                        for (let k = x(j); k > 2; --k)
+                            for (let l = x(k); l > 1; --l)
                                 yield [t, i, j, k, l, 1]
         }
-
-        console.log(calculate([10, 5, 2, 1], max))
 
         let seq = gen();
         let n = 0;
@@ -55,7 +55,6 @@
             next = seq.next();
         }
 
-        console.log(total)
         seq = gen();
 
         start = performance.now();
@@ -95,6 +94,9 @@
                     best = coins;
                     reportBest('Best: ' + coins.join(' ') + ', average ' + score.toFixed(2))
                     console.log('new best', bestScore.toFixed(2), best)
+                }
+                else if (score < best * 1.2) {
+                    console.log('almost', score.toFixed(2), coins);
                 }
 
                 return score;
