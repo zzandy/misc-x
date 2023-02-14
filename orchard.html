@@ -12,7 +12,6 @@
         // canvas w/ hex
         function fullscreenCanvas() {
             let [can, ctx] = makeCanvas(window.innerWidth, window.innerHeight, false)
-            ctx.translate(can.width / 2, can.height / 2);
 
             document.body.appendChild(can);
             document.body.style.overflow = "hidden";
@@ -37,6 +36,8 @@
 
     <script type="text/javascript">
         let ctx = fullscreenCanvas();
+        ctx.fillStyle = 'darkgreen'
+        ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height)
 
         class Rect {
             constructor(x, y, w, h) {
@@ -47,11 +48,117 @@
             }
         }
 
-        let settings = {
+        let scale = 1;
 
+        let dim = {
+            r: scale * 100,
+            dist: scale * 300,
+            pad: scale * 75,
+            mar: scale * 25
+        }
+
+        let settings = {
+            width: Math.floor(2 * (dim.pad + dim.mar + dim.r) + dim.dist),
+            height: Math.floor(2 * (dim.pad + dim.mar + dim.r + dim.dist)),
+            r: Math.floor(dim.r),
+            positions: calculatePositions(dim),
+            margin: Math.floor(dim.mar)
         };
 
-        console.log(generate())
+        let cards = generate();
+
+        ctx.translate(10, 10)
+        renderCard(ctx, cards[0], settings);
+
+        ctx.translate(10 + settings.width, 0);
+        renderCard(ctx, cards[2], settings);
+
+        function calculatePositions(dim) {
+            let x = Math.floor(dim.pad + dim.mar + dim.r);
+            let [ox, oy, dist] = [x, x, Math.floor(dim.dist)]
+            return [pos(ox, oy), pos(ox + dist, oy),
+            pos(ox, oy + dist), pos(ox + dist, oy + dist),
+            pos(ox, oy + 2 * dist), pos(ox + dist, oy + 2 * dist)];
+        }
+
+        function pos(x, y) {
+            return { x, y };
+        }
+
+        function renderCard(ctx, card, settings) {
+
+            function rounded(color, shift) {
+                roundedRect(ctx, .5 + shift, .5 + shift, settings.width - shift * 2, settings.height - shift * 2, Math.floor((settings.width - shift * 2) * .03));
+
+                ctx.fillStyle = color;
+                ctx.fill();
+            }
+
+            // draw outline
+            rounded('black', -1);
+            rounded('white', 0);
+            rounded('#4caf50', settings.margin)
+
+            // draw roundels
+            for (let [type, pos] of zip(card, settings.positions)) {
+
+                ctx.save();
+                ctx.translate(pos.x, pos.y);
+                drawRoundel(ctx, type, settings);
+
+                ctx.restore();
+            }
+        }
+
+        function drawRoundel(ctx, type, settings) {
+            const colors = ['#D2042D', '#673147', '#C9CC3F'];
+            const leaves = ['#2c5f01', '#0c4605', '#649213'];
+            const sizes = [.1, .3, .35];
+            const leafRenderers = [cherryLeaf, plumLeaf, pearLeaf];
+            const fruitRenderers = [cherry, plum, pear];
+
+            ctx.fillStyle = colors[type];
+            fruitRenderers[type]();
+
+
+
+
+            function cherry() {
+                circle(ctx, 0, 0, settings.r * sizes[0]);
+                ctx.fill();
+            }
+
+            function plum() {
+                circle(ctx, 0, 0, settings.r * sizes[1]);
+                ctx.fill();
+            }
+
+            function pear() {
+                ellipse(ctx, 0, 0, settings.r * sizes[2], settings.r * sizes[2] * .9, 0);
+                ctx.fill();
+                ellipse(ctx, settings.r * sizes[2] / 2, 0, settings.r * sizes[2], settings.r * sizes[2] / 2, 0);
+                ctx.fill();
+            }
+
+            function cherryLeaf() {
+
+            }
+
+            function plumLeaf() {
+
+            }
+
+            function pearLeaf() {
+
+            }
+        }
+
+        function pos(n) {
+            var r = 2 * sqrt(n);
+            var p = n * Math.PI * (3 - Math.sqrt(5));
+
+            return [r * cos(p), r * sin(p), p];
+        }
 
         function generate() {
             let m = {};[...perm([0, 0, 1, 1, 2, 2])].forEach(p => {
@@ -80,6 +187,42 @@
                 }
             }
         }
+
+        function roundedRect(ctx, x, y, width, height, radius) {
+            ctx.beginPath();
+            ctx.moveTo(x, y + radius);
+            ctx.lineTo(x, y + height - radius);
+            ctx.arcTo(x, y + height, x + radius, y + height, radius);
+            ctx.lineTo(x + width - radius, y + height);
+            ctx.arcTo(x + width, y + height, x + width, y + height - radius, radius);
+            ctx.lineTo(x + width, y + radius);
+            ctx.arcTo(x + width, y, x + width - radius, y, radius);
+            ctx.lineTo(x + radius, y);
+            ctx.arcTo(x, y, x, y + radius, radius);
+            ctx.closePath();
+        }
+
+        function* zip(a, b) {
+            let len = Math.max(a.length, b.length);
+
+            for (let i = 0; i < len; ++i) {
+                yield [a[i % a.length], b[i % b.length]]
+            }
+        }
+
+        function ellipse(ctx, x, y, r1, r2, a) {
+            ctx.beginPath()
+            ctx.ellipse(x, y, r1, r2, a, 0, 2 * Math.PI);
+            ctx.closePath();
+        }
+
+        function circle(ctx, x, y, r) {
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, Math.PI * 2);
+            ctx.closePath();
+        }
+
+
     </script>
 </body>
 
