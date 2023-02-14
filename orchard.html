@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Orchard</title>
+</head>
+
+<body>
+    <script name="canvas" type="text/javascript">
+
+        // canvas w/ hex
+        function fullscreenCanvas() {
+            let [can, ctx] = makeCanvas(window.innerWidth, window.innerHeight, false)
+            ctx.translate(can.width / 2, can.height / 2);
+
+            document.body.appendChild(can);
+            document.body.style.overflow = "hidden";
+            document.body.style.margin = "0";
+            document.body.style.padding = "0";
+
+            return ctx;
+        }
+
+        function makeCanvas(width, height, alpha) {
+
+            let can = document.createElement('canvas');
+            let ctx = can.getContext('2d', { alpha });
+
+            ctx.canvas.width = width;
+            ctx.canvas.height = height;
+            ctx.canvas.style.display = 'block';
+
+            return [can, ctx];
+        }
+    </script>
+
+    <script type="text/javascript">
+        let ctx = fullscreenCanvas();
+
+        class Rect {
+            constructor(x, y, w, h) {
+                this.x = x;
+                this.y = y;
+                this.w = w;
+                this.h = h;
+            }
+        }
+
+        let settings = {
+
+        };
+
+        console.log(generate())
+
+        function generate() {
+            let m = {};[...perm([0, 0, 1, 1, 2, 2])].forEach(p => {
+                let str = p.join('');
+                let left = p.slice(0, 3).join('');
+                let right = p.slice(3);
+                if (str.match(/(.)\1/g)?.length < 3 && left != right.reverse().join('') && left != right.join('') && !(str in m) && !([...p].reverse().join('') in m)) m[str] = p
+            });
+            return Object.values(m);
+        }
+
+        function* perm(values) {
+            let p = [];
+            for (let i = 0; i <= values.length; ++i)p.push(i)
+            let i = 1;
+            yield [...values]
+            while (i < values.length) {
+                p[i]--;
+                let j = ((i % 2) == 0) ? 0 : p[i];
+                [values[j], values[i]] = [values[i], values[j]]
+                yield [...values]
+                i = 1
+                while (p[i] == 0) {
+                    p[i] = i
+                    ++i
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>
