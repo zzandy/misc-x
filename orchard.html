@@ -114,10 +114,8 @@
         }
 
         function drawRoundel(ctx, type, settings) {
-            const colors = ['#D2042D', '#673147', '#C9CC3F'];
-            const leaves = ['#2c5f01', '#0c4605', '#649213'];
+            const colors = ['#D2042D', '#2b80bb', '#f0d82b'];
             const sizes = [.06, .15, .35];
-            const leafRenderers = [cherryLeaf, plumLeaf, pearLeaf];
             const fruitRenderers = [cherry, plum, pear];
             const fruitScatterers = [cherryScatter, plumScatter, pearScatter];
 
@@ -126,11 +124,22 @@
             turn(() => fruitScatterers[type](fruitRenderers[type]))
 
             function cherry() {
+                ctx.save();
+                ctx.fillStyle = 'white'
+                circle(ctx, 0, 0, 1.1 * settings.r * sizes[0]);
+                ctx.fill();
+                ctx.restore();
+
                 circle(ctx, 0, 0, settings.r * sizes[0]);
                 ctx.fill();
             }
 
             function plum() {
+                ctx.save();
+                ctx.fillStyle = 'white'
+                circle(ctx, 0, 0, 1.1 * settings.r * sizes[1]);
+                ctx.fill();
+                ctx.restore();
                 circle(ctx, 0, 0, settings.r * sizes[1]);
                 ctx.fill();
             }
@@ -149,23 +158,11 @@
                 ctx.restore();
             }
 
-            function cherryLeaf() {
-
-            }
-
-            function plumLeaf() {
-
-            }
-
-            function pearLeaf() {
-
-            }
-
             function cherryScatter(render) {
-                const q = 5;
+                const q = 2;
 
-                for (let j = 0; j < 50; ++j) {
-                    let d = phylotaxispos(j);
+                for (let i = 250; i >= 0; i--) {
+                    let d = phylotaxispos(i);
                     ctx.save()
                     ctx.translate(d.x * q, d.y * q);
                     render();
@@ -176,8 +173,8 @@
             function plumScatter(render) {
                 const q = 10;
 
-                for (let j = 0; j < 20; ++j) {
-                    let d = phylotaxispos(j);
+                for (let i = 1; i < 20; ++i) {
+                    let d = phylotaxispos(i);
                     ctx.save()
                     ctx.translate(d.x * q, d.y * q);
                     render();
@@ -189,18 +186,22 @@
                 const q = 20;
                 let n = 5;
 
-                for (let j = 0; j < n; ++j) {
+                for (let i = 0; i < n; ++i) {
 
-                    let a = Math.PI * 2 * j / n;
+                    let a = Math.PI * 2 * i / n;
 
                     ctx.save()
                     ctx.rotate(a)
                     ctx.translate(0, settings.r / 2)
-                    ctx.rotate(-Math.PI/2)
+                    ctx.rotate(-Math.PI / 2)
 
                     render();
                     ctx.restore()
                 }
+
+                ctx.fillStyle = 'white';
+                circle(ctx, 0, 0, settings.r * sizes[2]);
+                ctx.fill();
             }
         }
 
