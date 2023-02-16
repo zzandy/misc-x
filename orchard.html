@@ -4,6 +4,14 @@
 <head>
     <meta charset="utf-8" />
     <title>Orchard</title>
+    <style>
+        @media print {
+            @page {
+                size: 3508px 2480px ;
+                margin: 4cm;
+            }
+        }
+    </style>
 </head>
 
 <body>
@@ -28,17 +36,13 @@
 
             ctx.canvas.width = width;
             ctx.canvas.height = height;
-            ctx.canvas.style.display = 'block';
+            ctx.canvas.style.display = 'inline-block';
 
             return [can, ctx];
         }
     </script>
 
     <script type="text/javascript">
-        let ctx = fullscreenCanvas();
-        ctx.fillStyle = 'darkgreen'
-        ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height)
-
         class Rect {
             constructor(x, y, w, h) {
                 this.x = x;
@@ -48,7 +52,7 @@
             }
         }
 
-        let scale = 1;
+        let scale = 1.07;
 
         let dim = {
             r: scale * 100,
@@ -67,11 +71,11 @@
 
         let cards = generate();
 
-        ctx.translate(10, 10)
-        renderCard(ctx, cards[0], settings);
-
-        ctx.translate(settings.width, 0);
-        renderCard(ctx, cards[2], settings);
+        for (let card of cards) {
+            let [can, ctx] = makeCanvas(settings.width, settings.height, true);
+            document.body.appendChild(can);
+            renderCard(ctx, card, settings);
+        }
 
         function calculatePositions(dim) {
             let x = Math.floor(dim.pad + dim.mar + dim.r);
