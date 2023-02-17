@@ -64,7 +64,7 @@
 
         let cards = generate();
 
-        let lead = 8;
+        let lead = 8*3;
         for (let i = 0; i < lead; ++i) {
             cards.unshift(null)
         }
@@ -85,7 +85,7 @@
         }
 
         if (n != 0) {
-            document.appendChild(row)
+            document.body.appendChild(row)
         }
 
         function calculatePositions(dim) {
@@ -114,7 +114,7 @@
 
             // draw outline
             rounded('black', 0, settings.margin);
-            rounded('#bbbbbb', 1, settings.margin);
+            rounded('#bbbbbb', 2, settings.margin);
             rounded('#fff', settings.margin, settings.margin);
 
             if (card == null) { // back
