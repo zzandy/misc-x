@@ -71,6 +71,13 @@
 
         let cards = generate();
 
+        let lead = 9;
+        for (let i = 0; i < 9; ++i) {
+            let [can, ctx] = makeCanvas(settings.width, settings.height, true);
+            document.body.appendChild(can);
+            renderCard(ctx, null, settings);
+        }
+
         for (let card of cards) {
             let [can, ctx] = makeCanvas(settings.width, settings.height, true);
             document.body.appendChild(can);
@@ -104,7 +111,47 @@
             // draw outline
             rounded('black', 0, settings.margin);
             rounded('#bbbbbb', 1, settings.margin);
-            rounded('#fff', settings.margin, settings.margin)
+            rounded('#fff', settings.margin, settings.margin);
+
+            if (card == null) { // back
+
+                ctx.clip();
+
+                let y = -settings.r;
+                let shift = false;
+
+                let dx = settings.r / 2;
+                let dy = settings.r * Math.sqrt(3) / 4;
+
+                while (y < settings.height + settings.r) {
+
+                    let x = -settings.r;
+
+                    while (x < settings.width + settings.r) {
+                        let r = settings.r / 3;
+                        let xp = x + (shift ? dx / 2 : 0);
+
+                        ctx.fillStyle = '#999'
+                        circle(ctx, xp, y, r * 1.1);
+                        ctx.fill();
+                        ctx.fillStyle = '#fff'
+                        circle(ctx, xp, y, r);
+                        ctx.fill();
+
+                        ctx.fillStyle = '#999'
+                        circle(ctx, xp + dx / 12, y + dy / 6, r / 5);
+                        ctx.fill();
+
+                        x += dx;
+                    }
+
+                    y += dy;
+                    shift = !shift;
+                }
+
+
+                return;
+            }
 
             // draw roundels
             for (let [type, pos] of zip(card, settings.positions)) {
