@@ -7,7 +7,7 @@
     <style>
         @media print {
             @page {
-                size: 3508px 2480px ;
+                size: 3508px 2480px;
                 margin: 4cm;
             }
         }
@@ -103,8 +103,8 @@
 
             // draw outline
             rounded('black', 0, settings.margin);
-            rounded('white', 1, settings.margin);
-            rounded('#4caf50', settings.margin, settings.margin)
+            rounded('#bbbbbb', 1, settings.margin);
+            rounded('#fff', settings.margin, settings.margin)
 
             // draw roundels
             for (let [type, pos] of zip(card, settings.positions)) {
@@ -118,6 +118,110 @@
         }
 
         function drawRoundel(ctx, type, settings) {
+
+            const types = [typeOne, typeTwo, typeThree];
+
+            ctx.save();
+            types[type]();
+            ctx.restore();
+
+            function typeOne() {
+
+                ctx.fillStyle = '#777';
+                ctx.rotate(-Math.PI / 5 / 2);
+
+                for (let i = 0; i < 5; ++i) {
+                    circle(ctx, settings.r / 2, 0, 1.05 * settings.r / 2.5);
+                    ctx.fill();
+                    ctx.rotate(Math.PI * 2 / 5);
+                }
+
+                ctx.fillStyle = '#aaa';
+                for (let i = 0; i < 5; ++i) {
+                    circle(ctx, settings.r / 2, 0, settings.r / 2.5);
+                    ctx.fill();
+                    ctx.rotate(Math.PI * 2 / 5);
+                }
+
+                ctx.fillStyle = '#fff';
+                circle(ctx, 0, 0, settings.r / 3);
+                ctx.fill();
+            }
+
+            function typeTwo() {
+                const n = 5;
+                const q = .85;
+
+                ctx.fillStyle = '#444';
+
+                for (let i = 0; i < n; ++i) {
+                    for (let j = 0; j < i + 1; ++j) {
+                        circle(ctx, q * 2 * (j - i / 2) * settings.r / n, q * (2 * i * settings.r / n - settings.r) * Math.sqrt(3) / 2, 1.1 * settings.r / n)
+                        ctx.fill();
+                    }
+                }
+
+                ctx.fillStyle = '#888';
+
+                for (let i = 0; i < n; ++i) {
+                    for (let j = 0; j < i + 1; ++j) {
+                        circle(ctx, q * 2 * (j - i / 2) * settings.r / n, q * (2 * i * settings.r / n - settings.r) * Math.sqrt(3) / 2, settings.r / n)
+                        ctx.fill();
+                    }
+                }
+
+                ctx.fillStyle = '#bbb';
+                for (let i = 0; i < n; ++i) {
+                    for (let j = 0; j < i + 1; ++j) {
+                        circle(ctx, q * 2 * (j - i / 2) * settings.r / n, q * (2 * i * settings.r / n - settings.r) * Math.sqrt(3) / 2 - 2 * settings.r / n / 5, settings.r / n / 5)
+                        ctx.fill();
+                    }
+                }
+            }
+
+            function typeThree() {
+
+                const r = settings.r;
+                const a = r * .4;
+                const rx = r * 1.03;
+                const ax = a * 1.10
+                const n = 6;
+
+                ctx.fillStyle = '#888'
+                ctx.rotate(Math.PI * 2 / n / 2);
+
+                circle(ctx, 0, 0, rx / 8);
+                ctx.fill();
+
+                for (let i = 0; i < n; ++i) {
+                    ctx.beginPath();
+                    ctx.moveTo(-rx + r, 0)
+                    ctx.quadraticCurveTo(ax, -ax, rx, 0);
+                    ctx.quadraticCurveTo(ax, ax, -rx + r, 0);
+                    ctx.fill();
+                    ctx.rotate(Math.PI * 2 / n);
+                }
+
+
+                ctx.fillStyle = '#bbb'
+
+                for (let i = 0; i < n; ++i) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0)
+                    ctx.quadraticCurveTo(a, -a, r, 0);
+                    ctx.quadraticCurveTo(a, a, 0, 0);
+                    ctx.fill();
+                    ctx.rotate(Math.PI * 2 / n);
+                }
+
+
+                ctx.fillStyle = '#888'
+                circle(ctx, 0, 0, r / 10);
+                ctx.fill();
+            }
+        }
+
+        function drawRoundelColor(ctx, type, settings) {
             const colors = ['#D2042D', '#2b80bb', '#f0d82b'];
             const sizes = [.06, .15, .35];
             const fruitRenderers = [cherry, plum, pear];
