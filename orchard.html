@@ -11,12 +11,15 @@
                 margin: 4cm;
             }
         }
+
+        div {
+            display: flex;
+        }
     </style>
 </head>
 
 <body>
     <script name="canvas" type="text/javascript">
-
         // canvas w/ hex
         function fullscreenCanvas() {
             let [can, ctx] = makeCanvas(window.innerWidth, window.innerHeight, false)
@@ -36,29 +39,19 @@
 
             ctx.canvas.width = width;
             ctx.canvas.height = height;
-            ctx.canvas.style.display = 'inline-block';
 
             return [can, ctx];
         }
     </script>
 
     <script type="text/javascript">
-        class Rect {
-            constructor(x, y, w, h) {
-                this.x = x;
-                this.y = y;
-                this.w = w;
-                this.h = h;
-            }
-        }
-
         let scale = 1.07;
 
         let dim = {
             r: scale * 100,
-            dist: scale * 300,
-            pad: scale * 75,
-            mar: scale * 25
+            dist: scale * 250,
+            pad: scale * 55,
+            mar: scale * 45
         }
 
         let settings = {
@@ -71,17 +64,28 @@
 
         let cards = generate();
 
-        let lead = 9;
-        for (let i = 0; i < 9; ++i) {
-            let [can, ctx] = makeCanvas(settings.width, settings.height, true);
-            document.body.appendChild(can);
-            renderCard(ctx, null, settings);
+        let lead = 8;
+        for (let i = 0; i < lead; ++i) {
+            cards.unshift(null)
         }
+
+        let row = document.createElement('div');
+        let n = 0;
 
         for (let card of cards) {
             let [can, ctx] = makeCanvas(settings.width, settings.height, true);
-            document.body.appendChild(can);
+            row.appendChild(can);
             renderCard(ctx, card, settings);
+
+            if (++n >= 4) {
+                n = 0;
+                document.body.appendChild(row)
+                row = document.createElement('div');
+            }
+        }
+
+        if (n != 0) {
+            document.appendChild(row)
         }
 
         function calculatePositions(dim) {
@@ -277,7 +281,6 @@
                 if (str.match(/(.)\1/g)?.length < 3 && !str.match(/(..)\1/g) && left != right.reverse().join('') && left != right.join('') && !(str in m) && !([...p].reverse().join('') in m)) m[str] = p
             });
 
-            console.log(Object.values(m))
             return Object.values(m);
         }
 
