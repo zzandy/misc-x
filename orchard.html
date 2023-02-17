@@ -172,9 +172,13 @@
             types[type]();
             ctx.restore();
 
-            function typeOne() {
+            function shade(n) {
+                let value = (n * 255 / 100) | 0;
+                ctx.fillStyle = `rgb(${value}, ${value}, ${value})`
+            }
 
-                ctx.fillStyle = '#777';
+            function typeOne() {
+                shade(50);
                 ctx.rotate(-Math.PI / 5 / 2);
 
                 for (let i = 0; i < 5; ++i) {
@@ -183,14 +187,14 @@
                     ctx.rotate(Math.PI * 2 / 5);
                 }
 
-                ctx.fillStyle = '#aaa';
+                shade(70);
                 for (let i = 0; i < 5; ++i) {
                     circle(ctx, settings.r / 2, 0, settings.r / 2.5);
                     ctx.fill();
                     ctx.rotate(Math.PI * 2 / 5);
                 }
 
-                ctx.fillStyle = '#fff';
+                shade(100);
                 circle(ctx, 0, 0, settings.r / 3);
                 ctx.fill();
             }
@@ -199,8 +203,7 @@
                 const n = 5;
                 const q = .85;
 
-                ctx.fillStyle = '#444';
-
+                shade(40)
                 for (let i = 0; i < n; ++i) {
                     for (let j = 0; j < i + 1; ++j) {
                         circle(ctx, q * 2 * (j - i / 2) * settings.r / n, q * (2 * i * settings.r / n - settings.r) * Math.sqrt(3) / 2, 1.1 * settings.r / n)
@@ -208,8 +211,7 @@
                     }
                 }
 
-                ctx.fillStyle = '#888';
-
+                shade(50)
                 for (let i = 0; i < n; ++i) {
                     for (let j = 0; j < i + 1; ++j) {
                         circle(ctx, q * 2 * (j - i / 2) * settings.r / n, q * (2 * i * settings.r / n - settings.r) * Math.sqrt(3) / 2, settings.r / n)
@@ -217,7 +219,7 @@
                     }
                 }
 
-                ctx.fillStyle = '#bbb';
+                shade(80);
                 for (let i = 0; i < n; ++i) {
                     for (let j = 0; j < i + 1; ++j) {
                         circle(ctx, q * 2 * (j - i / 2) * settings.r / n, q * (2 * i * settings.r / n - settings.r) * Math.sqrt(3) / 2 - 2 * settings.r / n / 5, settings.r / n / 5)
@@ -234,7 +236,7 @@
                 const ax = a * 1.10
                 const n = 6;
 
-                ctx.fillStyle = '#888'
+                shade(60);
                 ctx.rotate(Math.PI * 2 / n / 2);
 
                 circle(ctx, 0, 0, rx / 8);
@@ -250,7 +252,7 @@
                 }
 
 
-                ctx.fillStyle = '#bbb'
+                shade(90);
 
                 for (let i = 0; i < n; ++i) {
                     ctx.beginPath();
@@ -261,110 +263,10 @@
                     ctx.rotate(Math.PI * 2 / n);
                 }
 
-
-                ctx.fillStyle = '#888'
+                shade(70);
                 circle(ctx, 0, 0, r / 10);
                 ctx.fill();
             }
-        }
-
-        function drawRoundelColor(ctx, type, settings) {
-            const colors = ['#D2042D', '#2b80bb', '#f0d82b'];
-            const sizes = [.06, .15, .35];
-            const fruitRenderers = [cherry, plum, pear];
-            const fruitScatterers = [cherryScatter, plumScatter, pearScatter];
-
-            ctx.fillStyle = colors[type];
-
-            turn(() => fruitScatterers[type](fruitRenderers[type]))
-
-            function cherry() {
-                ctx.save();
-                ctx.fillStyle = 'white'
-                circle(ctx, 0, 0, 1.1 * settings.r * sizes[0]);
-                ctx.fill();
-                ctx.restore();
-
-                circle(ctx, 0, 0, settings.r * sizes[0]);
-                ctx.fill();
-            }
-
-            function plum() {
-                ctx.save();
-                ctx.fillStyle = 'white'
-                circle(ctx, 0, 0, 1.1 * settings.r * sizes[1]);
-                ctx.fill();
-                ctx.restore();
-                circle(ctx, 0, 0, settings.r * sizes[1]);
-                ctx.fill();
-            }
-
-            function pear() {
-                ellipse(ctx, 0, 0, settings.r * sizes[2], settings.r * sizes[2] * .9, 0);
-                ctx.fill();
-                ellipse(ctx, settings.r * sizes[2] / 2, 0, settings.r * sizes[2], settings.r * sizes[2] / 2, 0);
-                ctx.fill();
-            }
-
-            function turn(cb) {
-                ctx.save()
-                ctx.rotate(Math.PI * 2 * Math.random())
-                cb();
-                ctx.restore();
-            }
-
-            function cherryScatter(render) {
-                const q = 2;
-
-                for (let i = 250; i >= 0; i--) {
-                    let d = phylotaxispos(i);
-                    ctx.save()
-                    ctx.translate(d.x * q, d.y * q);
-                    render();
-                    ctx.restore()
-                }
-            }
-
-            function plumScatter(render) {
-                const q = 10;
-
-                for (let i = 1; i < 20; ++i) {
-                    let d = phylotaxispos(i);
-                    ctx.save()
-                    ctx.translate(d.x * q, d.y * q);
-                    render();
-                    ctx.restore()
-                }
-            }
-
-            function pearScatter(render) {
-                const q = 20;
-                let n = 5;
-
-                for (let i = 0; i < n; ++i) {
-
-                    let a = Math.PI * 2 * i / n;
-
-                    ctx.save()
-                    ctx.rotate(a)
-                    ctx.translate(0, settings.r / 2)
-                    ctx.rotate(-Math.PI / 2)
-
-                    render();
-                    ctx.restore()
-                }
-
-                ctx.fillStyle = 'white';
-                circle(ctx, 0, 0, settings.r * sizes[2]);
-                ctx.fill();
-            }
-        }
-
-        function phylotaxispos(n) {
-            var r = 2 * Math.sqrt(n);
-            var p = n * Math.PI * (3 - Math.sqrt(5));
-
-            return pos(r * Math.cos(p), r * Math.sin(p), p);
         }
 
         function generate() {
@@ -372,8 +274,10 @@
                 let str = p.join('');
                 let left = p.slice(0, 3).join('');
                 let right = p.slice(3);
-                if (str.match(/(.)\1/g)?.length < 3 && left != right.reverse().join('') && left != right.join('') && !(str in m) && !([...p].reverse().join('') in m)) m[str] = p
+                if (str.match(/(.)\1/g)?.length < 3 && !str.match(/(..)\1/g) && left != right.reverse().join('') && left != right.join('') && !(str in m) && !([...p].reverse().join('') in m)) m[str] = p
             });
+
+            console.log(Object.values(m))
             return Object.values(m);
         }
 
