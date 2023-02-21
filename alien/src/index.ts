@@ -160,6 +160,8 @@ function calcfreq() {
         });
 }
 
+// 26 Steam guard alphabeth letters - 23456789BCDFGHJKMNPQRTVWXY
+
 /*
 1. the: 1.96%
 2. th: 0.94%
