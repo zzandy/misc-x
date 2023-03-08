@@ -46,8 +46,6 @@ async function main() {
             row[4]
         ].join('  '));
     }
-
-    console.log('No results for ' + nodata.map(bold).join(', '));
 }
 
 main();
